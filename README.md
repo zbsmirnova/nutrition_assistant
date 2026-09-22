@@ -4,7 +4,7 @@ A personal Telegram assistant for conversational food logging, recipes, daily bo
 
 ## Current stage
 
-The local persistence service saves resolved food commands with deterministic totals and safe retries. The next slice adds private Telegram ingestion, durable polling, account linking, Russian response rendering, and bot-scoped delivery. Its developer checks use synthetic Telegram responses and real local PostgreSQL; no real bot messages have been sent.
+The local persistence service saves resolved food commands with deterministic totals and safe retries. W002 adds private Telegram ingestion, durable polling, account linking, Russian response rendering, and bot-scoped delivery. Its verification uses synthetic Telegram responses and real local PostgreSQL; no real bot messages have been sent.
 
 M1 completed on 2026-09-22. Verification passed: 41 contract/arithmetic tests, 26 PostgreSQL integration tests, and 10 additional independently authored QA checks. Independent QA passed the local persistence scope; database execution was assisted by the lead. The completed brief is [001-persist-food-entry.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/001-persist-food-entry.md?type=file&root=%252F), with evidence in [001-persist-food-entry-qa.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/001-persist-food-entry-qa.md?type=file&root=%252F).
 
@@ -43,7 +43,7 @@ docker compose -f compose.dev.yml stop db
 
 Apply migration head 0003 before using transport commands. No new runtime dependencies are needed. The API adapter uses normal HTTPS certificate verification; if your environment uses a custom CA, configure its trusted CA through Python's standard SSL_CERT_FILE setting.
 
-The local transport harness is verified with synthetic data. Real-message data handling and the model provider remain open decisions. These commands are documented for explicit operator use; they are not run by the test suite. Configure NUTRITION_TELEGRAM_TOKEN and NUTRITION_TELEGRAM_BOT_ID in your local environment; do not place a token in a command argument, chat message, or repository file.
+The local transport harness is verified with synthetic data. The selected model provider is Nebius Token Factory; real-message retention and other data-lifecycle details remain open. These commands are documented for explicit operator use; they are not run by the test suite. Configure NUTRITION_TELEGRAM_TOKEN and NUTRITION_TELEGRAM_BOT_ID in your local environment; do not place a token in a command argument, chat message, or repository file.
 
 Create an owner with user-create, or use an existing internal user ID. Link that owner to numeric Telegram bot/user/private-chat IDs obtained through your own account. Replace the uppercase placeholders below:
 
@@ -58,6 +58,12 @@ Create an owner with user-create, or use an existing internal user ID. Link that
 Each poll command receives one batch into the durable inbox; it does not run a parser or create food entries. Each send command attempts one committed food response for the configured bot. Repeated invocations resume from persisted state. A future conversation worker will interpret inbox messages and produce validated commands. Existing fake dispatch remains available for synthetic demos.
 
 The adapter refuses an active webhook without changing it. Unknown accounts, groups, bot senders, edited messages, and non-text updates create no food. Reply references and forwarding indicators are preserved for later interpretation. Failed and uncertain sends remain in the outbox for explicit investigation; uncertain sends are not automatically repeated. A 429 response defers retry according to retry_after, with at most three proven-unsent attempts.
+
+## Nebius provider setup
+
+The user selected Nebius Token Factory cloud inference and will supply an API key as a secret. Expose that secret to the application process as NEBIUS_API_KEY. The exact model ID will use NUTRITION_LLM_MODEL; model selection follows evaluation rather than an assumed default. The non-secret [.env.example](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/.env.example?type=file&root=%252F) records these names. The application does not automatically load .env files, and no provider adapter or live model call is implemented yet.
+
+Nebius's documented API base is https://api.tokenfactory.nebius.com/v1/. The worker and its synthetic checks can be implemented without credentials. Supplying the secret will not automatically run inference, process stored messages, or deploy the application. The provider decision, official references, and remaining evaluation requirements are in [0009-nebius-cloud-provider.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0009-nebius-cloud-provider.md?type=file&root=%252F).
 
 ## Verification
 
@@ -96,4 +102,4 @@ Alembic revisions are the migration history. The runtime model in [schema.py](ai
 | [strategy.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/strategy.md?type=file&root=%252F) | Independent verification and evidence requirements. |
 | [development-process.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/development-process.md?type=file&root=%252F) | Workflow and document ownership. |
 
-[Dockerfile](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/Dockerfile?type=file&root=%252F) and [fly.toml](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/fly.toml?type=file&root=%252F) still describe the existing Open WebUI deployment context. They do not deploy this application. Hosting and real-data provider/privacy requirements remain open.
+[Dockerfile](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/Dockerfile?type=file&root=%252F) and [fly.toml](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/fly.toml?type=file&root=%252F) still describe the existing Open WebUI deployment context. They do not deploy this application. Hosting and remaining data-lifecycle requirements remain open; the Nebius provider choice is accepted.

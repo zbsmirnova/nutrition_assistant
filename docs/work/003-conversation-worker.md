@@ -9,7 +9,7 @@ Updated: 2026-09-22.
 
 Connect the durable Telegram inbox to the existing food service through a parser interface and backend resolver. For one explicit consumption statement, such as “Съела 100 г творога”, use an unambiguous owned product and compatible quantity to save one entry and queue the existing Russian entry-plus-day acknowledgment. The product's nutrition comes from its pinned catalog version, never from model arithmetic.
 
-This slice implements the worker and resolution boundary using controlled parser responses. It does not establish that a live model understands Russian messages. A separate live-provider adapter and measured evaluation follow the Q09 choice; actual personal-data use also depends on Q10. No provider choice is implied by defining the interface.
+This slice implements the worker and resolution boundary using controlled parser responses. It does not establish that a live model understands Russian messages. The user selected Nebius Token Factory cloud inference and will supply its key as a secret (D009). A separate Nebius adapter and measured evaluation follow; the exact model and Q10's remaining data-lifecycle choices are still open. Worker development does not require the key.
 
 Initial executable scope is one independent product-food addition with explicit quantity, known unit/basis, and a deterministically resolvable source date. Preserve M1's operation identity for position zero. Persist and expose non-logging, unsupported, unresolved, and failed dispositions so an input cannot disappear or be mistaken for a successful food save. Do not attempt an arbitrary first action from a multi-action proposal.
 
@@ -21,7 +21,7 @@ FOOD-001, FOOD-002, FOOD-005, FOOD-006, CALC-001/CALC-002, and DATA-001–DATA-0
 
 The existing ParserOutput type and validate_parser_context function own proposal validation; CommandEnvelope owns the trusted command boundary. Read the conversation and typed-contract specifications before implementation. Do not invent a second parser schema or let a provider choose the actor, operation ID, database identity, or nutrition totals.
 
-Q09/Q10 remain in the single question register. A cloud/local/synthetic preference was requested again when planning W003; no answer is assumed. Synthetic worker implementation can proceed independently. Resolve provider-specific request context, model evaluation criteria, and real-data constraints before their dependent work.
+Q09's provider choice is resolved by D009; do not ask cloud versus local again. The intended secret variable is NEBIUS_API_KEY, with a separate NUTRITION_LLM_MODEL setting for the exact model ID. The non-secret configuration template and provider decision are prepared; no runtime adapter is implemented. Synthetic worker implementation can proceed independently. The single question register retains the remaining model/evaluation and Q10 data-lifecycle choices for their dependent work.
 
 Q04's broader conversational ambiguity choices remain open. This slice can use the stored message timestamp and captured IANA time zone for no-date/today/yesterday and explicit ISO-date cases, retaining unsupported date expressions for later resolution. Processing after midnight must not silently change the target date. Reply-dependent and forwarded inputs must not be interpreted as standalone consumption without the later context-resolution rules.
 
