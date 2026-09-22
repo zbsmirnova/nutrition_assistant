@@ -4,13 +4,18 @@ import argparse
 from datetime import date
 import json
 import os
+from pathlib import Path
 from uuid import UUID
 
 from pydantic import TypeAdapter, ValidationError
+from sqlalchemy.exc import DBAPIError
 
 from nutrition_contracts.common import TimeZoneName
 
 from .db import engine_for, migrate
+from .conversation import ConversationWorker
+from .conversation_demo import run_conversation_demo
+from .interpretation import SyntheticParser
 from .demo import run_demo
 from .errors import ApplicationError
 from .outbox import FakeSender, OutboxWorker
@@ -24,6 +29,15 @@ def main():
     sub = parser.add_subparsers(dest="action", required=True)
     sub.add_parser("migrate")
     sub.add_parser("demo")
+    sub.add_parser("conversation-demo", help="Synthetic text-to-food-to-reply exercise; no external calls")
+    run = sub.add_parser("conversation-run", help="Process one source with a source-bound synthetic parser fixture")
+    run.add_argument("--user", type=UUID, required=True)
+    run.add_argument("--source", type=UUID, required=True)
+    run.add_argument("--fixture", type=Path, required=True)
+    run.add_argument("--crash", choices=["after_claim", "after_parse", "after_prepare", "before_domain_commit", "after_domain_commit"])
+    status = sub.add_parser("conversation-status", help="Inspect processing status without printing message text")
+    status.add_argument("--user", type=UUID, required=True)
+    status.add_argument("--source", type=UUID)
     sub.add_parser("db-info")
     execute = sub.add_parser("execute", help="Resume a prepared operation as a trusted local operator")
     execute.add_argument("--user", type=UUID, required=True)
@@ -51,6 +65,24 @@ def main():
             output = {"migrations": "head"}
         elif args.action == "demo":
             output = run_demo(engine)
+        elif args.action == "conversation-demo":
+            output = run_conversation_demo(engine)
+        elif args.action == "conversation-run":
+            try:
+                with args.fixture.open("rb") as stream:
+                    raw = stream.read(256 * 1024 + 1)
+                if len(raw) > 256 * 1024:
+                    raise ValueError("Fixture too large")
+                fixture_parser = SyntheticParser(json.loads(raw))
+            except (OSError, ValueError, UnicodeError):
+                raise ApplicationError("Cannot read a valid bounded synthetic fixture") from None
+            def fault(point):
+                if point == args.crash:
+                    os._exit(77)
+            output = ConversationWorker(engine).run_one(args.user, fixture_parser, origin=args.source, fault=fault)
+            output.pop("outcome", None)  # Operational CLI output does not print personal food records.
+        elif args.action == "conversation-status":
+            output = ConversationWorker(engine).status(args.user, args.source)
         elif args.action == "db-info":
             with engine.connect() as connection:
                 output = {"postgresql": connection.exec_driver_sql("SHOW server_version").scalar_one(),
@@ -94,6 +126,9 @@ def main():
     except ApplicationError as exc:
         print(json.dumps({"error": exc.code, "message": str(exc)}))
         raise SystemExit(1)
+    except DBAPIError:
+        print(json.dumps({"error": "database_unavailable", "message": "Database operation failed; retry after checking local database health"}))
+        raise SystemExit(1) from None
     finally:
         engine.dispose()
 

@@ -1,0 +1,89 @@
+Executor: independent QA; W003 original snapshot 3a0e362c8cad.
+Command: python -m unittest qa_w003_independent.ResolverEvidenceQA -v
+Exit code: 1
+
+test_qa01_dairy_source_cannot_be_relabelled_as_general_food (qa_w003_independent.ResolverEvidenceQA.test_qa01_dairy_source_cannot_be_relabelled_as_general_food) ... FAIL
+test_qa02_explicit_other_brand_cannot_select_catalog_brand (qa_w003_independent.ResolverEvidenceQA.test_qa02_explicit_other_brand_cannot_select_catalog_brand) ... FAIL
+test_qa03_quantity_range_is_not_an_exact_portion (qa_w003_independent.ResolverEvidenceQA.test_qa03_quantity_range_is_not_an_exact_portion) ... 
+  test_qa03_quantity_range_is_not_an_exact_portion (qa_w003_independent.ResolverEvidenceQA.test_qa03_quantity_range_is_not_an_exact_portion) (text='Съела 80–100 г творога 5% «Марка А»') ... FAIL
+  test_qa03_quantity_range_is_not_an_exact_portion (qa_w003_independent.ResolverEvidenceQA.test_qa03_quantity_range_is_not_an_exact_portion) (text='Съела 80—100 г творога 5% «Марка А»') ... FAIL
+test_qa04_omitted_unsupported_relative_date_cannot_default_to_today (qa_w003_independent.ResolverEvidenceQA.test_qa04_omitted_unsupported_relative_date_cannot_default_to_today) ... FAIL
+test_qa05_cooked_source_cannot_use_raw_profile (qa_w003_independent.ResolverEvidenceQA.test_qa05_cooked_source_cannot_use_raw_profile) ... FAIL
+test_qa06_exact_branded_quantity_remains_supported (qa_w003_independent.ResolverEvidenceQA.test_qa06_exact_branded_quantity_remains_supported) ... ok
+
+======================================================================
+FAIL: test_qa01_dairy_source_cannot_be_relabelled_as_general_food (qa_w003_independent.ResolverEvidenceQA.test_qa01_dairy_source_cannot_be_relabelled_as_general_food)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/nutrition-w003-qa-eo35kq3z/qa_w003_independent.py", line 53, in test_qa01_dairy_source_cannot_be_relabelled_as_general_food
+    self.assertEqual(self.result(text,ctx).status,'unresolved')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'ready' != 'unresolved'
+- ready
++ unresolved
+
+
+======================================================================
+FAIL: test_qa02_explicit_other_brand_cannot_select_catalog_brand (qa_w003_independent.ResolverEvidenceQA.test_qa02_explicit_other_brand_cannot_select_catalog_brand)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/nutrition-w003-qa-eo35kq3z/qa_w003_independent.py", line 56, in test_qa02_explicit_other_brand_cannot_select_catalog_brand
+    self.assertEqual(self.result(text).status,'unresolved')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'ready' != 'unresolved'
+- ready
++ unresolved
+
+
+======================================================================
+FAIL: test_qa03_quantity_range_is_not_an_exact_portion (qa_w003_independent.ResolverEvidenceQA.test_qa03_quantity_range_is_not_an_exact_portion) (text='Съела 80–100 г творога 5% «Марка А»')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/nutrition-w003-qa-eo35kq3z/qa_w003_independent.py", line 59, in test_qa03_quantity_range_is_not_an_exact_portion
+    with self.subTest(text=text):self.assertEqual(self.result(text).status,'unresolved')
+                                 ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'ready' != 'unresolved'
+- ready
++ unresolved
+
+
+======================================================================
+FAIL: test_qa03_quantity_range_is_not_an_exact_portion (qa_w003_independent.ResolverEvidenceQA.test_qa03_quantity_range_is_not_an_exact_portion) (text='Съела 80—100 г творога 5% «Марка А»')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/nutrition-w003-qa-eo35kq3z/qa_w003_independent.py", line 59, in test_qa03_quantity_range_is_not_an_exact_portion
+    with self.subTest(text=text):self.assertEqual(self.result(text).status,'unresolved')
+                                 ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'ready' != 'unresolved'
+- ready
++ unresolved
+
+
+======================================================================
+FAIL: test_qa04_omitted_unsupported_relative_date_cannot_default_to_today (qa_w003_independent.ResolverEvidenceQA.test_qa04_omitted_unsupported_relative_date_cannot_default_to_today)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/nutrition-w003-qa-eo35kq3z/qa_w003_independent.py", line 63, in test_qa04_omitted_unsupported_relative_date_cannot_default_to_today
+    self.assertEqual(result.status,'unresolved')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'ready' != 'unresolved'
+- ready
++ unresolved
+
+
+======================================================================
+FAIL: test_qa05_cooked_source_cannot_use_raw_profile (qa_w003_independent.ResolverEvidenceQA.test_qa05_cooked_source_cannot_use_raw_profile)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/nutrition-w003-qa-eo35kq3z/qa_w003_independent.py", line 69, in test_qa05_cooked_source_cannot_use_raw_profile
+    self.assertEqual(self.result(text,ctx,weight_basis='raw').status,'unresolved')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'ready' != 'unresolved'
+- ready
++ unresolved
+
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.004s
+
+FAILED (failures=6)

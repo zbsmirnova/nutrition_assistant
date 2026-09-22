@@ -7,7 +7,7 @@ This file owns milestone status and order. Individual task status and acceptance
 
 M1 is complete: a local PostgreSQL application path for a resolved product-food command, with frozen operation identity, deterministic totals, atomic revisions/results/outbox, and fake delivery. Verification passes: 32 contract tests, 9 arithmetic tests, 26 PostgreSQL integration tests, and 10 independently authored QA probes on Python 3.14.0 / PostgreSQL 17.11. The original three schemas and 20 authored parser scenarios are unchanged.
 
-The completed brief is [001-persist-food-entry.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/001-persist-food-entry.md?type=file&root=%252F). Independent QA passed the local scope with root-assisted database execution; documentation observations were resolved. M2 is now in progress through [002-telegram-transport.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/002-telegram-transport.md?type=file&root=%252F). W002 private Telegram transport is complete and independently reviewed with synthetic API responses. The current suites contain 106 checks with passing evidence; the report records targeted rechecks and inherited unchanged-code results. Live interpretation and real-bot operation remain unverified.
+The completed brief is [001-persist-food-entry.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/001-persist-food-entry.md?type=file&root=%252F). M2 remains in progress. W002 private Telegram transport is complete and independently reviewed with synthetic API responses. The latest completed slice is [003-conversation-worker.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/003-conversation-worker.md?type=file&root=%252F): durable single-food interpretation/resolution with controlled responses and dairy ambiguity handling. It passed independent review after its recorded resolver fixes; the brief owns the exact evidence. Live interpretation and real-bot operation remain unverified.
 
 ## Milestones
 
@@ -27,9 +27,8 @@ Milestone statuses: planned, in progress, complete, blocked. The first implement
 
 ## Implementation sequence now
 
-1. Implement [003-conversation-worker.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/003-conversation-worker.md?type=file&root=%252F): resume the durable inbox, validate controlled parser proposals, resolve one clear product-food addition, and recover without duplicate saves. Provider-neutral development uses synthetic inputs and can proceed while Q09/Q10 remain open.
-2. Implement the Nebius Token Factory adapter selected by the user in D009. The user supplies NEBIUS_API_KEY as a secret; keep NUTRITION_LLM_MODEL configurable and select it through measured Russian-language evaluation. Q09's remaining evaluation/request details and Q10's data-lifecycle choices stay in the question register. The key is not needed for the synthetic worker slice.
-3. Extend to durable clarification/resumption and mixed-message partial saving, then same-entry correction/delete/undo through subsequent M2 tasks. W003's deliberately narrow development scope does not replace these accepted requirements.
+1. Implement the Nebius Token Factory adapter selected by the user in D009 on W003’s verified worker boundary. The user supplies NEBIUS_API_KEY as a secret; keep NUTRITION_LLM_MODEL configurable and select it through measured Russian-language evaluation. Q09’s remaining request/evaluation choices and Q10’s data-lifecycle choices stay in the question register. Synthetic adapter contract tests can proceed before the key is available.
+2. Extend to durable clarification/resumption and mixed-message partial saving, then same-entry correction/delete/undo through subsequent M2 tasks. W003’s bounded worker does not replace these accepted requirements.
 
 Use [README.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/README.md?type=file&root=%252F) for unresolved questions and blockers. Use [strategy.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/strategy.md?type=file&root=%252F) for verification expectations.
 
@@ -48,4 +47,4 @@ Use [README.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutri
 
 M2 transport evidence is in [002-telegram-transport-qa.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/002-telegram-transport-qa.md?type=file&root=%252F); all eight W002 criteria passed after the receipt fix. The parser and conversational workflows remain necessary to complete M2.
 
-Detailed QA evidence for later slices belongs in reports linked from their work briefs.
+W003 worker evidence is in [003-conversation-worker-qa.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/003-conversation-worker-qa.md?type=file&root=%252F). All eleven criteria passed for the frozen synthetic source. Detailed evidence for later slices belongs in reports linked from their work briefs.

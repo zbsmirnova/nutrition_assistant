@@ -99,6 +99,11 @@ product_versions = owned("product_versions",
     sa.Column("data_source_id", UUID(as_uuid=True), nullable=False),
     sa.Column("nutrition_basis", sa.Text, nullable=False),
     sa.Column("weight_basis", sa.Text, nullable=False),
+    sa.Column("food_kind", sa.Text),
+    sa.Column("declared_fat_percent", sa.Numeric(5, 2)),
+    sa.CheckConstraint("food_kind IS NULL OR food_kind IN ('general','dairy')", name="food_kind"),
+    sa.CheckConstraint("declared_fat_percent IS NULL OR (food_kind IS NOT NULL AND food_kind = 'dairy' "
+                       "AND declared_fat_percent >= 0 AND declared_fat_percent <= 100)", name="declared_fat"),
     *nutrition_columns(),
     sa.ForeignKeyConstraint(["user_id", "product_id"], ["products.user_id", "products.id"]),
     sa.ForeignKeyConstraint(["user_id", "data_source_id"], ["data_sources.user_id", "data_sources.id"]),
@@ -205,3 +210,24 @@ telegram_poll_cursors = sa.Table("telegram_poll_cursors", metadata,
     sa.Column("bot_id", sa.BigInteger, primary_key=True),
     sa.Column("next_update_id", sa.BigInteger, nullable=False, server_default="0"),
     sa.CheckConstraint("bot_id > 0 AND next_update_id >= 0", name="valid_cursor"))
+
+conversation_jobs = owned("conversation_jobs",
+    sa.Column("origin_update_id", UUID(as_uuid=True), nullable=False),
+    sa.Column("status", sa.Text, nullable=False),
+    sa.Column("reason", sa.Text),
+    sa.Column("pending_food_date", sa.Date),
+    sa.Column("attempts", sa.Integer, nullable=False, server_default="0"),
+    sa.Column("claim_token", UUID(as_uuid=True)),
+    sa.Column("lease_until", sa.DateTime(timezone=True)),
+    sa.Column("next_attempt_at", sa.DateTime(timezone=True)),
+    sa.Column("context", JSONB(none_as_null=True)),
+    sa.Column("proposal", JSONB(none_as_null=True)),
+    sa.ForeignKeyConstraint(["user_id", "origin_update_id"], ["inbox_updates.user_id", "inbox_updates.id"]),
+    sa.UniqueConstraint("user_id", "origin_update_id", name="uq_conversation_origin"),
+    sa.CheckConstraint("attempts >= 0", name="nonnegative_attempts"),
+    sa.CheckConstraint("status IN ('processing','ready','retry','applied','non_logging','unresolved',"
+                       "'unsupported','rejected','failed')", name="status"),
+    sa.CheckConstraint("(status = 'processing' AND claim_token IS NOT NULL AND lease_until IS NOT NULL) OR "
+                       "(status <> 'processing' AND claim_token IS NULL AND lease_until IS NULL)", name="lease_state"))
+sa.Index("ix_conversation_work", conversation_jobs.c.user_id, conversation_jobs.c.status,
+         conversation_jobs.c.next_attempt_at)

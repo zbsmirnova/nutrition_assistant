@@ -2,7 +2,7 @@
 
 Date: 2026-09-22
 
-Status: current design overview. Product choices and technical proposals are distinguished in the decision register. Typed contracts, M1 persistence, and W002 private Telegram transport are implemented. Transport checks use synthetic API responses. Live interpretation, later domains, and deployment remain unimplemented.
+Status: current design overview. Product choices and technical proposals are distinguished in the decision register. Typed contracts, M1 persistence, W002 private Telegram transport, and W003's controlled-proposal conversation worker are implemented. Live interpretation, later domains, and deployment remain unimplemented; revision-specific verification belongs in the work briefs.
 
 Input: the personal nutrition tracker architecture brief dated 2026-09-21.
 
@@ -61,7 +61,7 @@ A message may yield independent operations and pending questions. Persist operat
 
 ## 4. System boundary and target processes
 
-One repository, one modular Python application, one PostgreSQL database. M1 provides persistence services; W002 adds a private long-polling Telegram adapter and bot-scoped delivery, verified with synthetic API responses. The diagram shows the target runtime, including future interpretation and background processes; it is not a diagram of currently running services. No microservices or Redis are needed for the initial design.
+One repository, one modular Python application, one PostgreSQL database. M1 provides persistence services; W002 adds private Telegram transport. W003 connects a controlled parser interface and bounded single-food resolver through durable jobs. The diagram shows the target runtime, including future live interpretation and background scheduling; it is not a diagram of currently running services. No microservices or Redis are needed for the initial design.
 
 ```mermaid
 flowchart LR
@@ -107,6 +107,8 @@ Python/PostgreSQL with SQLAlchemy Core, psycopg, and Alembic is the accepted and
 W002 uses D007's private account mappings and durable polling cursor. A per-bot PostgreSQL advisory lock prevents competing pollers from acknowledging an in-flight batch. Inbox writes commit before the next offset; no transaction spans the network wait. The separate sender claims only its bot's responses, records successful Telegram message IDs, defers explicit rate limits, and preserves ambiguous sends as uncertain. Transport does not parse incoming text into food. Live operation and provider/data policies remain separate from synthetic verification.
 
 Accepted continuous-persistence semantics are recorded in D001. The accepted M1 relational revision decision is [0003-relational-storage.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0003-relational-storage.md?type=file&root=%252F): keep current pointers and ordinary immutable revisions without requiring full event replay.
+
+W003's D011 adds per-inbox conversation jobs, database-clock leases, frozen owned catalog context, and atomic proposal/command preparation. Short user-row locks fence state changes; parser work runs outside transactions. Restart recovery reuses M1's prepared command and outbox. Unsupported or unresolved inputs remain durable and inspectable. This bounded worker uses synthetic responses; the Nebius adapter and full conversational workflow remain separate slices.
 
 Immutability applies to ordinary editing. Explicit account erasure and agreed retention rules may purge personal revisions and source data; an audit trail is not an exception to deletion policy.
 

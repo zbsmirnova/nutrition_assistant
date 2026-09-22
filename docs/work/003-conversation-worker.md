@@ -1,8 +1,8 @@
 # W003 — Turn a clear food message into a durable command
 
-Status: ready.
+Status: done.
 Milestone: M2 (second slice; does not complete M2).
-Owner: lead assistant, architect/developer; independent reviewer not yet assigned.
+Owner: lead assistant, architect/developer; independent review completed by independent_m1_qa.
 Updated: 2026-09-22.
 
 ## Outcome and scope
@@ -46,21 +46,27 @@ Q04's broader conversational ambiguity choices remain open. This slice can use t
 ## Implementation checklist
 
 - [x] Define the next bounded slice and identify the existing service/contract constraints.
-- [ ] Record the worker state/recovery decision, including claims, retries, frozen interpretation, deferred input handling, and upgrade behavior.
-- [ ] Add durable worker state and migration; preserve existing operation identities and source ownership.
-- [ ] Implement the provider-neutral interface and controlled synthetic adapter.
-- [ ] Build scoped product context and the supported single-food/date resolver.
-- [ ] Connect prepared-command recovery and the existing food service/outbox; add an explicit synthetic worker command.
-- [ ] Add requirements-based intent, isolation, date, crash/concurrency, and populated-migration checks.
-- [ ] Run relevant regressions, maintain setup/specifications, and provide a reproducible review handoff.
-- [ ] Obtain independent review, address findings, and commit the completed, tested implementation.
+- [x] Record the worker state/recovery decision, including claims, retries, frozen interpretation, deferred input handling, and upgrade behavior.
+- [x] Add durable worker state and migration; preserve existing operation identities and source ownership.
+- [x] Implement the provider-neutral interface and controlled synthetic adapter.
+- [x] Build scoped product context and the supported single-food/date resolver.
+- [x] Connect prepared-command recovery and the existing food service/outbox; add an explicit synthetic worker command.
+- [x] Add requirements-based intent, isolation, date, crash/concurrency, and populated-migration checks.
+- [x] Run relevant regressions, maintain setup/specifications, and provide a reproducible review handoff.
+- [x] Obtain independent review and address findings; close out under the authorized completed-slice commit workflow.
 
 ## Developer handoff
 
 Preparation baseline: commit 4b5120be5ca5423c24d64af91048da8793f795ea, the completed W002 transport slice. The repository currently has 106 passing checks recorded for that baseline. They do not cover W003 and were not rerun merely to write this brief.
 
-No W003 runtime changes, migration, parser call, or worker verification have run. Implementation must provide the exact reviewable revision/snapshot, migration and CLI instructions, executed checks, and remaining limitations here or in a linked developer report. Retain independent QA attribution; a developer test pass is not an independent verdict.
+W003 now implements migration 0004, the controlled parser boundary, scoped single-food resolver, durable worker, deferred-food counts, and synthetic CLI flow. D011 records its recovery and catalog identity rules. Developer verification contains 65 unit/protocol/resolver checks, 53 PostgreSQL integration checks, and 27 retained independent probes from M1/W002/W003. The developer report and independent review preserve source-specific runs and attribution.
+
+Setup/run commands are in README. Limitations: no live Nebius or Telegram calls, no clarification question/answer handler, no multi-action execution, no general Russian parser, g/ml only, and bounded classified catalogs. Deferred unknown-date/context-dependent work cannot yet be assigned reliable daily pending counts. Prior review evidence applies only to its earlier snapshots.
 
 ## QA result and completion
 
-Not run. No W003 QA report exists yet. The implementation is done only when its scoped criteria have evidence, relevant regression suites pass, substantive defects are resolved, independent review is recorded, and affected documents are current. Completing this planning document does not complete the implementation or M2.
+Independent W003 review passed all eleven criteria for source 857b4097fc7f85b843bdc08169b5d61b9ecffa49f11fc98a554552252873d633. All five original defect groups, including the quantity-bound follow-up, are resolved. Final verification: 67 offline checks, 53 PostgreSQL integration checks, and 27 retained QA checks. The frozen source includes two separately authored corpus-integrity checks; those do not establish model accuracy. The separate corpus removal commit 4cd68b3 leaves 65 offline checks in the final project, with W003 runtime and tests unchanged.
+
+Developer evidence: [003-conversation-worker-developer.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/003-conversation-worker-developer.md?type=file&root=%252F). Independent verdict and retained failures: [003-conversation-worker-qa.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/003-conversation-worker-qa.md?type=file&root=%252F). The closeout manifest separates unchanged reviewed runtime from subsequent documentation/evidence packaging.
+
+W003 is complete for its synthetic single-food scope. M2 remains in progress; live Nebius interpretation, interactive clarification, mixed actions, and corrections require subsequent slices.

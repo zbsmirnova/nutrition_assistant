@@ -77,7 +77,7 @@ class FoodPersistenceTests(unittest.TestCase):
     def test_fresh_migrations_are_repeatable_and_match_current_model(self):
         migrate(self.engine)
         with self.engine.connect() as connection:
-            self.assertEqual(connection.exec_driver_sql("SELECT version_num FROM alembic_version").scalar_one(), "0003")
+            self.assertEqual(connection.exec_driver_sql("SELECT version_num FROM alembic_version").scalar_one(), "0004")
             self.assertEqual(connection.exec_driver_sql("SELECT current_schema()").scalar_one(), self.schema)
             inspector = sa.inspect(connection)
             self.assertEqual(set(inspector.get_table_names()) - {"alembic_version"}, set(db.metadata.tables))

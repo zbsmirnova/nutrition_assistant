@@ -116,30 +116,34 @@ class FoodService:
             raise ApplicationError("Operation identity must match its original message and position")
 
     def prepare(self, actor: UUID, command: CommandEnvelope) -> UUID:
+        with self.engine.begin() as connection:
+            self._user(connection, actor)
+            return self._prepare(connection, actor, command)
+
+    def _prepare(self, connection: Connection, actor: UUID, command: CommandEnvelope) -> UUID:
+        """Freeze under an existing short user-locked transaction (also used by W003)."""
         command = CommandEnvelope.model_validate_json(command.model_dump_json())
         if command.user_id != actor:
             raise Unauthorized("Command identity does not match the authenticated user")
         self._validate_supported(command)
         payload = command.model_dump(mode="json")
         request_hash = digest(payload)
-        with self.engine.begin() as connection:
-            self._user(connection, actor)
-            source = connection.execute(sa.select(db.inbox_updates.c.id).where(
-                db.inbox_updates.c.user_id == actor, db.inbox_updates.c.id == command.source.origin_update_id,
-            )).one_or_none()
-            if source is None:
-                raise NotFound("Source message not found")
-            existing = connection.execute(sa.select(db.prepared_operations).where(
-                db.prepared_operations.c.user_id == actor, db.prepared_operations.c.id == command.operation_id,
-            )).mappings().one_or_none()
-            if existing:
-                if existing["request_hash"] != request_hash:
-                    raise Conflict("A prepared operation cannot be replaced with different input")
-                return existing["id"]
-            connection.execute(db.prepared_operations.insert().values(
-                id=command.operation_id, user_id=actor, origin_update_id=command.source.origin_update_id,
-                position=0, request_hash=request_hash, command=payload,
-            ))
+        source = connection.execute(sa.select(db.inbox_updates.c.id).where(
+            db.inbox_updates.c.user_id == actor, db.inbox_updates.c.id == command.source.origin_update_id,
+        )).one_or_none()
+        if source is None:
+            raise NotFound("Source message not found")
+        existing = connection.execute(sa.select(db.prepared_operations).where(
+            db.prepared_operations.c.user_id == actor, db.prepared_operations.c.id == command.operation_id,
+        )).mappings().one_or_none()
+        if existing:
+            if existing["request_hash"] != request_hash:
+                raise Conflict("A prepared operation cannot be replaced with different input")
+            return existing["id"]
+        connection.execute(db.prepared_operations.insert().values(
+            id=command.operation_id, user_id=actor, origin_update_id=command.source.origin_update_id,
+            position=0, request_hash=request_hash, command=payload,
+        ))
         return command.operation_id
 
     def apply(self, actor: UUID, command: CommandEnvelope, *, fault: Callable[[str], None] | None = None) -> OutcomeEnvelope:
@@ -260,9 +264,12 @@ class FoodService:
             db.food_days.c.user_id == actor, db.food_days.c.local_date == effective_date,
         )).mappings().one_or_none()
         rows = connection.execute(self._current_components(actor).where(db.food_days.c.local_date == effective_date)).mappings().all()
+        pending = connection.execute(sa.select(sa.func.count()).select_from(db.conversation_jobs).where(
+            db.conversation_jobs.c.user_id == actor, db.conversation_jobs.c.status == "unresolved",
+            db.conversation_jobs.c.pending_food_date == effective_date)).scalar_one()
         return DailySummary(effective_date=effective_date,
             completeness="unconfirmed" if day is None else day["completeness"],
-            explicit_zero_food=False if day is None else day["explicit_zero_food"], pending_food_actions=0,
+            explicit_zero_food=False if day is None else day["explicit_zero_food"], pending_food_actions=pending,
             entry_count=len({row["entry_id"] for row in rows}), component_count=len(rows),
             nutrition=day_nutrition([from_columns(row) for row in rows]))
 

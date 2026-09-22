@@ -1,0 +1,8 @@
+test_qa07_stale_parser_failure_cannot_replace_newer_terminal_interpretation (qa_w003_independent.WorkerRecoveryQA.test_qa07_stale_parser_failure_cannot_replace_newer_terminal_interpretation) ... ok
+test_qa08_frozen_command_resumes_with_different_adapter_and_no_parse (qa_w003_independent.WorkerRecoveryQA.test_qa08_frozen_command_resumes_with_different_adapter_and_no_parse) ... ok
+test_qa09_populated_migration_preserves_sent_receipt_and_pending_source (qa_w003_independent.WorkerRecoveryQA.test_qa09_populated_migration_preserves_sent_receipt_and_pending_source) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.660s
+
+OK

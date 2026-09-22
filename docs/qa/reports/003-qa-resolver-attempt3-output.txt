@@ -1,0 +1,17 @@
+Executor: independent QA; W003 attempt3 857b4097fc7f.
+Command: python -m unittest qa_w003_independent.ResolverEvidenceQA qa_w003_decimal_evidence qa_w003_quantity_bound -v
+Exit code: 0
+
+test_qa01_dairy_source_cannot_be_relabelled_as_general_food (qa_w003_independent.ResolverEvidenceQA.test_qa01_dairy_source_cannot_be_relabelled_as_general_food) ... ok
+test_qa02_explicit_other_brand_cannot_select_catalog_brand (qa_w003_independent.ResolverEvidenceQA.test_qa02_explicit_other_brand_cannot_select_catalog_brand) ... ok
+test_qa03_quantity_range_is_not_an_exact_portion (qa_w003_independent.ResolverEvidenceQA.test_qa03_quantity_range_is_not_an_exact_portion) ... ok
+test_qa04_omitted_unsupported_relative_date_cannot_default_to_today (qa_w003_independent.ResolverEvidenceQA.test_qa04_omitted_unsupported_relative_date_cannot_default_to_today) ... ok
+test_qa05_cooked_source_cannot_use_raw_profile (qa_w003_independent.ResolverEvidenceQA.test_qa05_cooked_source_cannot_use_raw_profile) ... ok
+test_qa06_exact_branded_quantity_remains_supported (qa_w003_independent.ResolverEvidenceQA.test_qa06_exact_branded_quantity_remains_supported) ... ok
+test_qa10_decimal_quantity_and_matching_fat_are_not_dates (qa_w003_decimal_evidence.DecimalEvidenceQA.test_qa10_decimal_quantity_and_matching_fat_are_not_dates) ... ok
+test_qa11_upper_bound_is_not_an_exact_portion (qa_w003_quantity_bound.QuantityBoundQA.test_qa11_upper_bound_is_not_an_exact_portion) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.002s
+
+OK

@@ -1,0 +1,22 @@
+Executor: independent QA; W003 attempt2 effdac279ab1.
+Command: python -m unittest qa_w003_quantity_bound -v
+Exit code: 1
+
+test_qa11_upper_bound_is_not_an_exact_portion (qa_w003_quantity_bound.QuantityBoundQA.test_qa11_upper_bound_is_not_an_exact_portion) ... FAIL
+
+======================================================================
+FAIL: test_qa11_upper_bound_is_not_an_exact_portion (qa_w003_quantity_bound.QuantityBoundQA.test_qa11_upper_bound_is_not_an_exact_portion)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/nutrition-w003-qa-eo35kq3z/qa_w003_quantity_bound.py", line 12, in test_qa11_upper_bound_is_not_an_exact_portion
+    self.assertEqual(result.status,'unresolved')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'ready' != 'unresolved'
+- ready
++ unresolved
+
+
+----------------------------------------------------------------------
+Ran 1 test in 0.001s
+
+FAILED (failures=1)

@@ -37,7 +37,8 @@ def synthetic_nutrition(*, unknown_fat=False) -> NutritionSnapshot:
 
 
 def seed_product(connection, actor: UUID, *, nutrition=None, product_id=None, version_no=1,
-                 nutrition_basis="per_100_g", weight_basis="as_sold"):
+                 nutrition_basis="per_100_g", weight_basis="as_sold", name="Synthetic product A",
+                 food_kind=None, declared_fat_percent=None):
     source_id, version_id = uuid4(), uuid4()
     connection.execute(db.data_sources.insert().values(id=source_id, user_id=actor,
         kind="synthetic_fixture", evidence={"synthetic": True, "fixture": "M1 product A"}))
@@ -45,7 +46,8 @@ def seed_product(connection, actor: UUID, *, nutrition=None, product_id=None, ve
         product_id = uuid4()
         connection.execute(db.products.insert().values(id=product_id, user_id=actor, current_version_id=version_id))
     connection.execute(db.product_versions.insert().values(id=version_id, user_id=actor, product_id=product_id,
-        version_no=version_no, name="Synthetic product A", data_source_id=source_id,
+        version_no=version_no, name=name, data_source_id=source_id,
+        food_kind=food_kind, declared_fat_percent=declared_fat_percent,
         nutrition_basis=nutrition_basis, weight_basis=weight_basis,
         **to_columns(nutrition or synthetic_nutrition())))
     connection.execute(db.products.update().where(db.products.c.id == product_id, db.products.c.user_id == actor)
@@ -53,14 +55,14 @@ def seed_product(connection, actor: UUID, *, nutrition=None, product_id=None, ve
     return product_id, version_id, source_id
 
 
-def seed_user(engine: Engine, *, user_id: UUID | None = None, nutrition=None) -> Seed:
+def seed_user(engine: Engine, *, user_id: UUID | None = None, nutrition=None, **product_identity) -> Seed:
     actor, account_id = user_id or uuid4(), uuid4()
     external_user = actor.int % (2 ** 52) + 1
     with engine.begin() as connection:
         connection.execute(db.users.insert().values(id=actor, time_zone="Europe/Berlin"))
         connection.execute(db.telegram_accounts.insert().values(id=account_id, user_id=actor, bot_id=101,
             telegram_user_id=external_user, private_chat_id=external_user))
-        product_id, version_id, source_id = seed_product(connection, actor, nutrition=nutrition)
+        product_id, version_id, source_id = seed_product(connection, actor, nutrition=nutrition, **product_identity)
     return Seed(actor, account_id, external_user, product_id, version_id, source_id)
 
 

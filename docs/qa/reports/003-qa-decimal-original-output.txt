@@ -1,0 +1,36 @@
+Executor: independent QA; original W003 snapshot.
+Command: python -m unittest qa_w003_decimal_evidence -v
+Exit code: 1
+
+test_qa10_decimal_quantity_and_matching_fat_are_not_dates (qa_w003_decimal_evidence.DecimalEvidenceQA.test_qa10_decimal_quantity_and_matching_fat_are_not_dates) ... 
+  test_qa10_decimal_quantity_and_matching_fat_are_not_dates (qa_w003_decimal_evidence.DecimalEvidenceQA.test_qa10_decimal_quantity_and_matching_fat_are_not_dates) (text='Съела 12.5 г творога 5% «Марка А»') ... FAIL
+  test_qa10_decimal_quantity_and_matching_fat_are_not_dates (qa_w003_decimal_evidence.DecimalEvidenceQA.test_qa10_decimal_quantity_and_matching_fat_are_not_dates) (text='Съела 100 г творога 5.5% «Марка А»') ... FAIL
+
+======================================================================
+FAIL: test_qa10_decimal_quantity_and_matching_fat_are_not_dates (qa_w003_decimal_evidence.DecimalEvidenceQA.test_qa10_decimal_quantity_and_matching_fat_are_not_dates) (text='Съела 12.5 г творога 5% «Марка А»')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/nutrition-w003-qa-eo35kq3z/qa_w003_decimal_evidence.py", line 18, in test_qa10_decimal_quantity_and_matching_fat_are_not_dates
+    self.assertEqual(result.status,'ready')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'unresolved' != 'ready'
+- unresolved
++ ready
+
+
+======================================================================
+FAIL: test_qa10_decimal_quantity_and_matching_fat_are_not_dates (qa_w003_decimal_evidence.DecimalEvidenceQA.test_qa10_decimal_quantity_and_matching_fat_are_not_dates) (text='Съела 100 г творога 5.5% «Марка А»')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/nutrition-w003-qa-eo35kq3z/qa_w003_decimal_evidence.py", line 18, in test_qa10_decimal_quantity_and_matching_fat_are_not_dates
+    self.assertEqual(result.status,'ready')
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'unresolved' != 'ready'
+- unresolved
++ ready
+
+
+----------------------------------------------------------------------
+Ran 1 test in 0.002s
+
+FAILED (failures=2)
