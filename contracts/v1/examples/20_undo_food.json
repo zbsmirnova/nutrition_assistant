@@ -1,0 +1,150 @@
+{
+  "scenario": "20_undo_food",
+  "source": {
+    "text": "Верни предыдущее количество.",
+    "local_date": "2026-09-22",
+    "time_zone": "Europe/Berlin"
+  },
+  "context": {
+    "candidates": {},
+    "pending_questions": {},
+    "has_reply": true
+  },
+  "parser": {
+    "schema_version": "1.0",
+    "actions": [
+      {
+        "action_id": "a1",
+        "kind": "undo_food",
+        "evidence": "Верни предыдущее количество.",
+        "depends_on": [],
+        "unresolved": [],
+        "target": {
+          "kind": "reply"
+        }
+      }
+    ]
+  },
+  "commands": [
+    {
+      "schema_version": "1.0",
+      "user_id": "00000000-0000-4000-8000-000000000001",
+      "operation_id": "00000000-0000-4000-8000-000000001020",
+      "source": {
+        "origin_update_id": "00000000-0000-4000-8000-000000002020",
+        "evidence_update_ids": [
+          "00000000-0000-4000-8000-000000002020"
+        ],
+        "pending_action_id": null
+      },
+      "context_revision": 1,
+      "command": {
+        "kind": "restore_food_entry",
+        "entry_id": "00000000-0000-4000-8000-000000003004",
+        "expected_revision_id": "00000000-0000-4000-8000-000000005004",
+        "restore_from_revision_id": "00000000-0000-4000-8000-000000004004"
+      }
+    }
+  ],
+  "results": [
+    {
+      "result": {
+        "schema_version": "1.0",
+        "operation_id": "00000000-0000-4000-8000-000000001020",
+        "outcome": "applied",
+        "mutations": [
+          {
+            "entity_kind": "food_entry",
+            "entity_id": "00000000-0000-4000-8000-000000003004",
+            "revision_id": "00000000-0000-4000-8000-000000006004",
+            "effective_date": "2026-09-22"
+          }
+        ],
+        "food_entries": [
+          {
+            "entry_id": "00000000-0000-4000-8000-000000003004",
+            "revision_id": "00000000-0000-4000-8000-000000006004",
+            "effective_date": "2026-09-22",
+            "description": "хлеб",
+            "nutrition": {
+              "kcal": {
+                "value": "250",
+                "lower": null,
+                "upper": null
+              },
+              "protein_g": {
+                "value": "8",
+                "lower": null,
+                "upper": null
+              },
+              "fat_g": {
+                "value": "2",
+                "lower": null,
+                "upper": null
+              },
+              "carbs_g": {
+                "value": "50",
+                "lower": null,
+                "upper": null
+              }
+            },
+            "change": "restored"
+          }
+        ],
+        "observations": [],
+        "daily_summaries": [
+          {
+            "effective_date": "2026-09-22",
+            "completeness": "unconfirmed",
+            "explicit_zero_food": false,
+            "pending_food_actions": 0,
+            "entry_count": 1,
+            "component_count": 1,
+            "nutrition": {
+              "kcal": {
+                "kind": "complete",
+                "amount": {
+                  "value": "250",
+                  "lower": null,
+                  "upper": null
+                },
+                "known_components": 1
+              },
+              "protein_g": {
+                "kind": "complete",
+                "amount": {
+                  "value": "8",
+                  "lower": null,
+                  "upper": null
+                },
+                "known_components": 1
+              },
+              "fat_g": {
+                "kind": "complete",
+                "amount": {
+                  "value": "2",
+                  "lower": null,
+                  "upper": null
+                },
+                "known_components": 1
+              },
+              "carbs_g": {
+                "kind": "complete",
+                "amount": {
+                  "value": "50",
+                  "lower": null,
+                  "upper": null
+                },
+                "known_components": 1
+              }
+            }
+          }
+        ],
+        "recipe": null
+      }
+    }
+  ],
+  "notes": [
+    "Restore via a new revision; do not move the current pointer back to an old revision or erase history."
+  ]
+}

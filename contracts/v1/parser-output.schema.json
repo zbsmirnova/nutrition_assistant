@@ -1,0 +1,2484 @@
+{
+  "$defs": {
+    "ActionResultReference": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "action_result",
+          "title": "Kind",
+          "type": "string"
+        },
+        "action_id": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^a[1-9][0-9]*$",
+          "title": "Action Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "action_id"
+      ],
+      "title": "ActionResultReference",
+      "type": "object"
+    },
+    "AddFood": {
+      "additionalProperties": false,
+      "properties": {
+        "action_id": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^a[1-9][0-9]*$",
+          "title": "Action Id",
+          "type": "string"
+        },
+        "evidence": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Evidence",
+          "type": "string"
+        },
+        "depends_on": {
+          "items": {
+            "not": {
+              "pattern": "\\s"
+            },
+            "pattern": "^a[1-9][0-9]*$",
+            "type": "string"
+          },
+          "title": "Depends On",
+          "type": "array"
+        },
+        "unresolved": {
+          "items": {
+            "$ref": "#/$defs/UnresolvedField"
+          },
+          "title": "Unresolved",
+          "type": "array"
+        },
+        "kind": {
+          "const": "add_food",
+          "title": "Kind",
+          "type": "string"
+        },
+        "food": {
+          "discriminator": {
+            "mapping": {
+              "action_result": "#/$defs/ActionResultReference",
+              "candidate": "#/$defs/FoodCandidate",
+              "name": "#/$defs/NamedFood"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/FoodCandidate"
+            },
+            {
+              "$ref": "#/$defs/NamedFood"
+            },
+            {
+              "$ref": "#/$defs/ActionResultReference"
+            }
+          ],
+          "title": "Food"
+        },
+        "quantity": {
+          "$ref": "#/$defs/QuantityMention"
+        },
+        "weight_basis": {
+          "anyOf": [
+            {
+              "enum": [
+                "raw",
+                "cooked",
+                "as_sold"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Weight Basis"
+        },
+        "date_hint": {
+          "$ref": "#/$defs/DateHint"
+        },
+        "meal": {
+          "enum": [
+            "breakfast",
+            "lunch",
+            "dinner",
+            "snack",
+            "unspecified"
+          ],
+          "title": "Meal",
+          "type": "string"
+        }
+      },
+      "required": [
+        "action_id",
+        "evidence",
+        "depends_on",
+        "unresolved",
+        "kind",
+        "food",
+        "quantity",
+        "weight_basis",
+        "date_hint",
+        "meal"
+      ],
+      "title": "AddFood",
+      "type": "object"
+    },
+    "AnswerClarification": {
+      "additionalProperties": false,
+      "properties": {
+        "action_id": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^a[1-9][0-9]*$",
+          "title": "Action Id",
+          "type": "string"
+        },
+        "evidence": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Evidence",
+          "type": "string"
+        },
+        "depends_on": {
+          "items": {
+            "not": {
+              "pattern": "\\s"
+            },
+            "pattern": "^a[1-9][0-9]*$",
+            "type": "string"
+          },
+          "title": "Depends On",
+          "type": "array"
+        },
+        "unresolved": {
+          "items": {
+            "$ref": "#/$defs/UnresolvedField"
+          },
+          "title": "Unresolved",
+          "type": "array"
+        },
+        "kind": {
+          "const": "answer_clarification",
+          "title": "Kind",
+          "type": "string"
+        },
+        "pending": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PendingCandidate"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "answers": {
+          "items": {
+            "$ref": "#/$defs/ClarificationAnswer"
+          },
+          "maxItems": 100,
+          "minItems": 1,
+          "title": "Answers",
+          "type": "array"
+        }
+      },
+      "required": [
+        "action_id",
+        "evidence",
+        "depends_on",
+        "unresolved",
+        "kind",
+        "pending",
+        "answers"
+      ],
+      "title": "AnswerClarification",
+      "type": "object"
+    },
+    "CalculatedRecipe": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "calculate",
+          "title": "Kind",
+          "type": "string"
+        },
+        "ingredients": {
+          "items": {
+            "$ref": "#/$defs/IngredientMention"
+          },
+          "maxItems": 100,
+          "minItems": 1,
+          "title": "Ingredients",
+          "type": "array"
+        },
+        "finished_weight": {
+          "$ref": "#/$defs/QuantityMention"
+        }
+      },
+      "required": [
+        "kind",
+        "ingredients",
+        "finished_weight"
+      ],
+      "title": "CalculatedRecipe",
+      "type": "object"
+    },
+    "CancelClarification": {
+      "additionalProperties": false,
+      "properties": {
+        "action_id": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^a[1-9][0-9]*$",
+          "title": "Action Id",
+          "type": "string"
+        },
+        "evidence": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Evidence",
+          "type": "string"
+        },
+        "depends_on": {
+          "items": {
+            "not": {
+              "pattern": "\\s"
+            },
+            "pattern": "^a[1-9][0-9]*$",
+            "type": "string"
+          },
+          "title": "Depends On",
+          "type": "array"
+        },
+        "unresolved": {
+          "items": {
+            "$ref": "#/$defs/UnresolvedField"
+          },
+          "title": "Unresolved",
+          "type": "array"
+        },
+        "kind": {
+          "const": "cancel_clarification",
+          "title": "Kind",
+          "type": "string"
+        },
+        "pending": {
+          "discriminator": {
+            "mapping": {
+              "candidate": "#/$defs/PendingCandidate",
+              "description": "#/$defs/DescribedTarget"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/PendingCandidate"
+            },
+            {
+              "$ref": "#/$defs/DescribedTarget"
+            }
+          ],
+          "title": "Pending"
+        }
+      },
+      "required": [
+        "action_id",
+        "evidence",
+        "depends_on",
+        "unresolved",
+        "kind",
+        "pending"
+      ],
+      "title": "CancelClarification",
+      "type": "object"
+    },
+    "CandidateAnswer": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "selection",
+          "title": "Kind",
+          "type": "string"
+        },
+        "selection": {
+          "$ref": "#/$defs/CandidateReference"
+        }
+      },
+      "required": [
+        "kind",
+        "selection"
+      ],
+      "title": "CandidateAnswer",
+      "type": "object"
+    },
+    "CandidateReference": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "candidate",
+          "title": "Kind",
+          "type": "string"
+        },
+        "candidate_ref": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^c[1-9][0-9]*$",
+          "title": "Candidate Ref",
+          "type": "string"
+        },
+        "candidate_kind": {
+          "enum": [
+            "product",
+            "recipe",
+            "entry",
+            "pending",
+            "estimate"
+          ],
+          "title": "Candidate Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "candidate_ref",
+        "candidate_kind"
+      ],
+      "title": "CandidateReference",
+      "type": "object"
+    },
+    "ChangeIngredientAmount": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "set_ingredient_quantity",
+          "title": "Kind",
+          "type": "string"
+        },
+        "ingredient_description": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Ingredient Description",
+          "type": "string"
+        },
+        "quantity": {
+          "$ref": "#/$defs/QuantityMention"
+        },
+        "finished_weight": {
+          "$ref": "#/$defs/QuantityMention"
+        }
+      },
+      "required": [
+        "kind",
+        "ingredient_description",
+        "quantity",
+        "finished_weight"
+      ],
+      "title": "ChangeIngredientAmount",
+      "type": "object"
+    },
+    "ChangeIngredients": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "replace_ingredients",
+          "title": "Kind",
+          "type": "string"
+        },
+        "ingredients": {
+          "items": {
+            "$ref": "#/$defs/IngredientMention"
+          },
+          "maxItems": 100,
+          "minItems": 1,
+          "title": "Ingredients",
+          "type": "array"
+        },
+        "finished_weight": {
+          "$ref": "#/$defs/QuantityMention"
+        }
+      },
+      "required": [
+        "kind",
+        "ingredients",
+        "finished_weight"
+      ],
+      "title": "ChangeIngredients",
+      "type": "object"
+    },
+    "ChangeInstructions": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "set_instructions",
+          "title": "Kind",
+          "type": "string"
+        },
+        "cooking_instructions": {
+          "anyOf": [
+            {
+              "maxLength": 16000,
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Cooking Instructions"
+        }
+      },
+      "required": [
+        "kind",
+        "cooking_instructions"
+      ],
+      "title": "ChangeInstructions",
+      "type": "object"
+    },
+    "ChangeRecipeNutrition": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "set_nutrition",
+          "title": "Kind",
+          "type": "string"
+        },
+        "per_100_g": {
+          "$ref": "#/$defs/SuppliedNutrition"
+        }
+      },
+      "required": [
+        "kind",
+        "per_100_g"
+      ],
+      "title": "ChangeRecipeNutrition",
+      "type": "object"
+    },
+    "ClarificationAnswer": {
+      "additionalProperties": false,
+      "properties": {
+        "question_ref": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^q[1-9][0-9]*$",
+          "title": "Question Ref",
+          "type": "string"
+        },
+        "value": {
+          "discriminator": {
+            "mapping": {
+              "confirmation": "#/$defs/ConfirmationAnswer",
+              "date": "#/$defs/DateAnswer",
+              "nutrition": "#/$defs/NutritionAnswer",
+              "quantity": "#/$defs/QuantityAnswer",
+              "selection": "#/$defs/CandidateAnswer",
+              "text": "#/$defs/TextAnswer"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/QuantityAnswer"
+            },
+            {
+              "$ref": "#/$defs/CandidateAnswer"
+            },
+            {
+              "$ref": "#/$defs/DateAnswer"
+            },
+            {
+              "$ref": "#/$defs/NutritionAnswer"
+            },
+            {
+              "$ref": "#/$defs/TextAnswer"
+            },
+            {
+              "$ref": "#/$defs/ConfirmationAnswer"
+            }
+          ],
+          "title": "Value"
+        }
+      },
+      "required": [
+        "question_ref",
+        "value"
+      ],
+      "title": "ClarificationAnswer",
+      "type": "object"
+    },
+    "ConfirmDay": {
+      "additionalProperties": false,
+      "properties": {
+        "action_id": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^a[1-9][0-9]*$",
+          "title": "Action Id",
+          "type": "string"
+        },
+        "evidence": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Evidence",
+          "type": "string"
+        },
+        "depends_on": {
+          "items": {
+            "not": {
+              "pattern": "\\s"
+            },
+            "pattern": "^a[1-9][0-9]*$",
+            "type": "string"
+          },
+          "title": "Depends On",
+          "type": "array"
+        },
+        "unresolved": {
+          "items": {
+            "$ref": "#/$defs/UnresolvedField"
+          },
+          "title": "Unresolved",
+          "type": "array"
+        },
+        "kind": {
+          "const": "confirm_day_complete",
+          "title": "Kind",
+          "type": "string"
+        },
+        "date_hint": {
+          "$ref": "#/$defs/DateHint"
+        },
+        "explicit_zero_food": {
+          "title": "Explicit Zero Food",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "action_id",
+        "evidence",
+        "depends_on",
+        "unresolved",
+        "kind",
+        "date_hint",
+        "explicit_zero_food"
+      ],
+      "title": "ConfirmDay",
+      "type": "object"
+    },
+    "ConfirmationAnswer": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "confirmation",
+          "title": "Kind",
+          "type": "string"
+        },
+        "accepted": {
+          "title": "Accepted",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "kind",
+        "accepted"
+      ],
+      "title": "ConfirmationAnswer",
+      "type": "object"
+    },
+    "CorrectFood": {
+      "additionalProperties": false,
+      "properties": {
+        "action_id": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^a[1-9][0-9]*$",
+          "title": "Action Id",
+          "type": "string"
+        },
+        "evidence": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Evidence",
+          "type": "string"
+        },
+        "depends_on": {
+          "items": {
+            "not": {
+              "pattern": "\\s"
+            },
+            "pattern": "^a[1-9][0-9]*$",
+            "type": "string"
+          },
+          "title": "Depends On",
+          "type": "array"
+        },
+        "unresolved": {
+          "items": {
+            "$ref": "#/$defs/UnresolvedField"
+          },
+          "title": "Unresolved",
+          "type": "array"
+        },
+        "kind": {
+          "const": "correct_food",
+          "title": "Kind",
+          "type": "string"
+        },
+        "target": {
+          "discriminator": {
+            "mapping": {
+              "candidate": "#/$defs/EntryCandidate",
+              "description": "#/$defs/DescribedTarget",
+              "reply": "#/$defs/ReplyTarget"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/EntryCandidate"
+            },
+            {
+              "$ref": "#/$defs/ReplyTarget"
+            },
+            {
+              "$ref": "#/$defs/DescribedTarget"
+            }
+          ],
+          "title": "Target"
+        },
+        "change": {
+          "discriminator": {
+            "mapping": {
+              "move_date": "#/$defs/MoveDate",
+              "replace_food": "#/$defs/ReplaceFood",
+              "set_inedible_weight": "#/$defs/SetInedibleWeight",
+              "set_quantity": "#/$defs/SetQuantity"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/SetQuantity"
+            },
+            {
+              "$ref": "#/$defs/SetInedibleWeight"
+            },
+            {
+              "$ref": "#/$defs/MoveDate"
+            },
+            {
+              "$ref": "#/$defs/ReplaceFood"
+            }
+          ],
+          "title": "Change"
+        }
+      },
+      "required": [
+        "action_id",
+        "evidence",
+        "depends_on",
+        "unresolved",
+        "kind",
+        "target",
+        "change"
+      ],
+      "title": "CorrectFood",
+      "type": "object"
+    },
+    "DateAnswer": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "date",
+          "title": "Kind",
+          "type": "string"
+        },
+        "date_hint": {
+          "$ref": "#/$defs/DateHint"
+        }
+      },
+      "required": [
+        "kind",
+        "date_hint"
+      ],
+      "title": "DateAnswer",
+      "type": "object"
+    },
+    "DateHint": {
+      "additionalProperties": false,
+      "description": "Original date words. Backend resolves relative dates against the source input.",
+      "properties": {
+        "text": {
+          "anyOf": [
+            {
+              "maxLength": 16000,
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Text"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "title": "DateHint",
+      "type": "object"
+    },
+    "DefineProduct": {
+      "additionalProperties": false,
+      "properties": {
+        "action_id": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^a[1-9][0-9]*$",
+          "title": "Action Id",
+          "type": "string"
+        },
+        "evidence": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Evidence",
+          "type": "string"
+        },
+        "depends_on": {
+          "items": {
+            "not": {
+              "pattern": "\\s"
+            },
+            "pattern": "^a[1-9][0-9]*$",
+            "type": "string"
+          },
+          "title": "Depends On",
+          "type": "array"
+        },
+        "unresolved": {
+          "items": {
+            "$ref": "#/$defs/UnresolvedField"
+          },
+          "title": "Unresolved",
+          "type": "array"
+        },
+        "kind": {
+          "const": "define_product",
+          "title": "Kind",
+          "type": "string"
+        },
+        "product": {
+          "$ref": "#/$defs/ProductInput"
+        }
+      },
+      "required": [
+        "action_id",
+        "evidence",
+        "depends_on",
+        "unresolved",
+        "kind",
+        "product"
+      ],
+      "title": "DefineProduct",
+      "type": "object"
+    },
+    "DefineRecipe": {
+      "additionalProperties": false,
+      "properties": {
+        "action_id": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^a[1-9][0-9]*$",
+          "title": "Action Id",
+          "type": "string"
+        },
+        "evidence": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Evidence",
+          "type": "string"
+        },
+        "depends_on": {
+          "items": {
+            "not": {
+              "pattern": "\\s"
+            },
+            "pattern": "^a[1-9][0-9]*$",
+            "type": "string"
+          },
+          "title": "Depends On",
+          "type": "array"
+        },
+        "unresolved": {
+          "items": {
+            "$ref": "#/$defs/UnresolvedField"
+          },
+          "title": "Unresolved",
+          "type": "array"
+        },
+        "kind": {
+          "const": "define_recipe",
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Name"
+        },
+        "cooking_instructions": {
+          "anyOf": [
+            {
+              "maxLength": 16000,
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Cooking Instructions"
+        },
+        "nutrition_input": {
+          "discriminator": {
+            "mapping": {
+              "calculate": "#/$defs/CalculatedRecipe",
+              "provided": "#/$defs/ProvidedRecipe"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ProvidedRecipe"
+            },
+            {
+              "$ref": "#/$defs/CalculatedRecipe"
+            }
+          ],
+          "title": "Nutrition Input"
+        }
+      },
+      "required": [
+        "action_id",
+        "evidence",
+        "depends_on",
+        "unresolved",
+        "kind",
+        "name",
+        "cooking_instructions",
+        "nutrition_input"
+      ],
+      "title": "DefineRecipe",
+      "type": "object"
+    },
+    "DeleteFood": {
+      "additionalProperties": false,
+      "properties": {
+        "action_id": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^a[1-9][0-9]*$",
+          "title": "Action Id",
+          "type": "string"
+        },
+        "evidence": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Evidence",
+          "type": "string"
+        },
+        "depends_on": {
+          "items": {
+            "not": {
+              "pattern": "\\s"
+            },
+            "pattern": "^a[1-9][0-9]*$",
+            "type": "string"
+          },
+          "title": "Depends On",
+          "type": "array"
+        },
+        "unresolved": {
+          "items": {
+            "$ref": "#/$defs/UnresolvedField"
+          },
+          "title": "Unresolved",
+          "type": "array"
+        },
+        "kind": {
+          "const": "delete_food",
+          "title": "Kind",
+          "type": "string"
+        },
+        "target": {
+          "discriminator": {
+            "mapping": {
+              "candidate": "#/$defs/EntryCandidate",
+              "description": "#/$defs/DescribedTarget",
+              "reply": "#/$defs/ReplyTarget"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/EntryCandidate"
+            },
+            {
+              "$ref": "#/$defs/ReplyTarget"
+            },
+            {
+              "$ref": "#/$defs/DescribedTarget"
+            }
+          ],
+          "title": "Target"
+        }
+      },
+      "required": [
+        "action_id",
+        "evidence",
+        "depends_on",
+        "unresolved",
+        "kind",
+        "target"
+      ],
+      "title": "DeleteFood",
+      "type": "object"
+    },
+    "DescribedTarget": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "description",
+          "title": "Kind",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Description",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "description"
+      ],
+      "title": "DescribedTarget",
+      "type": "object"
+    },
+    "EntryCandidate": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "candidate",
+          "title": "Kind",
+          "type": "string"
+        },
+        "candidate_ref": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^c[1-9][0-9]*$",
+          "title": "Candidate Ref",
+          "type": "string"
+        },
+        "candidate_kind": {
+          "const": "entry",
+          "title": "Candidate Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "candidate_ref",
+        "candidate_kind"
+      ],
+      "title": "EntryCandidate",
+      "type": "object"
+    },
+    "FoodCandidate": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "candidate",
+          "title": "Kind",
+          "type": "string"
+        },
+        "candidate_ref": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^c[1-9][0-9]*$",
+          "title": "Candidate Ref",
+          "type": "string"
+        },
+        "candidate_kind": {
+          "enum": [
+            "product",
+            "recipe"
+          ],
+          "title": "Candidate Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "candidate_ref",
+        "candidate_kind"
+      ],
+      "title": "FoodCandidate",
+      "type": "object"
+    },
+    "FoodQuestion": {
+      "additionalProperties": false,
+      "properties": {
+        "action_id": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^a[1-9][0-9]*$",
+          "title": "Action Id",
+          "type": "string"
+        },
+        "evidence": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Evidence",
+          "type": "string"
+        },
+        "depends_on": {
+          "items": {
+            "not": {
+              "pattern": "\\s"
+            },
+            "pattern": "^a[1-9][0-9]*$",
+            "type": "string"
+          },
+          "title": "Depends On",
+          "type": "array"
+        },
+        "unresolved": {
+          "items": {
+            "$ref": "#/$defs/UnresolvedField"
+          },
+          "title": "Unresolved",
+          "type": "array"
+        },
+        "kind": {
+          "const": "food_question",
+          "title": "Kind",
+          "type": "string"
+        },
+        "food": {
+          "discriminator": {
+            "mapping": {
+              "action_result": "#/$defs/ActionResultReference",
+              "candidate": "#/$defs/FoodCandidate",
+              "name": "#/$defs/NamedFood"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/FoodCandidate"
+            },
+            {
+              "$ref": "#/$defs/NamedFood"
+            },
+            {
+              "$ref": "#/$defs/ActionResultReference"
+            }
+          ],
+          "title": "Food"
+        },
+        "quantity": {
+          "$ref": "#/$defs/QuantityMention"
+        },
+        "question": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Question",
+          "type": "string"
+        }
+      },
+      "required": [
+        "action_id",
+        "evidence",
+        "depends_on",
+        "unresolved",
+        "kind",
+        "food",
+        "quantity",
+        "question"
+      ],
+      "title": "FoodQuestion",
+      "type": "object"
+    },
+    "GetDay": {
+      "additionalProperties": false,
+      "properties": {
+        "action_id": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^a[1-9][0-9]*$",
+          "title": "Action Id",
+          "type": "string"
+        },
+        "evidence": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Evidence",
+          "type": "string"
+        },
+        "depends_on": {
+          "items": {
+            "not": {
+              "pattern": "\\s"
+            },
+            "pattern": "^a[1-9][0-9]*$",
+            "type": "string"
+          },
+          "title": "Depends On",
+          "type": "array"
+        },
+        "unresolved": {
+          "items": {
+            "$ref": "#/$defs/UnresolvedField"
+          },
+          "title": "Unresolved",
+          "type": "array"
+        },
+        "kind": {
+          "const": "get_day_summary",
+          "title": "Kind",
+          "type": "string"
+        },
+        "date_hint": {
+          "$ref": "#/$defs/DateHint"
+        }
+      },
+      "required": [
+        "action_id",
+        "evidence",
+        "depends_on",
+        "unresolved",
+        "kind",
+        "date_hint"
+      ],
+      "title": "GetDay",
+      "type": "object"
+    },
+    "GetRecipe": {
+      "additionalProperties": false,
+      "properties": {
+        "action_id": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^a[1-9][0-9]*$",
+          "title": "Action Id",
+          "type": "string"
+        },
+        "evidence": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Evidence",
+          "type": "string"
+        },
+        "depends_on": {
+          "items": {
+            "not": {
+              "pattern": "\\s"
+            },
+            "pattern": "^a[1-9][0-9]*$",
+            "type": "string"
+          },
+          "title": "Depends On",
+          "type": "array"
+        },
+        "unresolved": {
+          "items": {
+            "$ref": "#/$defs/UnresolvedField"
+          },
+          "title": "Unresolved",
+          "type": "array"
+        },
+        "kind": {
+          "const": "get_recipe",
+          "title": "Kind",
+          "type": "string"
+        },
+        "target": {
+          "discriminator": {
+            "mapping": {
+              "candidate": "#/$defs/RecipeCandidate",
+              "description": "#/$defs/DescribedTarget"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/RecipeCandidate"
+            },
+            {
+              "$ref": "#/$defs/DescribedTarget"
+            }
+          ],
+          "title": "Target"
+        }
+      },
+      "required": [
+        "action_id",
+        "evidence",
+        "depends_on",
+        "unresolved",
+        "kind",
+        "target"
+      ],
+      "title": "GetRecipe",
+      "type": "object"
+    },
+    "IncrementSteps": {
+      "additionalProperties": false,
+      "properties": {
+        "action_id": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^a[1-9][0-9]*$",
+          "title": "Action Id",
+          "type": "string"
+        },
+        "evidence": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Evidence",
+          "type": "string"
+        },
+        "depends_on": {
+          "items": {
+            "not": {
+              "pattern": "\\s"
+            },
+            "pattern": "^a[1-9][0-9]*$",
+            "type": "string"
+          },
+          "title": "Depends On",
+          "type": "array"
+        },
+        "unresolved": {
+          "items": {
+            "$ref": "#/$defs/UnresolvedField"
+          },
+          "title": "Unresolved",
+          "type": "array"
+        },
+        "kind": {
+          "const": "increment_daily_steps",
+          "title": "Kind",
+          "type": "string"
+        },
+        "date_hint": {
+          "$ref": "#/$defs/DateHint"
+        },
+        "steps": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "maximum": 9223372036854775807,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Steps"
+        }
+      },
+      "required": [
+        "action_id",
+        "evidence",
+        "depends_on",
+        "unresolved",
+        "kind",
+        "date_hint",
+        "steps"
+      ],
+      "title": "IncrementSteps",
+      "type": "object"
+    },
+    "IngredientMention": {
+      "additionalProperties": false,
+      "properties": {
+        "food": {
+          "discriminator": {
+            "mapping": {
+              "candidate": "#/$defs/ProductCandidate",
+              "name": "#/$defs/NamedFood"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ProductCandidate"
+            },
+            {
+              "$ref": "#/$defs/NamedFood"
+            }
+          ],
+          "title": "Food"
+        },
+        "quantity": {
+          "$ref": "#/$defs/QuantityMention"
+        },
+        "weight_basis": {
+          "anyOf": [
+            {
+              "enum": [
+                "raw",
+                "cooked",
+                "as_sold"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Weight Basis"
+        }
+      },
+      "required": [
+        "food",
+        "quantity",
+        "weight_basis"
+      ],
+      "title": "IngredientMention",
+      "type": "object"
+    },
+    "MoveDate": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "move_date",
+          "title": "Kind",
+          "type": "string"
+        },
+        "date_hint": {
+          "$ref": "#/$defs/DateHint"
+        }
+      },
+      "required": [
+        "kind",
+        "date_hint"
+      ],
+      "title": "MoveDate",
+      "type": "object"
+    },
+    "NamedFood": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "name",
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 256,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "name"
+      ],
+      "title": "NamedFood",
+      "type": "object"
+    },
+    "NonLogging": {
+      "additionalProperties": false,
+      "properties": {
+        "action_id": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^a[1-9][0-9]*$",
+          "title": "Action Id",
+          "type": "string"
+        },
+        "evidence": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Evidence",
+          "type": "string"
+        },
+        "depends_on": {
+          "items": {
+            "not": {
+              "pattern": "\\s"
+            },
+            "pattern": "^a[1-9][0-9]*$",
+            "type": "string"
+          },
+          "title": "Depends On",
+          "type": "array"
+        },
+        "unresolved": {
+          "items": {
+            "$ref": "#/$defs/UnresolvedField"
+          },
+          "title": "Unresolved",
+          "type": "array"
+        },
+        "kind": {
+          "const": "non_logging",
+          "title": "Kind",
+          "type": "string"
+        },
+        "reason": {
+          "enum": [
+            "planned_food",
+            "general_chat",
+            "unsupported",
+            "ambiguous_intent"
+          ],
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "action_id",
+        "evidence",
+        "depends_on",
+        "unresolved",
+        "kind",
+        "reason"
+      ],
+      "title": "NonLogging",
+      "type": "object"
+    },
+    "NutritionAnswer": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "nutrition",
+          "title": "Kind",
+          "type": "string"
+        },
+        "supplied_nutrition": {
+          "$ref": "#/$defs/SuppliedNutrition"
+        }
+      },
+      "required": [
+        "kind",
+        "supplied_nutrition"
+      ],
+      "title": "NutritionAnswer",
+      "type": "object"
+    },
+    "PendingCandidate": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "candidate",
+          "title": "Kind",
+          "type": "string"
+        },
+        "candidate_ref": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^c[1-9][0-9]*$",
+          "title": "Candidate Ref",
+          "type": "string"
+        },
+        "candidate_kind": {
+          "const": "pending",
+          "title": "Candidate Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "candidate_ref",
+        "candidate_kind"
+      ],
+      "title": "PendingCandidate",
+      "type": "object"
+    },
+    "ProductCandidate": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "candidate",
+          "title": "Kind",
+          "type": "string"
+        },
+        "candidate_ref": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^c[1-9][0-9]*$",
+          "title": "Candidate Ref",
+          "type": "string"
+        },
+        "candidate_kind": {
+          "const": "product",
+          "title": "Candidate Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "candidate_ref",
+        "candidate_kind"
+      ],
+      "title": "ProductCandidate",
+      "type": "object"
+    },
+    "ProductInput": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Name"
+        },
+        "brand": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Brand"
+        },
+        "nutrition_basis": {
+          "anyOf": [
+            {
+              "enum": [
+                "per_100_g",
+                "per_100_ml"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Nutrition Basis"
+        },
+        "supplied_nutrition": {
+          "$ref": "#/$defs/SuppliedNutrition"
+        },
+        "weight_basis": {
+          "anyOf": [
+            {
+              "enum": [
+                "raw",
+                "cooked",
+                "as_sold"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Weight Basis"
+        }
+      },
+      "required": [
+        "name",
+        "brand",
+        "nutrition_basis",
+        "supplied_nutrition",
+        "weight_basis"
+      ],
+      "title": "ProductInput",
+      "type": "object"
+    },
+    "ProvidedRecipe": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "provided",
+          "title": "Kind",
+          "type": "string"
+        },
+        "per_100_g": {
+          "$ref": "#/$defs/SuppliedNutrition"
+        },
+        "ingredients": {
+          "items": {
+            "$ref": "#/$defs/IngredientMention"
+          },
+          "title": "Ingredients",
+          "type": "array"
+        }
+      },
+      "required": [
+        "kind",
+        "per_100_g",
+        "ingredients"
+      ],
+      "title": "ProvidedRecipe",
+      "type": "object"
+    },
+    "QuantityAnswer": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "quantity",
+          "title": "Kind",
+          "type": "string"
+        },
+        "quantity": {
+          "$ref": "#/$defs/QuantityMention"
+        }
+      },
+      "required": [
+        "kind",
+        "quantity"
+      ],
+      "title": "QuantityAnswer",
+      "type": "object"
+    },
+    "QuantityMention": {
+      "additionalProperties": false,
+      "description": "Extracted amount; NULL means not supplied, not zero or permission to guess.",
+      "properties": {
+        "amount": {
+          "anyOf": [
+            {
+              "not": {
+                "pattern": "\\s"
+              },
+              "pattern": "^(?:[1-9][0-9]{0,11}(?:\\.[0-9]{1,6})?|0\\.(?:[1-9][0-9]{0,5}|0[1-9][0-9]{0,4}|00[1-9][0-9]{0,3}|000[1-9][0-9]{0,2}|0000[1-9][0-9]?|00000[1-9]))$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Amount"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "enum": [
+                "g",
+                "kg",
+                "ml",
+                "l",
+                "piece"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Unit"
+        }
+      },
+      "required": [
+        "amount",
+        "unit"
+      ],
+      "title": "QuantityMention",
+      "type": "object"
+    },
+    "RecipeCandidate": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "candidate",
+          "title": "Kind",
+          "type": "string"
+        },
+        "candidate_ref": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^c[1-9][0-9]*$",
+          "title": "Candidate Ref",
+          "type": "string"
+        },
+        "candidate_kind": {
+          "const": "recipe",
+          "title": "Candidate Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "candidate_ref",
+        "candidate_kind"
+      ],
+      "title": "RecipeCandidate",
+      "type": "object"
+    },
+    "ReplaceFood": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "replace_food",
+          "title": "Kind",
+          "type": "string"
+        },
+        "food": {
+          "discriminator": {
+            "mapping": {
+              "action_result": "#/$defs/ActionResultReference",
+              "candidate": "#/$defs/FoodCandidate",
+              "name": "#/$defs/NamedFood"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/FoodCandidate"
+            },
+            {
+              "$ref": "#/$defs/NamedFood"
+            },
+            {
+              "$ref": "#/$defs/ActionResultReference"
+            }
+          ],
+          "title": "Food"
+        }
+      },
+      "required": [
+        "kind",
+        "food"
+      ],
+      "title": "ReplaceFood",
+      "type": "object"
+    },
+    "ReplyTarget": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "reply",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "title": "ReplyTarget",
+      "type": "object"
+    },
+    "ReviseProduct": {
+      "additionalProperties": false,
+      "properties": {
+        "action_id": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^a[1-9][0-9]*$",
+          "title": "Action Id",
+          "type": "string"
+        },
+        "evidence": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Evidence",
+          "type": "string"
+        },
+        "depends_on": {
+          "items": {
+            "not": {
+              "pattern": "\\s"
+            },
+            "pattern": "^a[1-9][0-9]*$",
+            "type": "string"
+          },
+          "title": "Depends On",
+          "type": "array"
+        },
+        "unresolved": {
+          "items": {
+            "$ref": "#/$defs/UnresolvedField"
+          },
+          "title": "Unresolved",
+          "type": "array"
+        },
+        "kind": {
+          "const": "revise_product",
+          "title": "Kind",
+          "type": "string"
+        },
+        "target": {
+          "discriminator": {
+            "mapping": {
+              "candidate": "#/$defs/ProductCandidate",
+              "description": "#/$defs/DescribedTarget"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ProductCandidate"
+            },
+            {
+              "$ref": "#/$defs/DescribedTarget"
+            }
+          ],
+          "title": "Target"
+        },
+        "product": {
+          "$ref": "#/$defs/ProductInput"
+        }
+      },
+      "required": [
+        "action_id",
+        "evidence",
+        "depends_on",
+        "unresolved",
+        "kind",
+        "target",
+        "product"
+      ],
+      "title": "ReviseProduct",
+      "type": "object"
+    },
+    "ReviseRecipe": {
+      "additionalProperties": false,
+      "properties": {
+        "action_id": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^a[1-9][0-9]*$",
+          "title": "Action Id",
+          "type": "string"
+        },
+        "evidence": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Evidence",
+          "type": "string"
+        },
+        "depends_on": {
+          "items": {
+            "not": {
+              "pattern": "\\s"
+            },
+            "pattern": "^a[1-9][0-9]*$",
+            "type": "string"
+          },
+          "title": "Depends On",
+          "type": "array"
+        },
+        "unresolved": {
+          "items": {
+            "$ref": "#/$defs/UnresolvedField"
+          },
+          "title": "Unresolved",
+          "type": "array"
+        },
+        "kind": {
+          "const": "revise_recipe",
+          "title": "Kind",
+          "type": "string"
+        },
+        "target": {
+          "discriminator": {
+            "mapping": {
+              "candidate": "#/$defs/RecipeCandidate",
+              "description": "#/$defs/DescribedTarget"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/RecipeCandidate"
+            },
+            {
+              "$ref": "#/$defs/DescribedTarget"
+            }
+          ],
+          "title": "Target"
+        },
+        "change": {
+          "discriminator": {
+            "mapping": {
+              "replace_ingredients": "#/$defs/ChangeIngredients",
+              "set_ingredient_quantity": "#/$defs/ChangeIngredientAmount",
+              "set_instructions": "#/$defs/ChangeInstructions",
+              "set_nutrition": "#/$defs/ChangeRecipeNutrition"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ChangeInstructions"
+            },
+            {
+              "$ref": "#/$defs/ChangeRecipeNutrition"
+            },
+            {
+              "$ref": "#/$defs/ChangeIngredients"
+            },
+            {
+              "$ref": "#/$defs/ChangeIngredientAmount"
+            }
+          ],
+          "title": "Change"
+        }
+      },
+      "required": [
+        "action_id",
+        "evidence",
+        "depends_on",
+        "unresolved",
+        "kind",
+        "target",
+        "change"
+      ],
+      "title": "ReviseRecipe",
+      "type": "object"
+    },
+    "SetInedibleWeight": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "set_inedible_weight",
+          "title": "Kind",
+          "type": "string"
+        },
+        "quantity": {
+          "$ref": "#/$defs/QuantityMention"
+        }
+      },
+      "required": [
+        "kind",
+        "quantity"
+      ],
+      "title": "SetInedibleWeight",
+      "type": "object"
+    },
+    "SetQuantity": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "set_quantity",
+          "title": "Kind",
+          "type": "string"
+        },
+        "quantity": {
+          "$ref": "#/$defs/QuantityMention"
+        }
+      },
+      "required": [
+        "kind",
+        "quantity"
+      ],
+      "title": "SetQuantity",
+      "type": "object"
+    },
+    "SetSteps": {
+      "additionalProperties": false,
+      "properties": {
+        "action_id": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^a[1-9][0-9]*$",
+          "title": "Action Id",
+          "type": "string"
+        },
+        "evidence": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Evidence",
+          "type": "string"
+        },
+        "depends_on": {
+          "items": {
+            "not": {
+              "pattern": "\\s"
+            },
+            "pattern": "^a[1-9][0-9]*$",
+            "type": "string"
+          },
+          "title": "Depends On",
+          "type": "array"
+        },
+        "unresolved": {
+          "items": {
+            "$ref": "#/$defs/UnresolvedField"
+          },
+          "title": "Unresolved",
+          "type": "array"
+        },
+        "kind": {
+          "const": "set_daily_steps",
+          "title": "Kind",
+          "type": "string"
+        },
+        "date_hint": {
+          "$ref": "#/$defs/DateHint"
+        },
+        "steps": {
+          "anyOf": [
+            {
+              "maximum": 9223372036854775807,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Steps"
+        }
+      },
+      "required": [
+        "action_id",
+        "evidence",
+        "depends_on",
+        "unresolved",
+        "kind",
+        "date_hint",
+        "steps"
+      ],
+      "title": "SetSteps",
+      "type": "object"
+    },
+    "SetWeight": {
+      "additionalProperties": false,
+      "properties": {
+        "action_id": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^a[1-9][0-9]*$",
+          "title": "Action Id",
+          "type": "string"
+        },
+        "evidence": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Evidence",
+          "type": "string"
+        },
+        "depends_on": {
+          "items": {
+            "not": {
+              "pattern": "\\s"
+            },
+            "pattern": "^a[1-9][0-9]*$",
+            "type": "string"
+          },
+          "title": "Depends On",
+          "type": "array"
+        },
+        "unresolved": {
+          "items": {
+            "$ref": "#/$defs/UnresolvedField"
+          },
+          "title": "Unresolved",
+          "type": "array"
+        },
+        "kind": {
+          "const": "set_daily_weight",
+          "title": "Kind",
+          "type": "string"
+        },
+        "date_hint": {
+          "$ref": "#/$defs/DateHint"
+        },
+        "quantity": {
+          "$ref": "#/$defs/QuantityMention"
+        }
+      },
+      "required": [
+        "action_id",
+        "evidence",
+        "depends_on",
+        "unresolved",
+        "kind",
+        "date_hint",
+        "quantity"
+      ],
+      "title": "SetWeight",
+      "type": "object"
+    },
+    "SuppliedNutrition": {
+      "additionalProperties": false,
+      "description": "Only values explicitly supplied by the user, at a separately specified basis.",
+      "properties": {
+        "kcal": {
+          "anyOf": [
+            {
+              "not": {
+                "pattern": "\\s"
+              },
+              "pattern": "^(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,6})?$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Kcal"
+        },
+        "protein_g": {
+          "anyOf": [
+            {
+              "not": {
+                "pattern": "\\s"
+              },
+              "pattern": "^(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,6})?$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Protein G"
+        },
+        "fat_g": {
+          "anyOf": [
+            {
+              "not": {
+                "pattern": "\\s"
+              },
+              "pattern": "^(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,6})?$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Fat G"
+        },
+        "carbs_g": {
+          "anyOf": [
+            {
+              "not": {
+                "pattern": "\\s"
+              },
+              "pattern": "^(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,6})?$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Carbs G"
+        }
+      },
+      "required": [
+        "kcal",
+        "protein_g",
+        "fat_g",
+        "carbs_g"
+      ],
+      "title": "SuppliedNutrition",
+      "type": "object"
+    },
+    "TextAnswer": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "text",
+          "title": "Kind",
+          "type": "string"
+        },
+        "text": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "text"
+      ],
+      "title": "TextAnswer",
+      "type": "object"
+    },
+    "UndoFood": {
+      "additionalProperties": false,
+      "properties": {
+        "action_id": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^a[1-9][0-9]*$",
+          "title": "Action Id",
+          "type": "string"
+        },
+        "evidence": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Evidence",
+          "type": "string"
+        },
+        "depends_on": {
+          "items": {
+            "not": {
+              "pattern": "\\s"
+            },
+            "pattern": "^a[1-9][0-9]*$",
+            "type": "string"
+          },
+          "title": "Depends On",
+          "type": "array"
+        },
+        "unresolved": {
+          "items": {
+            "$ref": "#/$defs/UnresolvedField"
+          },
+          "title": "Unresolved",
+          "type": "array"
+        },
+        "kind": {
+          "const": "undo_food",
+          "title": "Kind",
+          "type": "string"
+        },
+        "target": {
+          "discriminator": {
+            "mapping": {
+              "candidate": "#/$defs/EntryCandidate",
+              "description": "#/$defs/DescribedTarget",
+              "reply": "#/$defs/ReplyTarget"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/EntryCandidate"
+            },
+            {
+              "$ref": "#/$defs/ReplyTarget"
+            },
+            {
+              "$ref": "#/$defs/DescribedTarget"
+            }
+          ],
+          "title": "Target"
+        }
+      },
+      "required": [
+        "action_id",
+        "evidence",
+        "depends_on",
+        "unresolved",
+        "kind",
+        "target"
+      ],
+      "title": "UndoFood",
+      "type": "object"
+    },
+    "UnresolvedField": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "maxLength": 256,
+          "minLength": 1,
+          "title": "Path",
+          "type": "string"
+        },
+        "reason": {
+          "enum": [
+            "missing",
+            "ambiguous",
+            "conflicting"
+          ],
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "reason"
+      ],
+      "title": "UnresolvedField",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "actions": {
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "add_food": "#/$defs/AddFood",
+            "answer_clarification": "#/$defs/AnswerClarification",
+            "cancel_clarification": "#/$defs/CancelClarification",
+            "confirm_day_complete": "#/$defs/ConfirmDay",
+            "correct_food": "#/$defs/CorrectFood",
+            "define_product": "#/$defs/DefineProduct",
+            "define_recipe": "#/$defs/DefineRecipe",
+            "delete_food": "#/$defs/DeleteFood",
+            "food_question": "#/$defs/FoodQuestion",
+            "get_day_summary": "#/$defs/GetDay",
+            "get_recipe": "#/$defs/GetRecipe",
+            "increment_daily_steps": "#/$defs/IncrementSteps",
+            "non_logging": "#/$defs/NonLogging",
+            "revise_product": "#/$defs/ReviseProduct",
+            "revise_recipe": "#/$defs/ReviseRecipe",
+            "set_daily_steps": "#/$defs/SetSteps",
+            "set_daily_weight": "#/$defs/SetWeight",
+            "undo_food": "#/$defs/UndoFood"
+          },
+          "propertyName": "kind"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/AddFood"
+          },
+          {
+            "$ref": "#/$defs/CorrectFood"
+          },
+          {
+            "$ref": "#/$defs/DeleteFood"
+          },
+          {
+            "$ref": "#/$defs/UndoFood"
+          },
+          {
+            "$ref": "#/$defs/SetWeight"
+          },
+          {
+            "$ref": "#/$defs/SetSteps"
+          },
+          {
+            "$ref": "#/$defs/IncrementSteps"
+          },
+          {
+            "$ref": "#/$defs/DefineRecipe"
+          },
+          {
+            "$ref": "#/$defs/ReviseRecipe"
+          },
+          {
+            "$ref": "#/$defs/DefineProduct"
+          },
+          {
+            "$ref": "#/$defs/ReviseProduct"
+          },
+          {
+            "$ref": "#/$defs/ConfirmDay"
+          },
+          {
+            "$ref": "#/$defs/GetDay"
+          },
+          {
+            "$ref": "#/$defs/GetRecipe"
+          },
+          {
+            "$ref": "#/$defs/FoodQuestion"
+          },
+          {
+            "$ref": "#/$defs/NonLogging"
+          },
+          {
+            "$ref": "#/$defs/AnswerClarification"
+          },
+          {
+            "$ref": "#/$defs/CancelClarification"
+          }
+        ]
+      },
+      "maxItems": 32,
+      "minItems": 1,
+      "title": "Actions",
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "actions"
+  ],
+  "title": "ParserOutput",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:nutrition-assistant:contracts:1.0:parser-output"
+}

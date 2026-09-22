@@ -1,0 +1,155 @@
+{
+  "note": "Synthetic supplied nutrition for arithmetic examples; not a food database or dietary guidance.",
+  "per_100_g": {
+    "00000000-0000-4000-8000-000000000101": {
+      "kcal": {
+        "value": "70",
+        "lower": null,
+        "upper": null
+      },
+      "protein_g": {
+        "value": "4",
+        "lower": null,
+        "upper": null
+      },
+      "fat_g": {
+        "value": "2",
+        "lower": null,
+        "upper": null
+      },
+      "carbs_g": {
+        "value": "9",
+        "lower": null,
+        "upper": null
+      }
+    },
+    "00000000-0000-4000-8000-000000000102": {
+      "kcal": {
+        "value": "250",
+        "lower": null,
+        "upper": null
+      },
+      "protein_g": {
+        "value": "8",
+        "lower": null,
+        "upper": null
+      },
+      "fat_g": {
+        "value": "2",
+        "lower": null,
+        "upper": null
+      },
+      "carbs_g": {
+        "value": "50",
+        "lower": null,
+        "upper": null
+      }
+    },
+    "00000000-0000-4000-8000-000000000111": {
+      "kcal": {
+        "value": "80",
+        "lower": null,
+        "upper": null
+      },
+      "protein_g": {
+        "value": "2",
+        "lower": null,
+        "upper": null
+      },
+      "fat_g": {
+        "value": "0.1",
+        "lower": null,
+        "upper": null
+      },
+      "carbs_g": {
+        "value": "17",
+        "lower": null,
+        "upper": null
+      }
+    },
+    "00000000-0000-4000-8000-000000000112": {
+      "kcal": {
+        "value": "40",
+        "lower": null,
+        "upper": null
+      },
+      "protein_g": {
+        "value": "1",
+        "lower": null,
+        "upper": null
+      },
+      "fat_g": {
+        "value": "0.2",
+        "lower": null,
+        "upper": null
+      },
+      "carbs_g": {
+        "value": "9",
+        "lower": null,
+        "upper": null
+      }
+    },
+    "00000000-0000-4000-8000-000000000113": {
+      "kcal": {
+        "value": "120",
+        "lower": null,
+        "upper": null
+      },
+      "protein_g": {
+        "value": "22",
+        "lower": null,
+        "upper": null
+      },
+      "fat_g": {
+        "value": "3",
+        "lower": null,
+        "upper": null
+      },
+      "carbs_g": {
+        "value": "0",
+        "lower": null,
+        "upper": null
+      }
+    },
+    "00000000-0000-4000-8000-000000000114": {
+      "kcal": {
+        "value": "0",
+        "lower": null,
+        "upper": null
+      },
+      "protein_g": {
+        "value": "0",
+        "lower": null,
+        "upper": null
+      },
+      "fat_g": {
+        "value": "0",
+        "lower": null,
+        "upper": null
+      },
+      "carbs_g": {
+        "value": "0",
+        "lower": null,
+        "upper": null
+      }
+    },
+    "00000000-0000-4000-8000-000000000115": {
+      "kcal": {
+        "value": "100",
+        "lower": null,
+        "upper": null
+      },
+      "protein_g": {
+        "value": "10",
+        "lower": null,
+        "upper": null
+      },
+      "fat_g": null,
+      "carbs_g": {
+        "value": "5",
+        "lower": null,
+        "upper": null
+      }
+    }
+  }
+}

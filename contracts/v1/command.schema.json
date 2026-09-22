@@ -1,0 +1,1537 @@
+{
+  "$defs": {
+    "AddConsumedFood": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "add_consumed_food",
+          "title": "Kind",
+          "type": "string"
+        },
+        "food": {
+          "$ref": "#/$defs/FoodState"
+        }
+      },
+      "required": [
+        "kind",
+        "food"
+      ],
+      "title": "AddConsumedFood",
+      "type": "object"
+    },
+    "CalculatedRecipeNutrition": {
+      "additionalProperties": false,
+      "description": "Inputs for deterministic backend arithmetic; no model-computed result.",
+      "properties": {
+        "kind": {
+          "const": "calculate",
+          "title": "Kind",
+          "type": "string"
+        },
+        "finished_yield_g": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^(?:[1-9][0-9]{0,11}(?:\\.[0-9]{1,6})?|0\\.(?:[1-9][0-9]{0,5}|0[1-9][0-9]{0,4}|00[1-9][0-9]{0,3}|000[1-9][0-9]{0,2}|0000[1-9][0-9]?|00000[1-9]))$",
+          "title": "Finished Yield G",
+          "type": "string"
+        },
+        "yield_basis": {
+          "enum": [
+            "measured",
+            "user_confirmed_estimate"
+          ],
+          "title": "Yield Basis",
+          "type": "string"
+        },
+        "estimate_approval_update_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Estimate Approval Update Id"
+        },
+        "calculation_policy_version": {
+          "maxLength": 256,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Calculation Policy Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "finished_yield_g",
+        "yield_basis",
+        "estimate_approval_update_id",
+        "calculation_policy_version"
+      ],
+      "title": "CalculatedRecipeNutrition",
+      "type": "object"
+    },
+    "CancelPendingAction": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "cancel_pending_action",
+          "title": "Kind",
+          "type": "string"
+        },
+        "pending_action_id": {
+          "format": "uuid",
+          "title": "Pending Action Id",
+          "type": "string"
+        },
+        "expected_pending_revision": {
+          "exclusiveMinimum": 0,
+          "maximum": 9223372036854775807,
+          "title": "Expected Pending Revision",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind",
+        "pending_action_id",
+        "expected_pending_revision"
+      ],
+      "title": "CancelPendingAction",
+      "type": "object"
+    },
+    "CommandSource": {
+      "additionalProperties": false,
+      "properties": {
+        "origin_update_id": {
+          "format": "uuid",
+          "title": "Origin Update Id",
+          "type": "string"
+        },
+        "evidence_update_ids": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "maxItems": 100,
+          "minItems": 1,
+          "title": "Evidence Update Ids",
+          "type": "array"
+        },
+        "pending_action_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Pending Action Id"
+        }
+      },
+      "required": [
+        "origin_update_id",
+        "evidence_update_ids",
+        "pending_action_id"
+      ],
+      "title": "CommandSource",
+      "type": "object"
+    },
+    "ConfirmDayComplete": {
+      "additionalProperties": false,
+      "properties": {
+        "effective_date": {
+          "format": "date",
+          "title": "Effective Date",
+          "type": "string"
+        },
+        "time_zone": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Time Zone",
+          "type": "string"
+        },
+        "kind": {
+          "const": "confirm_day_complete",
+          "title": "Kind",
+          "type": "string"
+        },
+        "expected_day_revision": {
+          "maximum": 9223372036854775807,
+          "minimum": 0,
+          "title": "Expected Day Revision",
+          "type": "integer"
+        },
+        "intake_declaration": {
+          "enum": [
+            "logged_food",
+            "explicit_zero_food"
+          ],
+          "title": "Intake Declaration",
+          "type": "string"
+        }
+      },
+      "required": [
+        "effective_date",
+        "time_zone",
+        "kind",
+        "expected_day_revision",
+        "intake_declaration"
+      ],
+      "title": "ConfirmDayComplete",
+      "type": "object"
+    },
+    "CorrectFoodEntry": {
+      "additionalProperties": false,
+      "description": "A complete replacement snapshot; unaffected components must be preserved.",
+      "properties": {
+        "kind": {
+          "const": "correct_food_entry",
+          "title": "Kind",
+          "type": "string"
+        },
+        "entry_id": {
+          "format": "uuid",
+          "title": "Entry Id",
+          "type": "string"
+        },
+        "expected_revision_id": {
+          "format": "uuid",
+          "title": "Expected Revision Id",
+          "type": "string"
+        },
+        "replacement": {
+          "$ref": "#/$defs/FoodState"
+        },
+        "reason": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "entry_id",
+        "expected_revision_id",
+        "replacement",
+        "reason"
+      ],
+      "title": "CorrectFoodEntry",
+      "type": "object"
+    },
+    "DefineProduct": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "define_product",
+          "title": "Kind",
+          "type": "string"
+        },
+        "product": {
+          "$ref": "#/$defs/ProductDefinition"
+        }
+      },
+      "required": [
+        "kind",
+        "product"
+      ],
+      "title": "DefineProduct",
+      "type": "object"
+    },
+    "DefineRecipe": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "define_recipe",
+          "title": "Kind",
+          "type": "string"
+        },
+        "recipe": {
+          "$ref": "#/$defs/RecipeDefinition"
+        }
+      },
+      "required": [
+        "kind",
+        "recipe"
+      ],
+      "title": "DefineRecipe",
+      "type": "object"
+    },
+    "DeleteFoodEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "delete_food_entry",
+          "title": "Kind",
+          "type": "string"
+        },
+        "entry_id": {
+          "format": "uuid",
+          "title": "Entry Id",
+          "type": "string"
+        },
+        "expected_revision_id": {
+          "format": "uuid",
+          "title": "Expected Revision Id",
+          "type": "string"
+        },
+        "reason": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "entry_id",
+        "expected_revision_id",
+        "reason"
+      ],
+      "title": "DeleteFoodEntry",
+      "type": "object"
+    },
+    "DismissDailyCheckIn": {
+      "additionalProperties": false,
+      "properties": {
+        "effective_date": {
+          "format": "date",
+          "title": "Effective Date",
+          "type": "string"
+        },
+        "time_zone": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Time Zone",
+          "type": "string"
+        },
+        "kind": {
+          "const": "dismiss_daily_check_in",
+          "title": "Kind",
+          "type": "string"
+        },
+        "check_in_id": {
+          "format": "uuid",
+          "title": "Check In Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "effective_date",
+        "time_zone",
+        "kind",
+        "check_in_id"
+      ],
+      "title": "DismissDailyCheckIn",
+      "type": "object"
+    },
+    "EstimatedComponent": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "approved_estimate",
+          "title": "Kind",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 256,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Description",
+          "type": "string"
+        },
+        "estimate_source_id": {
+          "format": "uuid",
+          "title": "Estimate Source Id",
+          "type": "string"
+        },
+        "approval_update_id": {
+          "format": "uuid",
+          "title": "Approval Update Id",
+          "type": "string"
+        },
+        "quantity": {
+          "discriminator": {
+            "mapping": {
+              "mass": "#/$defs/Mass",
+              "volume": "#/$defs/Volume"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Mass"
+            },
+            {
+              "$ref": "#/$defs/Volume"
+            }
+          ],
+          "title": "Quantity"
+        }
+      },
+      "required": [
+        "kind",
+        "description",
+        "estimate_source_id",
+        "approval_update_id",
+        "quantity"
+      ],
+      "title": "EstimatedComponent",
+      "type": "object"
+    },
+    "FoodState": {
+      "additionalProperties": false,
+      "properties": {
+        "effective_date": {
+          "format": "date",
+          "title": "Effective Date",
+          "type": "string"
+        },
+        "time_zone": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Time Zone",
+          "type": "string"
+        },
+        "meal": {
+          "enum": [
+            "breakfast",
+            "lunch",
+            "dinner",
+            "snack",
+            "unspecified"
+          ],
+          "title": "Meal",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Description",
+          "type": "string"
+        },
+        "components": {
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "approved_estimate": "#/$defs/EstimatedComponent",
+                "product": "#/$defs/ProductComponent",
+                "recipe": "#/$defs/RecipeComponent"
+              },
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/ProductComponent"
+              },
+              {
+                "$ref": "#/$defs/RecipeComponent"
+              },
+              {
+                "$ref": "#/$defs/EstimatedComponent"
+              }
+            ]
+          },
+          "maxItems": 100,
+          "minItems": 1,
+          "title": "Components",
+          "type": "array"
+        }
+      },
+      "required": [
+        "effective_date",
+        "time_zone",
+        "meal",
+        "description",
+        "components"
+      ],
+      "title": "FoodState",
+      "type": "object"
+    },
+    "GetDaySummary": {
+      "additionalProperties": false,
+      "properties": {
+        "effective_date": {
+          "format": "date",
+          "title": "Effective Date",
+          "type": "string"
+        },
+        "time_zone": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Time Zone",
+          "type": "string"
+        },
+        "kind": {
+          "const": "get_day_summary",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "effective_date",
+        "time_zone",
+        "kind"
+      ],
+      "title": "GetDaySummary",
+      "type": "object"
+    },
+    "GetRecipe": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "get_recipe",
+          "title": "Kind",
+          "type": "string"
+        },
+        "recipe_id": {
+          "format": "uuid",
+          "title": "Recipe Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "recipe_id"
+      ],
+      "title": "GetRecipe",
+      "type": "object"
+    },
+    "IncrementDailySteps": {
+      "additionalProperties": false,
+      "properties": {
+        "effective_date": {
+          "format": "date",
+          "title": "Effective Date",
+          "type": "string"
+        },
+        "time_zone": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Time Zone",
+          "type": "string"
+        },
+        "kind": {
+          "const": "increment_daily_steps",
+          "title": "Kind",
+          "type": "string"
+        },
+        "steps": {
+          "exclusiveMinimum": 0,
+          "maximum": 9223372036854775807,
+          "title": "Steps",
+          "type": "integer"
+        },
+        "expected_revision_id": {
+          "format": "uuid",
+          "title": "Expected Revision Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "effective_date",
+        "time_zone",
+        "kind",
+        "steps",
+        "expected_revision_id"
+      ],
+      "title": "IncrementDailySteps",
+      "type": "object"
+    },
+    "Mass": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "mass",
+          "title": "Kind",
+          "type": "string"
+        },
+        "edible_g": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^(?:[1-9][0-9]{0,11}(?:\\.[0-9]{1,6})?|0\\.(?:[1-9][0-9]{0,5}|0[1-9][0-9]{0,4}|00[1-9][0-9]{0,3}|000[1-9][0-9]{0,2}|0000[1-9][0-9]?|00000[1-9]))$",
+          "title": "Edible G",
+          "type": "string"
+        },
+        "gross_g": {
+          "anyOf": [
+            {
+              "not": {
+                "pattern": "\\s"
+              },
+              "pattern": "^(?:[1-9][0-9]{0,11}(?:\\.[0-9]{1,6})?|0\\.(?:[1-9][0-9]{0,5}|0[1-9][0-9]{0,4}|00[1-9][0-9]{0,3}|000[1-9][0-9]{0,2}|0000[1-9][0-9]?|00000[1-9]))$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Gross G"
+        },
+        "inedible_g": {
+          "anyOf": [
+            {
+              "not": {
+                "pattern": "\\s"
+              },
+              "pattern": "^(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,6})?$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Inedible G"
+        },
+        "weight_basis": {
+          "enum": [
+            "raw",
+            "cooked",
+            "as_sold"
+          ],
+          "title": "Weight Basis",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "edible_g",
+        "gross_g",
+        "inedible_g",
+        "weight_basis"
+      ],
+      "title": "Mass",
+      "type": "object"
+    },
+    "NutrientValue": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,6})?$",
+          "title": "Value",
+          "type": "string"
+        },
+        "lower": {
+          "anyOf": [
+            {
+              "not": {
+                "pattern": "\\s"
+              },
+              "pattern": "^(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,6})?$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Lower"
+        },
+        "upper": {
+          "anyOf": [
+            {
+              "not": {
+                "pattern": "\\s"
+              },
+              "pattern": "^(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,6})?$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Upper"
+        }
+      },
+      "required": [
+        "value",
+        "lower",
+        "upper"
+      ],
+      "title": "NutrientValue",
+      "type": "object"
+    },
+    "NutritionSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "kcal": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NutrientValue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "protein_g": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NutrientValue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fat_g": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NutrientValue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "carbs_g": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NutrientValue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "kcal",
+        "protein_g",
+        "fat_g",
+        "carbs_g"
+      ],
+      "title": "NutritionSnapshot",
+      "type": "object"
+    },
+    "PreviewFood": {
+      "additionalProperties": false,
+      "description": "Read-only calculation. Never inserts a food entry.",
+      "properties": {
+        "kind": {
+          "const": "preview_food",
+          "title": "Kind",
+          "type": "string"
+        },
+        "components": {
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "approved_estimate": "#/$defs/EstimatedComponent",
+                "product": "#/$defs/ProductComponent",
+                "recipe": "#/$defs/RecipeComponent"
+              },
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/ProductComponent"
+              },
+              {
+                "$ref": "#/$defs/RecipeComponent"
+              },
+              {
+                "$ref": "#/$defs/EstimatedComponent"
+              }
+            ]
+          },
+          "maxItems": 100,
+          "minItems": 1,
+          "title": "Components",
+          "type": "array"
+        }
+      },
+      "required": [
+        "kind",
+        "components"
+      ],
+      "title": "PreviewFood",
+      "type": "object"
+    },
+    "ProductComponent": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "product",
+          "title": "Kind",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 256,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Description",
+          "type": "string"
+        },
+        "product_version_id": {
+          "format": "uuid",
+          "title": "Product Version Id",
+          "type": "string"
+        },
+        "quantity": {
+          "discriminator": {
+            "mapping": {
+              "mass": "#/$defs/Mass",
+              "volume": "#/$defs/Volume"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Mass"
+            },
+            {
+              "$ref": "#/$defs/Volume"
+            }
+          ],
+          "title": "Quantity"
+        }
+      },
+      "required": [
+        "kind",
+        "description",
+        "product_version_id",
+        "quantity"
+      ],
+      "title": "ProductComponent",
+      "type": "object"
+    },
+    "ProductDefinition": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "maxLength": 256,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Name",
+          "type": "string"
+        },
+        "brand": {
+          "anyOf": [
+            {
+              "maxLength": 256,
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Brand"
+        },
+        "data_source_id": {
+          "format": "uuid",
+          "title": "Data Source Id",
+          "type": "string"
+        },
+        "nutrition_basis": {
+          "enum": [
+            "per_100_g",
+            "per_100_ml"
+          ],
+          "title": "Nutrition Basis",
+          "type": "string"
+        },
+        "nutrition": {
+          "$ref": "#/$defs/NutritionSnapshot"
+        },
+        "weight_basis": {
+          "enum": [
+            "raw",
+            "cooked",
+            "as_sold"
+          ],
+          "title": "Weight Basis",
+          "type": "string"
+        },
+        "grams_per_piece": {
+          "anyOf": [
+            {
+              "not": {
+                "pattern": "\\s"
+              },
+              "pattern": "^(?:[1-9][0-9]{0,11}(?:\\.[0-9]{1,6})?|0\\.(?:[1-9][0-9]{0,5}|0[1-9][0-9]{0,4}|00[1-9][0-9]{0,3}|000[1-9][0-9]{0,2}|0000[1-9][0-9]?|00000[1-9]))$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Grams Per Piece"
+        },
+        "ml_per_piece": {
+          "anyOf": [
+            {
+              "not": {
+                "pattern": "\\s"
+              },
+              "pattern": "^(?:[1-9][0-9]{0,11}(?:\\.[0-9]{1,6})?|0\\.(?:[1-9][0-9]{0,5}|0[1-9][0-9]{0,4}|00[1-9][0-9]{0,3}|000[1-9][0-9]{0,2}|0000[1-9][0-9]?|00000[1-9]))$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Ml Per Piece"
+        },
+        "density_g_per_ml": {
+          "anyOf": [
+            {
+              "not": {
+                "pattern": "\\s"
+              },
+              "pattern": "^(?:[1-9][0-9]{0,11}(?:\\.[0-9]{1,6})?|0\\.(?:[1-9][0-9]{0,5}|0[1-9][0-9]{0,4}|00[1-9][0-9]{0,3}|000[1-9][0-9]{0,2}|0000[1-9][0-9]?|00000[1-9]))$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Density G Per Ml"
+        }
+      },
+      "required": [
+        "name",
+        "brand",
+        "data_source_id",
+        "nutrition_basis",
+        "nutrition",
+        "weight_basis",
+        "grams_per_piece",
+        "ml_per_piece",
+        "density_g_per_ml"
+      ],
+      "title": "ProductDefinition",
+      "type": "object"
+    },
+    "ProvidedRecipeNutrition": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "provided",
+          "title": "Kind",
+          "type": "string"
+        },
+        "data_source_id": {
+          "format": "uuid",
+          "title": "Data Source Id",
+          "type": "string"
+        },
+        "per_100_g": {
+          "$ref": "#/$defs/NutritionSnapshot"
+        }
+      },
+      "required": [
+        "kind",
+        "data_source_id",
+        "per_100_g"
+      ],
+      "title": "ProvidedRecipeNutrition",
+      "type": "object"
+    },
+    "RecipeComponent": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "recipe",
+          "title": "Kind",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 256,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Description",
+          "type": "string"
+        },
+        "recipe_version_id": {
+          "format": "uuid",
+          "title": "Recipe Version Id",
+          "type": "string"
+        },
+        "eaten_grams": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^(?:[1-9][0-9]{0,11}(?:\\.[0-9]{1,6})?|0\\.(?:[1-9][0-9]{0,5}|0[1-9][0-9]{0,4}|00[1-9][0-9]{0,3}|000[1-9][0-9]{0,2}|0000[1-9][0-9]?|00000[1-9]))$",
+          "title": "Eaten Grams",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "description",
+        "recipe_version_id",
+        "eaten_grams"
+      ],
+      "title": "RecipeComponent",
+      "type": "object"
+    },
+    "RecipeDefinition": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "maxLength": 256,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Name",
+          "type": "string"
+        },
+        "cooking_instructions": {
+          "anyOf": [
+            {
+              "maxLength": 16000,
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Cooking Instructions"
+        },
+        "ingredients": {
+          "items": {
+            "$ref": "#/$defs/RecipeIngredient"
+          },
+          "maxItems": 100,
+          "title": "Ingredients",
+          "type": "array"
+        },
+        "nutrition": {
+          "discriminator": {
+            "mapping": {
+              "calculate": "#/$defs/CalculatedRecipeNutrition",
+              "provided": "#/$defs/ProvidedRecipeNutrition"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ProvidedRecipeNutrition"
+            },
+            {
+              "$ref": "#/$defs/CalculatedRecipeNutrition"
+            }
+          ],
+          "title": "Nutrition"
+        }
+      },
+      "required": [
+        "name",
+        "cooking_instructions",
+        "ingredients",
+        "nutrition"
+      ],
+      "title": "RecipeDefinition",
+      "type": "object"
+    },
+    "RecipeIngredient": {
+      "additionalProperties": false,
+      "properties": {
+        "name_as_entered": {
+          "maxLength": 256,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Name As Entered",
+          "type": "string"
+        },
+        "original_quantity": {
+          "$ref": "#/$defs/SourceQuantity"
+        },
+        "weight_basis": {
+          "anyOf": [
+            {
+              "enum": [
+                "raw",
+                "cooked",
+                "as_sold"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Weight Basis"
+        },
+        "source": {
+          "discriminator": {
+            "mapping": {
+              "resolved": "#/$defs/ResolvedIngredientSource",
+              "unknown": "#/$defs/UnknownIngredientSource"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ResolvedIngredientSource"
+            },
+            {
+              "$ref": "#/$defs/UnknownIngredientSource"
+            }
+          ],
+          "title": "Source"
+        }
+      },
+      "required": [
+        "name_as_entered",
+        "original_quantity",
+        "weight_basis",
+        "source"
+      ],
+      "title": "RecipeIngredient",
+      "type": "object"
+    },
+    "ResolvedIngredientSource": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "resolved",
+          "title": "Kind",
+          "type": "string"
+        },
+        "product_version_id": {
+          "format": "uuid",
+          "title": "Product Version Id",
+          "type": "string"
+        },
+        "quantity": {
+          "discriminator": {
+            "mapping": {
+              "mass": "#/$defs/Mass",
+              "volume": "#/$defs/Volume"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Mass"
+            },
+            {
+              "$ref": "#/$defs/Volume"
+            }
+          ],
+          "title": "Quantity"
+        }
+      },
+      "required": [
+        "kind",
+        "product_version_id",
+        "quantity"
+      ],
+      "title": "ResolvedIngredientSource",
+      "type": "object"
+    },
+    "RestoreFoodEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "restore_food_entry",
+          "title": "Kind",
+          "type": "string"
+        },
+        "entry_id": {
+          "format": "uuid",
+          "title": "Entry Id",
+          "type": "string"
+        },
+        "expected_revision_id": {
+          "format": "uuid",
+          "title": "Expected Revision Id",
+          "type": "string"
+        },
+        "restore_from_revision_id": {
+          "format": "uuid",
+          "title": "Restore From Revision Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "entry_id",
+        "expected_revision_id",
+        "restore_from_revision_id"
+      ],
+      "title": "RestoreFoodEntry",
+      "type": "object"
+    },
+    "ReviseProduct": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "revise_product",
+          "title": "Kind",
+          "type": "string"
+        },
+        "product_id": {
+          "format": "uuid",
+          "title": "Product Id",
+          "type": "string"
+        },
+        "expected_version_id": {
+          "format": "uuid",
+          "title": "Expected Version Id",
+          "type": "string"
+        },
+        "replacement": {
+          "$ref": "#/$defs/ProductDefinition"
+        }
+      },
+      "required": [
+        "kind",
+        "product_id",
+        "expected_version_id",
+        "replacement"
+      ],
+      "title": "ReviseProduct",
+      "type": "object"
+    },
+    "ReviseRecipe": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "revise_recipe",
+          "title": "Kind",
+          "type": "string"
+        },
+        "recipe_id": {
+          "format": "uuid",
+          "title": "Recipe Id",
+          "type": "string"
+        },
+        "expected_version_id": {
+          "format": "uuid",
+          "title": "Expected Version Id",
+          "type": "string"
+        },
+        "replacement": {
+          "$ref": "#/$defs/RecipeDefinition"
+        }
+      },
+      "required": [
+        "kind",
+        "recipe_id",
+        "expected_version_id",
+        "replacement"
+      ],
+      "title": "ReviseRecipe",
+      "type": "object"
+    },
+    "SetDailySteps": {
+      "additionalProperties": false,
+      "properties": {
+        "effective_date": {
+          "format": "date",
+          "title": "Effective Date",
+          "type": "string"
+        },
+        "time_zone": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Time Zone",
+          "type": "string"
+        },
+        "kind": {
+          "const": "set_daily_steps",
+          "title": "Kind",
+          "type": "string"
+        },
+        "steps": {
+          "maximum": 9223372036854775807,
+          "minimum": 0,
+          "title": "Steps",
+          "type": "integer"
+        },
+        "expected_revision_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Expected Revision Id"
+        }
+      },
+      "required": [
+        "effective_date",
+        "time_zone",
+        "kind",
+        "steps",
+        "expected_revision_id"
+      ],
+      "title": "SetDailySteps",
+      "type": "object"
+    },
+    "SetDailyWeight": {
+      "additionalProperties": false,
+      "properties": {
+        "effective_date": {
+          "format": "date",
+          "title": "Effective Date",
+          "type": "string"
+        },
+        "time_zone": {
+          "maxLength": 128,
+          "minLength": 1,
+          "title": "Time Zone",
+          "type": "string"
+        },
+        "kind": {
+          "const": "set_daily_weight",
+          "title": "Kind",
+          "type": "string"
+        },
+        "value_kg": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^(?:[1-9][0-9]{0,11}(?:\\.[0-9]{1,6})?|0\\.(?:[1-9][0-9]{0,5}|0[1-9][0-9]{0,4}|00[1-9][0-9]{0,3}|000[1-9][0-9]{0,2}|0000[1-9][0-9]?|00000[1-9]))$",
+          "title": "Value Kg",
+          "type": "string"
+        },
+        "expected_revision_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Expected Revision Id"
+        }
+      },
+      "required": [
+        "effective_date",
+        "time_zone",
+        "kind",
+        "value_kg",
+        "expected_revision_id"
+      ],
+      "title": "SetDailyWeight",
+      "type": "object"
+    },
+    "SourceQuantity": {
+      "additionalProperties": false,
+      "properties": {
+        "amount": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^(?:[1-9][0-9]{0,11}(?:\\.[0-9]{1,6})?|0\\.(?:[1-9][0-9]{0,5}|0[1-9][0-9]{0,4}|00[1-9][0-9]{0,3}|000[1-9][0-9]{0,2}|0000[1-9][0-9]?|00000[1-9]))$",
+          "title": "Amount",
+          "type": "string"
+        },
+        "unit": {
+          "enum": [
+            "g",
+            "kg",
+            "ml",
+            "l",
+            "piece"
+          ],
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "amount",
+        "unit"
+      ],
+      "title": "SourceQuantity",
+      "type": "object"
+    },
+    "UnknownIngredientSource": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "unknown",
+          "title": "Kind",
+          "type": "string"
+        },
+        "reason": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "reason"
+      ],
+      "title": "UnknownIngredientSource",
+      "type": "object"
+    },
+    "Volume": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "volume",
+          "title": "Kind",
+          "type": "string"
+        },
+        "ml": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^(?:[1-9][0-9]{0,11}(?:\\.[0-9]{1,6})?|0\\.(?:[1-9][0-9]{0,5}|0[1-9][0-9]{0,4}|00[1-9][0-9]{0,3}|000[1-9][0-9]{0,2}|0000[1-9][0-9]?|00000[1-9]))$",
+          "title": "Ml",
+          "type": "string"
+        },
+        "weight_basis": {
+          "enum": [
+            "raw",
+            "cooked",
+            "as_sold"
+          ],
+          "title": "Weight Basis",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "ml",
+        "weight_basis"
+      ],
+      "title": "Volume",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "user_id": {
+      "format": "uuid",
+      "title": "User Id",
+      "type": "string"
+    },
+    "operation_id": {
+      "format": "uuid",
+      "title": "Operation Id",
+      "type": "string"
+    },
+    "source": {
+      "$ref": "#/$defs/CommandSource"
+    },
+    "context_revision": {
+      "maximum": 9223372036854775807,
+      "minimum": 0,
+      "title": "Context Revision",
+      "type": "integer"
+    },
+    "command": {
+      "discriminator": {
+        "mapping": {
+          "add_consumed_food": "#/$defs/AddConsumedFood",
+          "cancel_pending_action": "#/$defs/CancelPendingAction",
+          "confirm_day_complete": "#/$defs/ConfirmDayComplete",
+          "correct_food_entry": "#/$defs/CorrectFoodEntry",
+          "define_product": "#/$defs/DefineProduct",
+          "define_recipe": "#/$defs/DefineRecipe",
+          "delete_food_entry": "#/$defs/DeleteFoodEntry",
+          "dismiss_daily_check_in": "#/$defs/DismissDailyCheckIn",
+          "get_day_summary": "#/$defs/GetDaySummary",
+          "get_recipe": "#/$defs/GetRecipe",
+          "increment_daily_steps": "#/$defs/IncrementDailySteps",
+          "preview_food": "#/$defs/PreviewFood",
+          "restore_food_entry": "#/$defs/RestoreFoodEntry",
+          "revise_product": "#/$defs/ReviseProduct",
+          "revise_recipe": "#/$defs/ReviseRecipe",
+          "set_daily_steps": "#/$defs/SetDailySteps",
+          "set_daily_weight": "#/$defs/SetDailyWeight"
+        },
+        "propertyName": "kind"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/AddConsumedFood"
+        },
+        {
+          "$ref": "#/$defs/CorrectFoodEntry"
+        },
+        {
+          "$ref": "#/$defs/DeleteFoodEntry"
+        },
+        {
+          "$ref": "#/$defs/RestoreFoodEntry"
+        },
+        {
+          "$ref": "#/$defs/SetDailyWeight"
+        },
+        {
+          "$ref": "#/$defs/SetDailySteps"
+        },
+        {
+          "$ref": "#/$defs/IncrementDailySteps"
+        },
+        {
+          "$ref": "#/$defs/DefineRecipe"
+        },
+        {
+          "$ref": "#/$defs/ReviseRecipe"
+        },
+        {
+          "$ref": "#/$defs/DefineProduct"
+        },
+        {
+          "$ref": "#/$defs/ReviseProduct"
+        },
+        {
+          "$ref": "#/$defs/ConfirmDayComplete"
+        },
+        {
+          "$ref": "#/$defs/GetDaySummary"
+        },
+        {
+          "$ref": "#/$defs/GetRecipe"
+        },
+        {
+          "$ref": "#/$defs/PreviewFood"
+        },
+        {
+          "$ref": "#/$defs/CancelPendingAction"
+        },
+        {
+          "$ref": "#/$defs/DismissDailyCheckIn"
+        }
+      ],
+      "title": "Command"
+    }
+  },
+  "required": [
+    "schema_version",
+    "user_id",
+    "operation_id",
+    "source",
+    "context_revision",
+    "command"
+  ],
+  "title": "CommandEnvelope",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:nutrition-assistant:contracts:1.0:command"
+}

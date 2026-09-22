@@ -1,0 +1,120 @@
+{
+  "scenario": "08_recipe_needs_finished_weight",
+  "source": {
+    "text": "Сохрани суп: картофель 300 г, морковь 120 г, сырая курица 250 г, вода 800 г. Варить 30 минут.",
+    "local_date": "2026-09-22",
+    "time_zone": "Europe/Berlin"
+  },
+  "context": {
+    "candidates": {
+      "c1": "product",
+      "c2": "product",
+      "c3": "product",
+      "c4": "product"
+    },
+    "pending_questions": {},
+    "has_reply": false
+  },
+  "parser": {
+    "schema_version": "1.0",
+    "actions": [
+      {
+        "action_id": "a1",
+        "kind": "define_recipe",
+        "evidence": "Сохрани суп: картофель 300 г, морковь 120 г, сырая курица 250 г, вода 800 г. Варить 30 минут.",
+        "depends_on": [],
+        "unresolved": [
+          {
+            "path": "nutrition_input.finished_weight.amount",
+            "reason": "missing"
+          }
+        ],
+        "name": "мой суп",
+        "cooking_instructions": "Варить 30 минут.",
+        "nutrition_input": {
+          "kind": "calculate",
+          "ingredients": [
+            {
+              "food": {
+                "kind": "candidate",
+                "candidate_ref": "c1",
+                "candidate_kind": "product"
+              },
+              "quantity": {
+                "amount": "300",
+                "unit": "g"
+              },
+              "weight_basis": "raw"
+            },
+            {
+              "food": {
+                "kind": "candidate",
+                "candidate_ref": "c2",
+                "candidate_kind": "product"
+              },
+              "quantity": {
+                "amount": "120",
+                "unit": "g"
+              },
+              "weight_basis": "raw"
+            },
+            {
+              "food": {
+                "kind": "candidate",
+                "candidate_ref": "c3",
+                "candidate_kind": "product"
+              },
+              "quantity": {
+                "amount": "250",
+                "unit": "g"
+              },
+              "weight_basis": "raw"
+            },
+            {
+              "food": {
+                "kind": "candidate",
+                "candidate_ref": "c4",
+                "candidate_kind": "product"
+              },
+              "quantity": {
+                "amount": "800",
+                "unit": "g"
+              },
+              "weight_basis": "as_sold"
+            }
+          ],
+          "finished_weight": {
+            "amount": null,
+            "unit": "g"
+          }
+        }
+      }
+    ]
+  },
+  "commands": [],
+  "results": [
+    {
+      "result": {
+        "schema_version": "1.0",
+        "operation_id": "00000000-0000-4000-8000-000000001008",
+        "outcome": "needs_clarification",
+        "pending_action_id": "00000000-0000-4000-8000-000000006002",
+        "pending_revision": 1,
+        "effective_date": "2026-09-22",
+        "questions": [
+          {
+            "question_ref": "q1",
+            "field": "nutrition_input.finished_weight",
+            "prompt": "Уточните nutrition_input.finished_weight",
+            "answer_kind": "quantity",
+            "choices": []
+          }
+        ],
+        "previously_applied_operation_ids": []
+      }
+    }
+  ],
+  "notes": [
+    "Ingredient amounts and instructions are retained in the pending action; final nutrition is not guessed from raw total mass."
+  ]
+}

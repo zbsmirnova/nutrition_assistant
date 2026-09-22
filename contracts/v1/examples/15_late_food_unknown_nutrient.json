@@ -1,0 +1,173 @@
+{
+  "scenario": "15_late_food_unknown_nutrient",
+  "source": {
+    "text": "Ещё 100 г продукта X.",
+    "local_date": "2026-09-22",
+    "time_zone": "Europe/Berlin"
+  },
+  "context": {
+    "candidates": {
+      "c2": "product"
+    },
+    "pending_questions": {},
+    "has_reply": false
+  },
+  "parser": {
+    "schema_version": "1.0",
+    "actions": [
+      {
+        "action_id": "a1",
+        "kind": "add_food",
+        "evidence": "Ещё 100 г продукта X.",
+        "depends_on": [],
+        "unresolved": [],
+        "food": {
+          "kind": "candidate",
+          "candidate_ref": "c2",
+          "candidate_kind": "product"
+        },
+        "quantity": {
+          "amount": "100",
+          "unit": "g"
+        },
+        "weight_basis": null,
+        "date_hint": {
+          "text": null
+        },
+        "meal": "lunch"
+      }
+    ]
+  },
+  "commands": [
+    {
+      "schema_version": "1.0",
+      "user_id": "00000000-0000-4000-8000-000000000001",
+      "operation_id": "00000000-0000-4000-8000-000000001015",
+      "source": {
+        "origin_update_id": "00000000-0000-4000-8000-000000002015",
+        "evidence_update_ids": [
+          "00000000-0000-4000-8000-000000002015"
+        ],
+        "pending_action_id": null
+      },
+      "context_revision": 1,
+      "command": {
+        "kind": "add_consumed_food",
+        "food": {
+          "effective_date": "2026-09-22",
+          "time_zone": "Europe/Berlin",
+          "meal": "lunch",
+          "description": "обед",
+          "components": [
+            {
+              "kind": "product",
+              "description": "хлеб",
+              "product_version_id": "00000000-0000-4000-8000-000000000115",
+              "quantity": {
+                "kind": "mass",
+                "edible_g": "100",
+                "gross_g": null,
+                "inedible_g": null,
+                "weight_basis": "as_sold"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "results": [
+    {
+      "result": {
+        "schema_version": "1.0",
+        "operation_id": "00000000-0000-4000-8000-000000001015",
+        "outcome": "applied",
+        "mutations": [
+          {
+            "entity_kind": "food_entry",
+            "entity_id": "00000000-0000-4000-8000-000000003015",
+            "revision_id": "00000000-0000-4000-8000-000000004015",
+            "effective_date": "2026-09-22"
+          }
+        ],
+        "food_entries": [
+          {
+            "entry_id": "00000000-0000-4000-8000-000000003015",
+            "revision_id": "00000000-0000-4000-8000-000000004015",
+            "effective_date": "2026-09-22",
+            "description": "продукт X",
+            "nutrition": {
+              "kcal": {
+                "value": "100",
+                "lower": null,
+                "upper": null
+              },
+              "protein_g": {
+                "value": "10",
+                "lower": null,
+                "upper": null
+              },
+              "fat_g": null,
+              "carbs_g": {
+                "value": "5",
+                "lower": null,
+                "upper": null
+              }
+            },
+            "change": "added"
+          }
+        ],
+        "observations": [],
+        "daily_summaries": [
+          {
+            "effective_date": "2026-09-22",
+            "completeness": "complete",
+            "explicit_zero_food": false,
+            "pending_food_actions": 0,
+            "entry_count": 2,
+            "component_count": 2,
+            "nutrition": {
+              "kcal": {
+                "kind": "complete",
+                "amount": {
+                  "value": "240",
+                  "lower": null,
+                  "upper": null
+                },
+                "known_components": 2
+              },
+              "protein_g": {
+                "kind": "complete",
+                "amount": {
+                  "value": "18",
+                  "lower": null,
+                  "upper": null
+                },
+                "known_components": 2
+              },
+              "fat_g": {
+                "kind": "partial",
+                "known_subtotal": "4",
+                "known_components": 1,
+                "unknown_components": 1
+              },
+              "carbs_g": {
+                "kind": "complete",
+                "amount": {
+                  "value": "23",
+                  "lower": null,
+                  "upper": null
+                },
+                "known_components": 2
+              }
+            }
+          }
+        ],
+        "recipe": null
+      }
+    }
+  ],
+  "notes": [
+    "Day was complete and stays complete. Added food has unknown fat; day fat is a known subtotal, not a complete total."
+  ]
+}

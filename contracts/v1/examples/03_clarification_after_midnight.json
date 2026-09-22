@@ -1,0 +1,188 @@
+{
+  "scenario": "03_clarification_after_midnight",
+  "source": {
+    "text": "40",
+    "local_date": "2026-09-23",
+    "time_zone": "Europe/Berlin"
+  },
+  "context": {
+    "candidates": {
+      "c3": "pending"
+    },
+    "pending_questions": {
+      "c3": {
+        "q1": "quantity"
+      }
+    },
+    "has_reply": false
+  },
+  "parser": {
+    "schema_version": "1.0",
+    "actions": [
+      {
+        "action_id": "a1",
+        "kind": "answer_clarification",
+        "evidence": "40",
+        "depends_on": [],
+        "unresolved": [],
+        "pending": {
+          "kind": "candidate",
+          "candidate_ref": "c3",
+          "candidate_kind": "pending"
+        },
+        "answers": [
+          {
+            "question_ref": "q1",
+            "value": {
+              "kind": "quantity",
+              "quantity": {
+                "amount": "40",
+                "unit": null
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "commands": [
+    {
+      "schema_version": "1.0",
+      "user_id": "00000000-0000-4000-8000-000000000001",
+      "operation_id": "00000000-0000-4000-8000-000000001003",
+      "source": {
+        "origin_update_id": "00000000-0000-4000-8000-000000002002",
+        "evidence_update_ids": [
+          "00000000-0000-4000-8000-000000002002",
+          "00000000-0000-4000-8000-000000002003"
+        ],
+        "pending_action_id": "00000000-0000-4000-8000-000000006001"
+      },
+      "context_revision": 1,
+      "command": {
+        "kind": "add_consumed_food",
+        "food": {
+          "effective_date": "2026-09-22",
+          "time_zone": "Europe/Berlin",
+          "meal": "lunch",
+          "description": "обед",
+          "components": [
+            {
+              "kind": "product",
+              "description": "хлеб",
+              "product_version_id": "00000000-0000-4000-8000-000000000102",
+              "quantity": {
+                "kind": "mass",
+                "edible_g": "40",
+                "gross_g": null,
+                "inedible_g": null,
+                "weight_basis": "as_sold"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "results": [
+    {
+      "result": {
+        "schema_version": "1.0",
+        "operation_id": "00000000-0000-4000-8000-000000001003",
+        "outcome": "applied",
+        "mutations": [
+          {
+            "entity_kind": "food_entry",
+            "entity_id": "00000000-0000-4000-8000-000000003003",
+            "revision_id": "00000000-0000-4000-8000-000000004003",
+            "effective_date": "2026-09-22"
+          }
+        ],
+        "food_entries": [
+          {
+            "entry_id": "00000000-0000-4000-8000-000000003003",
+            "revision_id": "00000000-0000-4000-8000-000000004003",
+            "effective_date": "2026-09-22",
+            "description": "хлеб",
+            "nutrition": {
+              "kcal": {
+                "value": "100",
+                "lower": null,
+                "upper": null
+              },
+              "protein_g": {
+                "value": "3.2",
+                "lower": null,
+                "upper": null
+              },
+              "fat_g": {
+                "value": "0.8",
+                "lower": null,
+                "upper": null
+              },
+              "carbs_g": {
+                "value": "20",
+                "lower": null,
+                "upper": null
+              }
+            },
+            "change": "added"
+          }
+        ],
+        "observations": [],
+        "daily_summaries": [
+          {
+            "effective_date": "2026-09-22",
+            "completeness": "unconfirmed",
+            "explicit_zero_food": false,
+            "pending_food_actions": 0,
+            "entry_count": 2,
+            "component_count": 2,
+            "nutrition": {
+              "kcal": {
+                "kind": "complete",
+                "amount": {
+                  "value": "240",
+                  "lower": null,
+                  "upper": null
+                },
+                "known_components": 2
+              },
+              "protein_g": {
+                "kind": "complete",
+                "amount": {
+                  "value": "11.2",
+                  "lower": null,
+                  "upper": null
+                },
+                "known_components": 2
+              },
+              "fat_g": {
+                "kind": "complete",
+                "amount": {
+                  "value": "4.8",
+                  "lower": null,
+                  "upper": null
+                },
+                "known_components": 2
+              },
+              "carbs_g": {
+                "kind": "complete",
+                "amount": {
+                  "value": "38",
+                  "lower": null,
+                  "upper": null
+                },
+                "known_components": 2
+              }
+            }
+          }
+        ],
+        "recipe": null
+      }
+    }
+  ],
+  "notes": [
+    "Continues 02_mixed_food: reuse pending operation 1003, original date, and existing soup."
+  ]
+}

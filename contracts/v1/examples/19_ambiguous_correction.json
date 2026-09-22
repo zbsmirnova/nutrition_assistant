@@ -1,0 +1,81 @@
+{
+  "scenario": "19_ambiguous_correction",
+  "source": {
+    "text": "На самом деле хлеба было 80 г.",
+    "local_date": "2026-09-22",
+    "time_zone": "Europe/Berlin"
+  },
+  "context": {
+    "candidates": {
+      "c1": "entry",
+      "c2": "entry"
+    },
+    "pending_questions": {},
+    "has_reply": false
+  },
+  "parser": {
+    "schema_version": "1.0",
+    "actions": [
+      {
+        "action_id": "a1",
+        "kind": "correct_food",
+        "evidence": "На самом деле хлеба было 80 г.",
+        "depends_on": [],
+        "unresolved": [
+          {
+            "path": "target",
+            "reason": "ambiguous"
+          }
+        ],
+        "target": {
+          "kind": "description",
+          "description": "хлеб"
+        },
+        "change": {
+          "kind": "set_quantity",
+          "quantity": {
+            "amount": "80",
+            "unit": "g"
+          }
+        }
+      }
+    ]
+  },
+  "commands": [],
+  "results": [
+    {
+      "result": {
+        "schema_version": "1.0",
+        "operation_id": "00000000-0000-4000-8000-000000001019",
+        "outcome": "needs_clarification",
+        "pending_action_id": "00000000-0000-4000-8000-000000006019",
+        "pending_revision": 1,
+        "effective_date": "2026-09-22",
+        "questions": [
+          {
+            "question_ref": "q1",
+            "field": "target",
+            "prompt": "Уточните target",
+            "answer_kind": "selection",
+            "choices": [
+              {
+                "kind": "candidate",
+                "candidate_ref": "c1",
+                "candidate_kind": "entry"
+              },
+              {
+                "kind": "candidate",
+                "candidate_ref": "c2",
+                "candidate_kind": "entry"
+              }
+            ]
+          }
+        ],
+        "previously_applied_operation_ids": []
+      }
+    }
+  ],
+  "notes": [
+    "There are two matching bread entries. No correction command is emitted until the target is selected."
+  ]
+}

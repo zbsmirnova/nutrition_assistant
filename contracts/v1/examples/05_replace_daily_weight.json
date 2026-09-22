@@ -1,0 +1,86 @@
+{
+  "scenario": "05_replace_daily_weight",
+  "source": {
+    "text": "Вес сегодня 76,1.",
+    "local_date": "2026-09-22",
+    "time_zone": "Europe/Berlin"
+  },
+  "context": {
+    "candidates": {},
+    "pending_questions": {},
+    "has_reply": false
+  },
+  "parser": {
+    "schema_version": "1.0",
+    "actions": [
+      {
+        "action_id": "a1",
+        "kind": "set_daily_weight",
+        "evidence": "Вес сегодня 76,1.",
+        "depends_on": [],
+        "unresolved": [],
+        "date_hint": {
+          "text": "сегодня"
+        },
+        "quantity": {
+          "amount": "76.1",
+          "unit": "kg"
+        }
+      }
+    ]
+  },
+  "commands": [
+    {
+      "schema_version": "1.0",
+      "user_id": "00000000-0000-4000-8000-000000000001",
+      "operation_id": "00000000-0000-4000-8000-000000001005",
+      "source": {
+        "origin_update_id": "00000000-0000-4000-8000-000000002005",
+        "evidence_update_ids": [
+          "00000000-0000-4000-8000-000000002005"
+        ],
+        "pending_action_id": null
+      },
+      "context_revision": 1,
+      "command": {
+        "kind": "set_daily_weight",
+        "effective_date": "2026-09-22",
+        "time_zone": "Europe/Berlin",
+        "value_kg": "76.1",
+        "expected_revision_id": "00000000-0000-4000-8000-000000004010"
+      }
+    }
+  ],
+  "results": [
+    {
+      "result": {
+        "schema_version": "1.0",
+        "operation_id": "00000000-0000-4000-8000-000000001005",
+        "outcome": "applied",
+        "mutations": [
+          {
+            "entity_kind": "daily_weight",
+            "entity_id": "00000000-0000-4000-8000-000000003010",
+            "revision_id": "00000000-0000-4000-8000-000000005010",
+            "effective_date": "2026-09-22"
+          }
+        ],
+        "food_entries": [],
+        "observations": [
+          {
+            "kind": "daily_weight",
+            "observation_id": "00000000-0000-4000-8000-000000003010",
+            "revision_id": "00000000-0000-4000-8000-000000005010",
+            "effective_date": "2026-09-22",
+            "value_kg": "76.1"
+          }
+        ],
+        "daily_summaries": [],
+        "recipe": null
+      }
+    }
+  ],
+  "notes": [
+    "Prior daily weight was 76.3. It remains only in history; do not average readings."
+  ]
+}

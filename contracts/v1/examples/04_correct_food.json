@@ -1,0 +1,177 @@
+{
+  "scenario": "04_correct_food",
+  "source": {
+    "text": "Было 80 г хлеба, не 100.",
+    "local_date": "2026-09-22",
+    "time_zone": "Europe/Berlin"
+  },
+  "context": {
+    "candidates": {},
+    "pending_questions": {},
+    "has_reply": true
+  },
+  "parser": {
+    "schema_version": "1.0",
+    "actions": [
+      {
+        "action_id": "a1",
+        "kind": "correct_food",
+        "evidence": "Было 80 г хлеба, не 100.",
+        "depends_on": [],
+        "unresolved": [],
+        "target": {
+          "kind": "reply"
+        },
+        "change": {
+          "kind": "set_quantity",
+          "quantity": {
+            "amount": "80",
+            "unit": "g"
+          }
+        }
+      }
+    ]
+  },
+  "commands": [
+    {
+      "schema_version": "1.0",
+      "user_id": "00000000-0000-4000-8000-000000000001",
+      "operation_id": "00000000-0000-4000-8000-000000001004",
+      "source": {
+        "origin_update_id": "00000000-0000-4000-8000-000000002004",
+        "evidence_update_ids": [
+          "00000000-0000-4000-8000-000000002004"
+        ],
+        "pending_action_id": null
+      },
+      "context_revision": 1,
+      "command": {
+        "kind": "correct_food_entry",
+        "entry_id": "00000000-0000-4000-8000-000000003004",
+        "expected_revision_id": "00000000-0000-4000-8000-000000004004",
+        "replacement": {
+          "effective_date": "2026-09-22",
+          "time_zone": "Europe/Berlin",
+          "meal": "lunch",
+          "description": "обед",
+          "components": [
+            {
+              "kind": "product",
+              "description": "хлеб",
+              "product_version_id": "00000000-0000-4000-8000-000000000102",
+              "quantity": {
+                "kind": "mass",
+                "edible_g": "80",
+                "gross_g": null,
+                "inedible_g": null,
+                "weight_basis": "as_sold"
+              }
+            }
+          ]
+        },
+        "reason": "Было 80 г хлеба, не 100."
+      }
+    }
+  ],
+  "results": [
+    {
+      "result": {
+        "schema_version": "1.0",
+        "operation_id": "00000000-0000-4000-8000-000000001004",
+        "outcome": "applied",
+        "mutations": [
+          {
+            "entity_kind": "food_entry",
+            "entity_id": "00000000-0000-4000-8000-000000003004",
+            "revision_id": "00000000-0000-4000-8000-000000005004",
+            "effective_date": "2026-09-22"
+          }
+        ],
+        "food_entries": [
+          {
+            "entry_id": "00000000-0000-4000-8000-000000003004",
+            "revision_id": "00000000-0000-4000-8000-000000005004",
+            "effective_date": "2026-09-22",
+            "description": "хлеб",
+            "nutrition": {
+              "kcal": {
+                "value": "200",
+                "lower": null,
+                "upper": null
+              },
+              "protein_g": {
+                "value": "6.4",
+                "lower": null,
+                "upper": null
+              },
+              "fat_g": {
+                "value": "1.6",
+                "lower": null,
+                "upper": null
+              },
+              "carbs_g": {
+                "value": "40",
+                "lower": null,
+                "upper": null
+              }
+            },
+            "change": "corrected"
+          }
+        ],
+        "observations": [],
+        "daily_summaries": [
+          {
+            "effective_date": "2026-09-22",
+            "completeness": "unconfirmed",
+            "explicit_zero_food": false,
+            "pending_food_actions": 0,
+            "entry_count": 1,
+            "component_count": 1,
+            "nutrition": {
+              "kcal": {
+                "kind": "complete",
+                "amount": {
+                  "value": "200",
+                  "lower": null,
+                  "upper": null
+                },
+                "known_components": 1
+              },
+              "protein_g": {
+                "kind": "complete",
+                "amount": {
+                  "value": "6.4",
+                  "lower": null,
+                  "upper": null
+                },
+                "known_components": 1
+              },
+              "fat_g": {
+                "kind": "complete",
+                "amount": {
+                  "value": "1.6",
+                  "lower": null,
+                  "upper": null
+                },
+                "known_components": 1
+              },
+              "carbs_g": {
+                "kind": "complete",
+                "amount": {
+                  "value": "40",
+                  "lower": null,
+                  "upper": null
+                },
+                "known_components": 1
+              }
+            }
+          }
+        ],
+        "recipe": null
+      }
+    }
+  ],
+  "notes": [
+    "Same entry ID, new revision. The backend fills the complete replacement from the existing record."
+  ]
+}

@@ -1,0 +1,286 @@
+{
+  "scenario": "11_define_recipe_then_eat",
+  "source": {
+    "text": "Сохрани суп: на 100 г 70 ккал, Б 4, Ж 2, У 9. Я съела 250 г этого супа.",
+    "local_date": "2026-09-22",
+    "time_zone": "Europe/Berlin"
+  },
+  "context": {
+    "candidates": {},
+    "pending_questions": {},
+    "has_reply": false
+  },
+  "parser": {
+    "schema_version": "1.0",
+    "actions": [
+      {
+        "action_id": "a1",
+        "kind": "define_recipe",
+        "evidence": "Сохрани суп: на 100 г 70 ккал, Б 4, Ж 2, У 9.",
+        "depends_on": [],
+        "unresolved": [],
+        "name": "мой суп",
+        "cooking_instructions": null,
+        "nutrition_input": {
+          "kind": "provided",
+          "per_100_g": {
+            "kcal": "70",
+            "protein_g": "4",
+            "fat_g": "2",
+            "carbs_g": "9"
+          },
+          "ingredients": []
+        }
+      },
+      {
+        "action_id": "a2",
+        "kind": "add_food",
+        "evidence": "Я съела 250 г этого супа.",
+        "depends_on": [
+          "a1"
+        ],
+        "unresolved": [],
+        "food": {
+          "kind": "action_result",
+          "action_id": "a1"
+        },
+        "quantity": {
+          "amount": "250",
+          "unit": "g"
+        },
+        "weight_basis": "cooked",
+        "date_hint": {
+          "text": null
+        },
+        "meal": "lunch"
+      }
+    ]
+  },
+  "commands": [
+    {
+      "schema_version": "1.0",
+      "user_id": "00000000-0000-4000-8000-000000000001",
+      "operation_id": "00000000-0000-4000-8000-000000001011",
+      "source": {
+        "origin_update_id": "00000000-0000-4000-8000-000000002011",
+        "evidence_update_ids": [
+          "00000000-0000-4000-8000-000000002011"
+        ],
+        "pending_action_id": null
+      },
+      "context_revision": 1,
+      "command": {
+        "kind": "define_recipe",
+        "recipe": {
+          "name": "мой суп",
+          "cooking_instructions": null,
+          "ingredients": [],
+          "nutrition": {
+            "kind": "provided",
+            "data_source_id": "00000000-0000-4000-8000-000000009001",
+            "per_100_g": {
+              "kcal": {
+                "value": "70",
+                "lower": null,
+                "upper": null
+              },
+              "protein_g": {
+                "value": "4",
+                "lower": null,
+                "upper": null
+              },
+              "fat_g": {
+                "value": "2",
+                "lower": null,
+                "upper": null
+              },
+              "carbs_g": {
+                "value": "9",
+                "lower": null,
+                "upper": null
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "schema_version": "1.0",
+      "user_id": "00000000-0000-4000-8000-000000000001",
+      "operation_id": "00000000-0000-4000-8000-000000001012",
+      "source": {
+        "origin_update_id": "00000000-0000-4000-8000-000000002011",
+        "evidence_update_ids": [
+          "00000000-0000-4000-8000-000000002011"
+        ],
+        "pending_action_id": null
+      },
+      "context_revision": 1,
+      "command": {
+        "kind": "add_consumed_food",
+        "food": {
+          "effective_date": "2026-09-22",
+          "time_zone": "Europe/Berlin",
+          "meal": "lunch",
+          "description": "обед",
+          "components": [
+            {
+              "kind": "recipe",
+              "description": "мой суп",
+              "recipe_version_id": "00000000-0000-4000-8000-000000008003",
+              "eaten_grams": "250"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "results": [
+    {
+      "result": {
+        "schema_version": "1.0",
+        "operation_id": "00000000-0000-4000-8000-000000001011",
+        "outcome": "applied",
+        "mutations": [
+          {
+            "entity_kind": "recipe",
+            "entity_id": "00000000-0000-4000-8000-000000007003",
+            "revision_id": "00000000-0000-4000-8000-000000008003",
+            "effective_date": null
+          }
+        ],
+        "food_entries": [],
+        "observations": [],
+        "daily_summaries": [],
+        "recipe": {
+          "recipe_id": "00000000-0000-4000-8000-000000007003",
+          "version_id": "00000000-0000-4000-8000-000000008003",
+          "name": "мой суп",
+          "ingredients": [],
+          "cooking_instructions": null,
+          "per_100_g": {
+            "kcal": {
+              "value": "70",
+              "lower": null,
+              "upper": null
+            },
+            "protein_g": {
+              "value": "4",
+              "lower": null,
+              "upper": null
+            },
+            "fat_g": {
+              "value": "2",
+              "lower": null,
+              "upper": null
+            },
+            "carbs_g": {
+              "value": "9",
+              "lower": null,
+              "upper": null
+            }
+          }
+        }
+      }
+    },
+    {
+      "result": {
+        "schema_version": "1.0",
+        "operation_id": "00000000-0000-4000-8000-000000001012",
+        "outcome": "applied",
+        "mutations": [
+          {
+            "entity_kind": "food_entry",
+            "entity_id": "00000000-0000-4000-8000-000000003012",
+            "revision_id": "00000000-0000-4000-8000-000000004012",
+            "effective_date": "2026-09-22"
+          }
+        ],
+        "food_entries": [
+          {
+            "entry_id": "00000000-0000-4000-8000-000000003012",
+            "revision_id": "00000000-0000-4000-8000-000000004012",
+            "effective_date": "2026-09-22",
+            "description": "мой суп",
+            "nutrition": {
+              "kcal": {
+                "value": "175",
+                "lower": null,
+                "upper": null
+              },
+              "protein_g": {
+                "value": "10",
+                "lower": null,
+                "upper": null
+              },
+              "fat_g": {
+                "value": "5",
+                "lower": null,
+                "upper": null
+              },
+              "carbs_g": {
+                "value": "22.5",
+                "lower": null,
+                "upper": null
+              }
+            },
+            "change": "added"
+          }
+        ],
+        "observations": [],
+        "daily_summaries": [
+          {
+            "effective_date": "2026-09-22",
+            "completeness": "unconfirmed",
+            "explicit_zero_food": false,
+            "pending_food_actions": 0,
+            "entry_count": 1,
+            "component_count": 1,
+            "nutrition": {
+              "kcal": {
+                "kind": "complete",
+                "amount": {
+                  "value": "175",
+                  "lower": null,
+                  "upper": null
+                },
+                "known_components": 1
+              },
+              "protein_g": {
+                "kind": "complete",
+                "amount": {
+                  "value": "10",
+                  "lower": null,
+                  "upper": null
+                },
+                "known_components": 1
+              },
+              "fat_g": {
+                "kind": "complete",
+                "amount": {
+                  "value": "5",
+                  "lower": null,
+                  "upper": null
+                },
+                "known_components": 1
+              },
+              "carbs_g": {
+                "kind": "complete",
+                "amount": {
+                  "value": "22.5",
+                  "lower": null,
+                  "upper": null
+                },
+                "known_components": 1
+              }
+            }
+          }
+        ],
+        "recipe": null
+      }
+    }
+  ],
+  "notes": [
+    "Backend assigns both operation IDs and the new recipe version. Execute the consumption only after the recipe definition succeeds."
+  ]
+}

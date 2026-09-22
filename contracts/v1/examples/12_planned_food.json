@@ -1,0 +1,31 @@
+{
+  "scenario": "12_planned_food",
+  "source": {
+    "text": "Планирую суп на ужин.",
+    "local_date": "2026-09-22",
+    "time_zone": "Europe/Berlin"
+  },
+  "context": {
+    "candidates": {},
+    "pending_questions": {},
+    "has_reply": false
+  },
+  "parser": {
+    "schema_version": "1.0",
+    "actions": [
+      {
+        "action_id": "a1",
+        "kind": "non_logging",
+        "evidence": "Планирую суп на ужин.",
+        "depends_on": [],
+        "unresolved": [],
+        "reason": "planned_food"
+      }
+    ]
+  },
+  "commands": [],
+  "results": [],
+  "notes": [
+    "No consumed-food command; no mutation outcome."
+  ]
+}

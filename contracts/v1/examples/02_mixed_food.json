@@ -1,0 +1,223 @@
+{
+  "scenario": "02_mixed_food",
+  "source": {
+    "text": "200 г моего супа и немного хлеба.",
+    "local_date": "2026-09-22",
+    "time_zone": "Europe/Berlin"
+  },
+  "context": {
+    "candidates": {
+      "c1": "recipe",
+      "c2": "product"
+    },
+    "pending_questions": {},
+    "has_reply": false
+  },
+  "parser": {
+    "schema_version": "1.0",
+    "actions": [
+      {
+        "action_id": "a1",
+        "kind": "add_food",
+        "evidence": "200 г моего супа",
+        "depends_on": [],
+        "unresolved": [],
+        "food": {
+          "kind": "candidate",
+          "candidate_ref": "c1",
+          "candidate_kind": "recipe"
+        },
+        "quantity": {
+          "amount": "200",
+          "unit": "g"
+        },
+        "weight_basis": "cooked",
+        "date_hint": {
+          "text": null
+        },
+        "meal": "lunch"
+      },
+      {
+        "action_id": "a2",
+        "kind": "add_food",
+        "evidence": "немного хлеба",
+        "depends_on": [],
+        "unresolved": [
+          {
+            "path": "quantity.amount",
+            "reason": "missing"
+          }
+        ],
+        "food": {
+          "kind": "candidate",
+          "candidate_ref": "c2",
+          "candidate_kind": "product"
+        },
+        "quantity": {
+          "amount": null,
+          "unit": "g"
+        },
+        "weight_basis": "as_sold",
+        "date_hint": {
+          "text": null
+        },
+        "meal": "lunch"
+      }
+    ]
+  },
+  "commands": [
+    {
+      "schema_version": "1.0",
+      "user_id": "00000000-0000-4000-8000-000000000001",
+      "operation_id": "00000000-0000-4000-8000-000000001002",
+      "source": {
+        "origin_update_id": "00000000-0000-4000-8000-000000002002",
+        "evidence_update_ids": [
+          "00000000-0000-4000-8000-000000002002"
+        ],
+        "pending_action_id": null
+      },
+      "context_revision": 1,
+      "command": {
+        "kind": "add_consumed_food",
+        "food": {
+          "effective_date": "2026-09-22",
+          "time_zone": "Europe/Berlin",
+          "meal": "lunch",
+          "description": "обед",
+          "components": [
+            {
+              "kind": "recipe",
+              "description": "мой суп",
+              "recipe_version_id": "00000000-0000-4000-8000-000000000101",
+              "eaten_grams": "200"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "results": [
+    {
+      "result": {
+        "schema_version": "1.0",
+        "operation_id": "00000000-0000-4000-8000-000000001002",
+        "outcome": "applied",
+        "mutations": [
+          {
+            "entity_kind": "food_entry",
+            "entity_id": "00000000-0000-4000-8000-000000003002",
+            "revision_id": "00000000-0000-4000-8000-000000004002",
+            "effective_date": "2026-09-22"
+          }
+        ],
+        "food_entries": [
+          {
+            "entry_id": "00000000-0000-4000-8000-000000003002",
+            "revision_id": "00000000-0000-4000-8000-000000004002",
+            "effective_date": "2026-09-22",
+            "description": "мой суп",
+            "nutrition": {
+              "kcal": {
+                "value": "140",
+                "lower": null,
+                "upper": null
+              },
+              "protein_g": {
+                "value": "8",
+                "lower": null,
+                "upper": null
+              },
+              "fat_g": {
+                "value": "4",
+                "lower": null,
+                "upper": null
+              },
+              "carbs_g": {
+                "value": "18",
+                "lower": null,
+                "upper": null
+              }
+            },
+            "change": "added"
+          }
+        ],
+        "observations": [],
+        "daily_summaries": [
+          {
+            "effective_date": "2026-09-22",
+            "completeness": "unconfirmed",
+            "explicit_zero_food": false,
+            "pending_food_actions": 1,
+            "entry_count": 1,
+            "component_count": 1,
+            "nutrition": {
+              "kcal": {
+                "kind": "complete",
+                "amount": {
+                  "value": "140",
+                  "lower": null,
+                  "upper": null
+                },
+                "known_components": 1
+              },
+              "protein_g": {
+                "kind": "complete",
+                "amount": {
+                  "value": "8",
+                  "lower": null,
+                  "upper": null
+                },
+                "known_components": 1
+              },
+              "fat_g": {
+                "kind": "complete",
+                "amount": {
+                  "value": "4",
+                  "lower": null,
+                  "upper": null
+                },
+                "known_components": 1
+              },
+              "carbs_g": {
+                "kind": "complete",
+                "amount": {
+                  "value": "18",
+                  "lower": null,
+                  "upper": null
+                },
+                "known_components": 1
+              }
+            }
+          }
+        ],
+        "recipe": null
+      }
+    },
+    {
+      "result": {
+        "schema_version": "1.0",
+        "operation_id": "00000000-0000-4000-8000-000000001003",
+        "outcome": "needs_clarification",
+        "pending_action_id": "00000000-0000-4000-8000-000000006001",
+        "pending_revision": 1,
+        "effective_date": "2026-09-22",
+        "questions": [
+          {
+            "question_ref": "q1",
+            "field": "quantity.amount",
+            "prompt": "Уточните quantity.amount",
+            "answer_kind": "quantity",
+            "choices": []
+          }
+        ],
+        "previously_applied_operation_ids": [
+          "00000000-0000-4000-8000-000000001002"
+        ]
+      }
+    }
+  ],
+  "notes": [
+    "Soup is committed once; bread alone waits for grams."
+  ]
+}

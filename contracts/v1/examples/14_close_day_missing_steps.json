@@ -1,0 +1,122 @@
+{
+  "scenario": "14_close_day_missing_steps",
+  "source": {
+    "text": "Закрой день.",
+    "local_date": "2026-09-22",
+    "time_zone": "Europe/Berlin"
+  },
+  "context": {
+    "candidates": {},
+    "pending_questions": {},
+    "has_reply": false
+  },
+  "parser": {
+    "schema_version": "1.0",
+    "actions": [
+      {
+        "action_id": "a1",
+        "kind": "confirm_day_complete",
+        "evidence": "Закрой день.",
+        "depends_on": [],
+        "unresolved": [],
+        "date_hint": {
+          "text": null
+        },
+        "explicit_zero_food": false
+      }
+    ]
+  },
+  "commands": [
+    {
+      "schema_version": "1.0",
+      "user_id": "00000000-0000-4000-8000-000000000001",
+      "operation_id": "00000000-0000-4000-8000-000000001014",
+      "source": {
+        "origin_update_id": "00000000-0000-4000-8000-000000002014",
+        "evidence_update_ids": [
+          "00000000-0000-4000-8000-000000002014"
+        ],
+        "pending_action_id": null
+      },
+      "context_revision": 1,
+      "command": {
+        "kind": "confirm_day_complete",
+        "effective_date": "2026-09-22",
+        "time_zone": "Europe/Berlin",
+        "expected_day_revision": 4,
+        "intake_declaration": "logged_food"
+      }
+    }
+  ],
+  "results": [
+    {
+      "result": {
+        "schema_version": "1.0",
+        "operation_id": "00000000-0000-4000-8000-000000001014",
+        "outcome": "applied",
+        "mutations": [
+          {
+            "entity_kind": "food_day",
+            "entity_id": "00000000-0000-4000-8000-000000003014",
+            "revision_id": null,
+            "effective_date": "2026-09-22"
+          }
+        ],
+        "food_entries": [],
+        "observations": [],
+        "daily_summaries": [
+          {
+            "effective_date": "2026-09-22",
+            "completeness": "complete",
+            "explicit_zero_food": false,
+            "pending_food_actions": 0,
+            "entry_count": 1,
+            "component_count": 1,
+            "nutrition": {
+              "kcal": {
+                "kind": "complete",
+                "amount": {
+                  "value": "175",
+                  "lower": null,
+                  "upper": null
+                },
+                "known_components": 1
+              },
+              "protein_g": {
+                "kind": "complete",
+                "amount": {
+                  "value": "10",
+                  "lower": null,
+                  "upper": null
+                },
+                "known_components": 1
+              },
+              "fat_g": {
+                "kind": "complete",
+                "amount": {
+                  "value": "5",
+                  "lower": null,
+                  "upper": null
+                },
+                "known_components": 1
+              },
+              "carbs_g": {
+                "kind": "complete",
+                "amount": {
+                  "value": "22.5",
+                  "lower": null,
+                  "upper": null
+                },
+                "known_components": 1
+              }
+            }
+          }
+        ],
+        "recipe": null
+      }
+    }
+  ],
+  "notes": [
+    "Steps are absent. Closure succeeds; offer only Add steps, not another completion button."
+  ]
+}

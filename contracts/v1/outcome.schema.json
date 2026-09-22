@@ -1,0 +1,1361 @@
+{
+  "$defs": {
+    "Applied": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "operation_id": {
+          "format": "uuid",
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "outcome": {
+          "const": "applied",
+          "title": "Outcome",
+          "type": "string"
+        },
+        "mutations": {
+          "items": {
+            "$ref": "#/$defs/MutationReceipt"
+          },
+          "minItems": 1,
+          "title": "Mutations",
+          "type": "array"
+        },
+        "food_entries": {
+          "items": {
+            "$ref": "#/$defs/FoodEntrySummary"
+          },
+          "title": "Food Entries",
+          "type": "array"
+        },
+        "observations": {
+          "items": {
+            "discriminator": {
+              "mapping": {
+                "daily_steps": "#/$defs/StepsSnapshot",
+                "daily_weight": "#/$defs/WeightSnapshot"
+              },
+              "propertyName": "kind"
+            },
+            "oneOf": [
+              {
+                "$ref": "#/$defs/WeightSnapshot"
+              },
+              {
+                "$ref": "#/$defs/StepsSnapshot"
+              }
+            ]
+          },
+          "title": "Observations",
+          "type": "array"
+        },
+        "daily_summaries": {
+          "items": {
+            "$ref": "#/$defs/DailySummary"
+          },
+          "title": "Daily Summaries",
+          "type": "array"
+        },
+        "recipe": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RecipeProfile"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schema_version",
+        "operation_id",
+        "outcome",
+        "mutations",
+        "food_entries",
+        "observations",
+        "daily_summaries",
+        "recipe"
+      ],
+      "title": "Applied",
+      "type": "object"
+    },
+    "CandidateReference": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "candidate",
+          "title": "Kind",
+          "type": "string"
+        },
+        "candidate_ref": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^c[1-9][0-9]*$",
+          "title": "Candidate Ref",
+          "type": "string"
+        },
+        "candidate_kind": {
+          "enum": [
+            "product",
+            "recipe",
+            "entry",
+            "pending",
+            "estimate"
+          ],
+          "title": "Candidate Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "candidate_ref",
+        "candidate_kind"
+      ],
+      "title": "CandidateReference",
+      "type": "object"
+    },
+    "CompleteTotal": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "complete",
+          "title": "Kind",
+          "type": "string"
+        },
+        "amount": {
+          "$ref": "#/$defs/NutrientValue"
+        },
+        "known_components": {
+          "exclusiveMinimum": 0,
+          "maximum": 9223372036854775807,
+          "title": "Known Components",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind",
+        "amount",
+        "known_components"
+      ],
+      "title": "CompleteTotal",
+      "type": "object"
+    },
+    "DailySummary": {
+      "additionalProperties": false,
+      "properties": {
+        "effective_date": {
+          "format": "date",
+          "title": "Effective Date",
+          "type": "string"
+        },
+        "completeness": {
+          "enum": [
+            "unconfirmed",
+            "complete"
+          ],
+          "title": "Completeness",
+          "type": "string"
+        },
+        "explicit_zero_food": {
+          "title": "Explicit Zero Food",
+          "type": "boolean"
+        },
+        "pending_food_actions": {
+          "maximum": 9223372036854775807,
+          "minimum": 0,
+          "title": "Pending Food Actions",
+          "type": "integer"
+        },
+        "entry_count": {
+          "maximum": 9223372036854775807,
+          "minimum": 0,
+          "title": "Entry Count",
+          "type": "integer"
+        },
+        "component_count": {
+          "maximum": 9223372036854775807,
+          "minimum": 0,
+          "title": "Component Count",
+          "type": "integer"
+        },
+        "nutrition": {
+          "$ref": "#/$defs/DayNutrition"
+        }
+      },
+      "required": [
+        "effective_date",
+        "completeness",
+        "explicit_zero_food",
+        "pending_food_actions",
+        "entry_count",
+        "component_count",
+        "nutrition"
+      ],
+      "title": "DailySummary",
+      "type": "object"
+    },
+    "DayNutrition": {
+      "additionalProperties": false,
+      "properties": {
+        "kcal": {
+          "discriminator": {
+            "mapping": {
+              "complete": "#/$defs/CompleteTotal",
+              "empty": "#/$defs/EmptyTotal",
+              "partial": "#/$defs/PartialTotal",
+              "unknown": "#/$defs/UnknownTotal"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/CompleteTotal"
+            },
+            {
+              "$ref": "#/$defs/PartialTotal"
+            },
+            {
+              "$ref": "#/$defs/UnknownTotal"
+            },
+            {
+              "$ref": "#/$defs/EmptyTotal"
+            }
+          ],
+          "title": "Kcal"
+        },
+        "protein_g": {
+          "discriminator": {
+            "mapping": {
+              "complete": "#/$defs/CompleteTotal",
+              "empty": "#/$defs/EmptyTotal",
+              "partial": "#/$defs/PartialTotal",
+              "unknown": "#/$defs/UnknownTotal"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/CompleteTotal"
+            },
+            {
+              "$ref": "#/$defs/PartialTotal"
+            },
+            {
+              "$ref": "#/$defs/UnknownTotal"
+            },
+            {
+              "$ref": "#/$defs/EmptyTotal"
+            }
+          ],
+          "title": "Protein G"
+        },
+        "fat_g": {
+          "discriminator": {
+            "mapping": {
+              "complete": "#/$defs/CompleteTotal",
+              "empty": "#/$defs/EmptyTotal",
+              "partial": "#/$defs/PartialTotal",
+              "unknown": "#/$defs/UnknownTotal"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/CompleteTotal"
+            },
+            {
+              "$ref": "#/$defs/PartialTotal"
+            },
+            {
+              "$ref": "#/$defs/UnknownTotal"
+            },
+            {
+              "$ref": "#/$defs/EmptyTotal"
+            }
+          ],
+          "title": "Fat G"
+        },
+        "carbs_g": {
+          "discriminator": {
+            "mapping": {
+              "complete": "#/$defs/CompleteTotal",
+              "empty": "#/$defs/EmptyTotal",
+              "partial": "#/$defs/PartialTotal",
+              "unknown": "#/$defs/UnknownTotal"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/CompleteTotal"
+            },
+            {
+              "$ref": "#/$defs/PartialTotal"
+            },
+            {
+              "$ref": "#/$defs/UnknownTotal"
+            },
+            {
+              "$ref": "#/$defs/EmptyTotal"
+            }
+          ],
+          "title": "Carbs G"
+        }
+      },
+      "required": [
+        "kcal",
+        "protein_g",
+        "fat_g",
+        "carbs_g"
+      ],
+      "title": "DayNutrition",
+      "type": "object"
+    },
+    "EmptyTotal": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "empty",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "title": "EmptyTotal",
+      "type": "object"
+    },
+    "FoodEntrySummary": {
+      "additionalProperties": false,
+      "properties": {
+        "entry_id": {
+          "format": "uuid",
+          "title": "Entry Id",
+          "type": "string"
+        },
+        "revision_id": {
+          "format": "uuid",
+          "title": "Revision Id",
+          "type": "string"
+        },
+        "effective_date": {
+          "format": "date",
+          "title": "Effective Date",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Description",
+          "type": "string"
+        },
+        "nutrition": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NutritionSnapshot"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "change": {
+          "enum": [
+            "added",
+            "corrected",
+            "deleted",
+            "restored"
+          ],
+          "title": "Change",
+          "type": "string"
+        }
+      },
+      "required": [
+        "entry_id",
+        "revision_id",
+        "effective_date",
+        "description",
+        "nutrition",
+        "change"
+      ],
+      "title": "FoodEntrySummary",
+      "type": "object"
+    },
+    "FoodPreview": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "operation_id": {
+          "format": "uuid",
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "outcome": {
+          "const": "food_preview",
+          "title": "Outcome",
+          "type": "string"
+        },
+        "nutrition": {
+          "$ref": "#/$defs/NutritionSnapshot"
+        }
+      },
+      "required": [
+        "schema_version",
+        "operation_id",
+        "outcome",
+        "nutrition"
+      ],
+      "title": "FoodPreview",
+      "type": "object"
+    },
+    "Mass": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "mass",
+          "title": "Kind",
+          "type": "string"
+        },
+        "edible_g": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^(?:[1-9][0-9]{0,11}(?:\\.[0-9]{1,6})?|0\\.(?:[1-9][0-9]{0,5}|0[1-9][0-9]{0,4}|00[1-9][0-9]{0,3}|000[1-9][0-9]{0,2}|0000[1-9][0-9]?|00000[1-9]))$",
+          "title": "Edible G",
+          "type": "string"
+        },
+        "gross_g": {
+          "anyOf": [
+            {
+              "not": {
+                "pattern": "\\s"
+              },
+              "pattern": "^(?:[1-9][0-9]{0,11}(?:\\.[0-9]{1,6})?|0\\.(?:[1-9][0-9]{0,5}|0[1-9][0-9]{0,4}|00[1-9][0-9]{0,3}|000[1-9][0-9]{0,2}|0000[1-9][0-9]?|00000[1-9]))$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Gross G"
+        },
+        "inedible_g": {
+          "anyOf": [
+            {
+              "not": {
+                "pattern": "\\s"
+              },
+              "pattern": "^(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,6})?$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Inedible G"
+        },
+        "weight_basis": {
+          "enum": [
+            "raw",
+            "cooked",
+            "as_sold"
+          ],
+          "title": "Weight Basis",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "edible_g",
+        "gross_g",
+        "inedible_g",
+        "weight_basis"
+      ],
+      "title": "Mass",
+      "type": "object"
+    },
+    "MutationReceipt": {
+      "additionalProperties": false,
+      "properties": {
+        "entity_kind": {
+          "enum": [
+            "food_entry",
+            "recipe",
+            "product",
+            "daily_weight",
+            "daily_steps",
+            "food_day",
+            "pending_action",
+            "check_in"
+          ],
+          "title": "Entity Kind",
+          "type": "string"
+        },
+        "entity_id": {
+          "format": "uuid",
+          "title": "Entity Id",
+          "type": "string"
+        },
+        "revision_id": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Revision Id"
+        },
+        "effective_date": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Effective Date"
+        }
+      },
+      "required": [
+        "entity_kind",
+        "entity_id",
+        "revision_id",
+        "effective_date"
+      ],
+      "title": "MutationReceipt",
+      "type": "object"
+    },
+    "NeedsClarification": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "operation_id": {
+          "format": "uuid",
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "outcome": {
+          "const": "needs_clarification",
+          "title": "Outcome",
+          "type": "string"
+        },
+        "pending_action_id": {
+          "format": "uuid",
+          "title": "Pending Action Id",
+          "type": "string"
+        },
+        "pending_revision": {
+          "exclusiveMinimum": 0,
+          "maximum": 9223372036854775807,
+          "title": "Pending Revision",
+          "type": "integer"
+        },
+        "effective_date": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Effective Date"
+        },
+        "questions": {
+          "items": {
+            "$ref": "#/$defs/Question"
+          },
+          "minItems": 1,
+          "title": "Questions",
+          "type": "array"
+        },
+        "previously_applied_operation_ids": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "title": "Previously Applied Operation Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "schema_version",
+        "operation_id",
+        "outcome",
+        "pending_action_id",
+        "pending_revision",
+        "effective_date",
+        "questions",
+        "previously_applied_operation_ids"
+      ],
+      "title": "NeedsClarification",
+      "type": "object"
+    },
+    "NoChange": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "operation_id": {
+          "format": "uuid",
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "outcome": {
+          "const": "no_change",
+          "title": "Outcome",
+          "type": "string"
+        },
+        "reason": {
+          "enum": [
+            "same_value",
+            "already_complete",
+            "already_cancelled",
+            "already_dismissed"
+          ],
+          "title": "Reason",
+          "type": "string"
+        },
+        "daily_summaries": {
+          "items": {
+            "$ref": "#/$defs/DailySummary"
+          },
+          "title": "Daily Summaries",
+          "type": "array"
+        }
+      },
+      "required": [
+        "schema_version",
+        "operation_id",
+        "outcome",
+        "reason",
+        "daily_summaries"
+      ],
+      "title": "NoChange",
+      "type": "object"
+    },
+    "NutrientValue": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,6})?$",
+          "title": "Value",
+          "type": "string"
+        },
+        "lower": {
+          "anyOf": [
+            {
+              "not": {
+                "pattern": "\\s"
+              },
+              "pattern": "^(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,6})?$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Lower"
+        },
+        "upper": {
+          "anyOf": [
+            {
+              "not": {
+                "pattern": "\\s"
+              },
+              "pattern": "^(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,6})?$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Upper"
+        }
+      },
+      "required": [
+        "value",
+        "lower",
+        "upper"
+      ],
+      "title": "NutrientValue",
+      "type": "object"
+    },
+    "NutritionSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "kcal": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NutrientValue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "protein_g": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NutrientValue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "fat_g": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NutrientValue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "carbs_g": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NutrientValue"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "kcal",
+        "protein_g",
+        "fat_g",
+        "carbs_g"
+      ],
+      "title": "NutritionSnapshot",
+      "type": "object"
+    },
+    "PartialTotal": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "partial",
+          "title": "Kind",
+          "type": "string"
+        },
+        "known_subtotal": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^(?:0|[1-9][0-9]{0,11})(?:\\.[0-9]{1,6})?$",
+          "title": "Known Subtotal",
+          "type": "string"
+        },
+        "known_components": {
+          "exclusiveMinimum": 0,
+          "maximum": 9223372036854775807,
+          "title": "Known Components",
+          "type": "integer"
+        },
+        "unknown_components": {
+          "exclusiveMinimum": 0,
+          "maximum": 9223372036854775807,
+          "title": "Unknown Components",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind",
+        "known_subtotal",
+        "known_components",
+        "unknown_components"
+      ],
+      "title": "PartialTotal",
+      "type": "object"
+    },
+    "Question": {
+      "additionalProperties": false,
+      "properties": {
+        "question_ref": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^q[1-9][0-9]*$",
+          "title": "Question Ref",
+          "type": "string"
+        },
+        "field": {
+          "maxLength": 256,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Field",
+          "type": "string"
+        },
+        "prompt": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Prompt",
+          "type": "string"
+        },
+        "answer_kind": {
+          "enum": [
+            "quantity",
+            "selection",
+            "date",
+            "nutrition",
+            "text",
+            "confirmation"
+          ],
+          "title": "Answer Kind",
+          "type": "string"
+        },
+        "choices": {
+          "items": {
+            "$ref": "#/$defs/CandidateReference"
+          },
+          "title": "Choices",
+          "type": "array"
+        }
+      },
+      "required": [
+        "question_ref",
+        "field",
+        "prompt",
+        "answer_kind",
+        "choices"
+      ],
+      "title": "Question",
+      "type": "object"
+    },
+    "ReadDay": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "operation_id": {
+          "format": "uuid",
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "outcome": {
+          "const": "day_summary",
+          "title": "Outcome",
+          "type": "string"
+        },
+        "summary": {
+          "$ref": "#/$defs/DailySummary"
+        }
+      },
+      "required": [
+        "schema_version",
+        "operation_id",
+        "outcome",
+        "summary"
+      ],
+      "title": "ReadDay",
+      "type": "object"
+    },
+    "ReadRecipe": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "operation_id": {
+          "format": "uuid",
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "outcome": {
+          "const": "recipe_profile",
+          "title": "Outcome",
+          "type": "string"
+        },
+        "recipe": {
+          "$ref": "#/$defs/RecipeProfile"
+        }
+      },
+      "required": [
+        "schema_version",
+        "operation_id",
+        "outcome",
+        "recipe"
+      ],
+      "title": "ReadRecipe",
+      "type": "object"
+    },
+    "RecipeIngredient": {
+      "additionalProperties": false,
+      "properties": {
+        "name_as_entered": {
+          "maxLength": 256,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Name As Entered",
+          "type": "string"
+        },
+        "original_quantity": {
+          "$ref": "#/$defs/SourceQuantity"
+        },
+        "weight_basis": {
+          "anyOf": [
+            {
+              "enum": [
+                "raw",
+                "cooked",
+                "as_sold"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Weight Basis"
+        },
+        "source": {
+          "discriminator": {
+            "mapping": {
+              "resolved": "#/$defs/ResolvedIngredientSource",
+              "unknown": "#/$defs/UnknownIngredientSource"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ResolvedIngredientSource"
+            },
+            {
+              "$ref": "#/$defs/UnknownIngredientSource"
+            }
+          ],
+          "title": "Source"
+        }
+      },
+      "required": [
+        "name_as_entered",
+        "original_quantity",
+        "weight_basis",
+        "source"
+      ],
+      "title": "RecipeIngredient",
+      "type": "object"
+    },
+    "RecipeProfile": {
+      "additionalProperties": false,
+      "properties": {
+        "recipe_id": {
+          "format": "uuid",
+          "title": "Recipe Id",
+          "type": "string"
+        },
+        "version_id": {
+          "format": "uuid",
+          "title": "Version Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 256,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Name",
+          "type": "string"
+        },
+        "ingredients": {
+          "items": {
+            "$ref": "#/$defs/RecipeIngredient"
+          },
+          "title": "Ingredients",
+          "type": "array"
+        },
+        "cooking_instructions": {
+          "anyOf": [
+            {
+              "maxLength": 16000,
+              "minLength": 1,
+              "pattern": "\\S",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Cooking Instructions"
+        },
+        "per_100_g": {
+          "$ref": "#/$defs/NutritionSnapshot"
+        }
+      },
+      "required": [
+        "recipe_id",
+        "version_id",
+        "name",
+        "ingredients",
+        "cooking_instructions",
+        "per_100_g"
+      ],
+      "title": "RecipeProfile",
+      "type": "object"
+    },
+    "Rejected": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "operation_id": {
+          "format": "uuid",
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "outcome": {
+          "const": "rejected",
+          "title": "Outcome",
+          "type": "string"
+        },
+        "code": {
+          "enum": [
+            "invalid_input",
+            "not_found",
+            "unauthorized",
+            "revision_conflict",
+            "unsupported"
+          ],
+          "title": "Code",
+          "type": "string"
+        },
+        "message": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema_version",
+        "operation_id",
+        "outcome",
+        "code",
+        "message"
+      ],
+      "title": "Rejected",
+      "type": "object"
+    },
+    "ResolvedIngredientSource": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "resolved",
+          "title": "Kind",
+          "type": "string"
+        },
+        "product_version_id": {
+          "format": "uuid",
+          "title": "Product Version Id",
+          "type": "string"
+        },
+        "quantity": {
+          "discriminator": {
+            "mapping": {
+              "mass": "#/$defs/Mass",
+              "volume": "#/$defs/Volume"
+            },
+            "propertyName": "kind"
+          },
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Mass"
+            },
+            {
+              "$ref": "#/$defs/Volume"
+            }
+          ],
+          "title": "Quantity"
+        }
+      },
+      "required": [
+        "kind",
+        "product_version_id",
+        "quantity"
+      ],
+      "title": "ResolvedIngredientSource",
+      "type": "object"
+    },
+    "SourceQuantity": {
+      "additionalProperties": false,
+      "properties": {
+        "amount": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^(?:[1-9][0-9]{0,11}(?:\\.[0-9]{1,6})?|0\\.(?:[1-9][0-9]{0,5}|0[1-9][0-9]{0,4}|00[1-9][0-9]{0,3}|000[1-9][0-9]{0,2}|0000[1-9][0-9]?|00000[1-9]))$",
+          "title": "Amount",
+          "type": "string"
+        },
+        "unit": {
+          "enum": [
+            "g",
+            "kg",
+            "ml",
+            "l",
+            "piece"
+          ],
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "amount",
+        "unit"
+      ],
+      "title": "SourceQuantity",
+      "type": "object"
+    },
+    "StepsSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "daily_steps",
+          "title": "Kind",
+          "type": "string"
+        },
+        "observation_id": {
+          "format": "uuid",
+          "title": "Observation Id",
+          "type": "string"
+        },
+        "revision_id": {
+          "format": "uuid",
+          "title": "Revision Id",
+          "type": "string"
+        },
+        "effective_date": {
+          "format": "date",
+          "title": "Effective Date",
+          "type": "string"
+        },
+        "steps": {
+          "maximum": 9223372036854775807,
+          "minimum": 0,
+          "title": "Steps",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind",
+        "observation_id",
+        "revision_id",
+        "effective_date",
+        "steps"
+      ],
+      "title": "StepsSnapshot",
+      "type": "object"
+    },
+    "UnknownIngredientSource": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "unknown",
+          "title": "Kind",
+          "type": "string"
+        },
+        "reason": {
+          "maxLength": 16000,
+          "minLength": 1,
+          "pattern": "\\S",
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "reason"
+      ],
+      "title": "UnknownIngredientSource",
+      "type": "object"
+    },
+    "UnknownTotal": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "unknown",
+          "title": "Kind",
+          "type": "string"
+        },
+        "unknown_components": {
+          "exclusiveMinimum": 0,
+          "maximum": 9223372036854775807,
+          "title": "Unknown Components",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind",
+        "unknown_components"
+      ],
+      "title": "UnknownTotal",
+      "type": "object"
+    },
+    "Volume": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "volume",
+          "title": "Kind",
+          "type": "string"
+        },
+        "ml": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^(?:[1-9][0-9]{0,11}(?:\\.[0-9]{1,6})?|0\\.(?:[1-9][0-9]{0,5}|0[1-9][0-9]{0,4}|00[1-9][0-9]{0,3}|000[1-9][0-9]{0,2}|0000[1-9][0-9]?|00000[1-9]))$",
+          "title": "Ml",
+          "type": "string"
+        },
+        "weight_basis": {
+          "enum": [
+            "raw",
+            "cooked",
+            "as_sold"
+          ],
+          "title": "Weight Basis",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "ml",
+        "weight_basis"
+      ],
+      "title": "Volume",
+      "type": "object"
+    },
+    "WeightSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "daily_weight",
+          "title": "Kind",
+          "type": "string"
+        },
+        "observation_id": {
+          "format": "uuid",
+          "title": "Observation Id",
+          "type": "string"
+        },
+        "revision_id": {
+          "format": "uuid",
+          "title": "Revision Id",
+          "type": "string"
+        },
+        "effective_date": {
+          "format": "date",
+          "title": "Effective Date",
+          "type": "string"
+        },
+        "value_kg": {
+          "not": {
+            "pattern": "\\s"
+          },
+          "pattern": "^(?:[1-9][0-9]{0,11}(?:\\.[0-9]{1,6})?|0\\.(?:[1-9][0-9]{0,5}|0[1-9][0-9]{0,4}|00[1-9][0-9]{0,3}|000[1-9][0-9]{0,2}|0000[1-9][0-9]?|00000[1-9]))$",
+          "title": "Value Kg",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "observation_id",
+        "revision_id",
+        "effective_date",
+        "value_kg"
+      ],
+      "title": "WeightSnapshot",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "result": {
+      "discriminator": {
+        "mapping": {
+          "applied": "#/$defs/Applied",
+          "day_summary": "#/$defs/ReadDay",
+          "food_preview": "#/$defs/FoodPreview",
+          "needs_clarification": "#/$defs/NeedsClarification",
+          "no_change": "#/$defs/NoChange",
+          "recipe_profile": "#/$defs/ReadRecipe",
+          "rejected": "#/$defs/Rejected"
+        },
+        "propertyName": "outcome"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Applied"
+        },
+        {
+          "$ref": "#/$defs/NoChange"
+        },
+        {
+          "$ref": "#/$defs/NeedsClarification"
+        },
+        {
+          "$ref": "#/$defs/Rejected"
+        },
+        {
+          "$ref": "#/$defs/ReadDay"
+        },
+        {
+          "$ref": "#/$defs/ReadRecipe"
+        },
+        {
+          "$ref": "#/$defs/FoodPreview"
+        }
+      ],
+      "title": "Result"
+    }
+  },
+  "required": [
+    "result"
+  ],
+  "title": "OutcomeEnvelope",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:nutrition-assistant:contracts:1.0:outcome"
+}

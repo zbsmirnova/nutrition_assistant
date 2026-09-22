@@ -1,0 +1,83 @@
+{
+  "scenario": "07_increment_daily_steps",
+  "source": {
+    "text": "Ещё 500 шагов сегодня.",
+    "local_date": "2026-09-22",
+    "time_zone": "Europe/Berlin"
+  },
+  "context": {
+    "candidates": {},
+    "pending_questions": {},
+    "has_reply": false
+  },
+  "parser": {
+    "schema_version": "1.0",
+    "actions": [
+      {
+        "action_id": "a1",
+        "kind": "increment_daily_steps",
+        "evidence": "Ещё 500 шагов сегодня.",
+        "depends_on": [],
+        "unresolved": [],
+        "date_hint": {
+          "text": "сегодня"
+        },
+        "steps": 500
+      }
+    ]
+  },
+  "commands": [
+    {
+      "schema_version": "1.0",
+      "user_id": "00000000-0000-4000-8000-000000000001",
+      "operation_id": "00000000-0000-4000-8000-000000001007",
+      "source": {
+        "origin_update_id": "00000000-0000-4000-8000-000000002007",
+        "evidence_update_ids": [
+          "00000000-0000-4000-8000-000000002007"
+        ],
+        "pending_action_id": null
+      },
+      "context_revision": 1,
+      "command": {
+        "kind": "increment_daily_steps",
+        "effective_date": "2026-09-22",
+        "time_zone": "Europe/Berlin",
+        "steps": 500,
+        "expected_revision_id": "00000000-0000-4000-8000-000000004011"
+      }
+    }
+  ],
+  "results": [
+    {
+      "result": {
+        "schema_version": "1.0",
+        "operation_id": "00000000-0000-4000-8000-000000001007",
+        "outcome": "applied",
+        "mutations": [
+          {
+            "entity_kind": "daily_steps",
+            "entity_id": "00000000-0000-4000-8000-000000003011",
+            "revision_id": "00000000-0000-4000-8000-000000005011",
+            "effective_date": "2026-09-22"
+          }
+        ],
+        "food_entries": [],
+        "observations": [
+          {
+            "kind": "daily_steps",
+            "observation_id": "00000000-0000-4000-8000-000000003011",
+            "revision_id": "00000000-0000-4000-8000-000000005011",
+            "effective_date": "2026-09-22",
+            "steps": 9500
+          }
+        ],
+        "daily_summaries": [],
+        "recipe": null
+      }
+    }
+  ],
+  "notes": [
+    "Starting total is 9000. A missing starting total would require clarification; retry never increments twice."
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "scenario": "06_same_daily_steps",
+  "source": {
+    "text": "Сегодня 9000 шагов.",
+    "local_date": "2026-09-22",
+    "time_zone": "Europe/Berlin"
+  },
+  "context": {
+    "candidates": {},
+    "pending_questions": {},
+    "has_reply": false
+  },
+  "parser": {
+    "schema_version": "1.0",
+    "actions": [
+      {
+        "action_id": "a1",
+        "kind": "set_daily_steps",
+        "evidence": "Сегодня 9000 шагов.",
+        "depends_on": [],
+        "unresolved": [],
+        "date_hint": {
+          "text": "Сегодня"
+        },
+        "steps": 9000
+      }
+    ]
+  },
+  "commands": [
+    {
+      "schema_version": "1.0",
+      "user_id": "00000000-0000-4000-8000-000000000001",
+      "operation_id": "00000000-0000-4000-8000-000000001006",
+      "source": {
+        "origin_update_id": "00000000-0000-4000-8000-000000002006",
+        "evidence_update_ids": [
+          "00000000-0000-4000-8000-000000002006"
+        ],
+        "pending_action_id": null
+      },
+      "context_revision": 1,
+      "command": {
+        "kind": "set_daily_steps",
+        "effective_date": "2026-09-22",
+        "time_zone": "Europe/Berlin",
+        "steps": 9000,
+        "expected_revision_id": "00000000-0000-4000-8000-000000004011"
+      }
+    }
+  ],
+  "results": [
+    {
+      "result": {
+        "schema_version": "1.0",
+        "operation_id": "00000000-0000-4000-8000-000000001006",
+        "outcome": "no_change",
+        "reason": "same_value",
+        "daily_summaries": []
+      }
+    }
+  ],
+  "notes": [
+    "Existing daily steps are already 9000. No new observation or revision is needed."
+  ]
+}

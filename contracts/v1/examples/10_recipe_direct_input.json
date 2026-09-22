@@ -1,0 +1,136 @@
+{
+  "scenario": "10_recipe_direct_input",
+  "source": {
+    "text": "Сохрани рецепт «мой суп»: на 100 г 70 ккал, Б 4, Ж 2, У 9.",
+    "local_date": "2026-09-22",
+    "time_zone": "Europe/Berlin"
+  },
+  "context": {
+    "candidates": {},
+    "pending_questions": {},
+    "has_reply": false
+  },
+  "parser": {
+    "schema_version": "1.0",
+    "actions": [
+      {
+        "action_id": "a1",
+        "kind": "define_recipe",
+        "evidence": "Сохрани рецепт «мой суп»: на 100 г 70 ккал, Б 4, Ж 2, У 9.",
+        "depends_on": [],
+        "unresolved": [],
+        "name": "мой суп",
+        "cooking_instructions": null,
+        "nutrition_input": {
+          "kind": "provided",
+          "per_100_g": {
+            "kcal": "70",
+            "protein_g": "4",
+            "fat_g": "2",
+            "carbs_g": "9"
+          },
+          "ingredients": []
+        }
+      }
+    ]
+  },
+  "commands": [
+    {
+      "schema_version": "1.0",
+      "user_id": "00000000-0000-4000-8000-000000000001",
+      "operation_id": "00000000-0000-4000-8000-000000001010",
+      "source": {
+        "origin_update_id": "00000000-0000-4000-8000-000000002010",
+        "evidence_update_ids": [
+          "00000000-0000-4000-8000-000000002010"
+        ],
+        "pending_action_id": null
+      },
+      "context_revision": 1,
+      "command": {
+        "kind": "define_recipe",
+        "recipe": {
+          "name": "мой суп",
+          "cooking_instructions": null,
+          "ingredients": [],
+          "nutrition": {
+            "kind": "provided",
+            "data_source_id": "00000000-0000-4000-8000-000000009001",
+            "per_100_g": {
+              "kcal": {
+                "value": "70",
+                "lower": null,
+                "upper": null
+              },
+              "protein_g": {
+                "value": "4",
+                "lower": null,
+                "upper": null
+              },
+              "fat_g": {
+                "value": "2",
+                "lower": null,
+                "upper": null
+              },
+              "carbs_g": {
+                "value": "9",
+                "lower": null,
+                "upper": null
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "results": [
+    {
+      "result": {
+        "schema_version": "1.0",
+        "operation_id": "00000000-0000-4000-8000-000000001010",
+        "outcome": "applied",
+        "mutations": [
+          {
+            "entity_kind": "recipe",
+            "entity_id": "00000000-0000-4000-8000-000000007002",
+            "revision_id": "00000000-0000-4000-8000-000000008002",
+            "effective_date": null
+          }
+        ],
+        "food_entries": [],
+        "observations": [],
+        "daily_summaries": [],
+        "recipe": {
+          "recipe_id": "00000000-0000-4000-8000-000000007002",
+          "version_id": "00000000-0000-4000-8000-000000008002",
+          "name": "мой суп",
+          "ingredients": [],
+          "cooking_instructions": null,
+          "per_100_g": {
+            "kcal": {
+              "value": "70",
+              "lower": null,
+              "upper": null
+            },
+            "protein_g": {
+              "value": "4",
+              "lower": null,
+              "upper": null
+            },
+            "fat_g": {
+              "value": "2",
+              "lower": null,
+              "upper": null
+            },
+            "carbs_g": {
+              "value": "9",
+              "lower": null,
+              "upper": null
+            }
+          }
+        }
+      }
+    }
+  ],
+  "notes": []
+}

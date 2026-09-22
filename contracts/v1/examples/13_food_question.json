@@ -1,0 +1,95 @@
+{
+  "scenario": "13_food_question",
+  "source": {
+    "text": "Сколько калорий в 200 г моего супа?",
+    "local_date": "2026-09-22",
+    "time_zone": "Europe/Berlin"
+  },
+  "context": {
+    "candidates": {
+      "c1": "recipe"
+    },
+    "pending_questions": {},
+    "has_reply": false
+  },
+  "parser": {
+    "schema_version": "1.0",
+    "actions": [
+      {
+        "action_id": "a1",
+        "kind": "food_question",
+        "evidence": "Сколько калорий в 200 г моего супа?",
+        "depends_on": [],
+        "unresolved": [],
+        "food": {
+          "kind": "candidate",
+          "candidate_ref": "c1",
+          "candidate_kind": "recipe"
+        },
+        "quantity": {
+          "amount": "200",
+          "unit": "g"
+        },
+        "question": "Сколько калорий в 200 г моего супа?"
+      }
+    ]
+  },
+  "commands": [
+    {
+      "schema_version": "1.0",
+      "user_id": "00000000-0000-4000-8000-000000000001",
+      "operation_id": "00000000-0000-4000-8000-000000001013",
+      "source": {
+        "origin_update_id": "00000000-0000-4000-8000-000000002013",
+        "evidence_update_ids": [
+          "00000000-0000-4000-8000-000000002013"
+        ],
+        "pending_action_id": null
+      },
+      "context_revision": 1,
+      "command": {
+        "kind": "preview_food",
+        "components": [
+          {
+            "kind": "recipe",
+            "description": "мой суп",
+            "recipe_version_id": "00000000-0000-4000-8000-000000000101",
+            "eaten_grams": "200"
+          }
+        ]
+      }
+    }
+  ],
+  "results": [
+    {
+      "result": {
+        "schema_version": "1.0",
+        "operation_id": "00000000-0000-4000-8000-000000001013",
+        "outcome": "food_preview",
+        "nutrition": {
+          "kcal": {
+            "value": "140",
+            "lower": null,
+            "upper": null
+          },
+          "protein_g": {
+            "value": "8",
+            "lower": null,
+            "upper": null
+          },
+          "fat_g": {
+            "value": "4",
+            "lower": null,
+            "upper": null
+          },
+          "carbs_g": {
+            "value": "18",
+            "lower": null,
+            "upper": null
+          }
+        }
+      }
+    }
+  ],
+  "notes": []
+}

@@ -1,0 +1,285 @@
+{
+  "scenario": "09_recipe_calculation_answer",
+  "source": {
+    "text": "Готовый суп весит 1400 г.",
+    "local_date": "2026-09-22",
+    "time_zone": "Europe/Berlin"
+  },
+  "context": {
+    "candidates": {
+      "c5": "pending"
+    },
+    "pending_questions": {
+      "c5": {
+        "q1": "quantity"
+      }
+    },
+    "has_reply": false
+  },
+  "parser": {
+    "schema_version": "1.0",
+    "actions": [
+      {
+        "action_id": "a1",
+        "kind": "answer_clarification",
+        "evidence": "Готовый суп весит 1400 г.",
+        "depends_on": [],
+        "unresolved": [],
+        "pending": {
+          "kind": "candidate",
+          "candidate_ref": "c5",
+          "candidate_kind": "pending"
+        },
+        "answers": [
+          {
+            "question_ref": "q1",
+            "value": {
+              "kind": "quantity",
+              "quantity": {
+                "amount": "1400",
+                "unit": null
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "commands": [
+    {
+      "schema_version": "1.0",
+      "user_id": "00000000-0000-4000-8000-000000000001",
+      "operation_id": "00000000-0000-4000-8000-000000001008",
+      "source": {
+        "origin_update_id": "00000000-0000-4000-8000-000000002008",
+        "evidence_update_ids": [
+          "00000000-0000-4000-8000-000000002008",
+          "00000000-0000-4000-8000-000000002009"
+        ],
+        "pending_action_id": "00000000-0000-4000-8000-000000006002"
+      },
+      "context_revision": 1,
+      "command": {
+        "kind": "define_recipe",
+        "recipe": {
+          "name": "мой суп",
+          "cooking_instructions": "Варить 30 минут.",
+          "ingredients": [
+            {
+              "name_as_entered": "картофель",
+              "original_quantity": {
+                "amount": "300",
+                "unit": "g"
+              },
+              "weight_basis": "raw",
+              "source": {
+                "kind": "resolved",
+                "product_version_id": "00000000-0000-4000-8000-000000000111",
+                "quantity": {
+                  "kind": "mass",
+                  "edible_g": "300",
+                  "gross_g": null,
+                  "inedible_g": null,
+                  "weight_basis": "raw"
+                }
+              }
+            },
+            {
+              "name_as_entered": "морковь",
+              "original_quantity": {
+                "amount": "120",
+                "unit": "g"
+              },
+              "weight_basis": "raw",
+              "source": {
+                "kind": "resolved",
+                "product_version_id": "00000000-0000-4000-8000-000000000112",
+                "quantity": {
+                  "kind": "mass",
+                  "edible_g": "120",
+                  "gross_g": null,
+                  "inedible_g": null,
+                  "weight_basis": "raw"
+                }
+              }
+            },
+            {
+              "name_as_entered": "курица",
+              "original_quantity": {
+                "amount": "250",
+                "unit": "g"
+              },
+              "weight_basis": "raw",
+              "source": {
+                "kind": "resolved",
+                "product_version_id": "00000000-0000-4000-8000-000000000113",
+                "quantity": {
+                  "kind": "mass",
+                  "edible_g": "250",
+                  "gross_g": null,
+                  "inedible_g": null,
+                  "weight_basis": "raw"
+                }
+              }
+            },
+            {
+              "name_as_entered": "вода",
+              "original_quantity": {
+                "amount": "800",
+                "unit": "g"
+              },
+              "weight_basis": "as_sold",
+              "source": {
+                "kind": "resolved",
+                "product_version_id": "00000000-0000-4000-8000-000000000114",
+                "quantity": {
+                  "kind": "mass",
+                  "edible_g": "800",
+                  "gross_g": null,
+                  "inedible_g": null,
+                  "weight_basis": "as_sold"
+                }
+              }
+            }
+          ],
+          "nutrition": {
+            "kind": "calculate",
+            "finished_yield_g": "1400",
+            "yield_basis": "measured",
+            "estimate_approval_update_id": null,
+            "calculation_policy_version": "1.0"
+          }
+        }
+      }
+    }
+  ],
+  "results": [
+    {
+      "result": {
+        "schema_version": "1.0",
+        "operation_id": "00000000-0000-4000-8000-000000001008",
+        "outcome": "applied",
+        "mutations": [
+          {
+            "entity_kind": "recipe",
+            "entity_id": "00000000-0000-4000-8000-000000007001",
+            "revision_id": "00000000-0000-4000-8000-000000008001",
+            "effective_date": null
+          }
+        ],
+        "food_entries": [],
+        "observations": [],
+        "daily_summaries": [],
+        "recipe": {
+          "recipe_id": "00000000-0000-4000-8000-000000007001",
+          "version_id": "00000000-0000-4000-8000-000000008001",
+          "name": "мой суп",
+          "ingredients": [
+            {
+              "name_as_entered": "картофель",
+              "original_quantity": {
+                "amount": "300",
+                "unit": "g"
+              },
+              "weight_basis": "raw",
+              "source": {
+                "kind": "resolved",
+                "product_version_id": "00000000-0000-4000-8000-000000000111",
+                "quantity": {
+                  "kind": "mass",
+                  "edible_g": "300",
+                  "gross_g": null,
+                  "inedible_g": null,
+                  "weight_basis": "raw"
+                }
+              }
+            },
+            {
+              "name_as_entered": "морковь",
+              "original_quantity": {
+                "amount": "120",
+                "unit": "g"
+              },
+              "weight_basis": "raw",
+              "source": {
+                "kind": "resolved",
+                "product_version_id": "00000000-0000-4000-8000-000000000112",
+                "quantity": {
+                  "kind": "mass",
+                  "edible_g": "120",
+                  "gross_g": null,
+                  "inedible_g": null,
+                  "weight_basis": "raw"
+                }
+              }
+            },
+            {
+              "name_as_entered": "курица",
+              "original_quantity": {
+                "amount": "250",
+                "unit": "g"
+              },
+              "weight_basis": "raw",
+              "source": {
+                "kind": "resolved",
+                "product_version_id": "00000000-0000-4000-8000-000000000113",
+                "quantity": {
+                  "kind": "mass",
+                  "edible_g": "250",
+                  "gross_g": null,
+                  "inedible_g": null,
+                  "weight_basis": "raw"
+                }
+              }
+            },
+            {
+              "name_as_entered": "вода",
+              "original_quantity": {
+                "amount": "800",
+                "unit": "g"
+              },
+              "weight_basis": "as_sold",
+              "source": {
+                "kind": "resolved",
+                "product_version_id": "00000000-0000-4000-8000-000000000114",
+                "quantity": {
+                  "kind": "mass",
+                  "edible_g": "800",
+                  "gross_g": null,
+                  "inedible_g": null,
+                  "weight_basis": "as_sold"
+                }
+              }
+            }
+          ],
+          "cooking_instructions": "Варить 30 минут.",
+          "per_100_g": {
+            "kcal": {
+              "value": "42",
+              "lower": null,
+              "upper": null
+            },
+            "protein_g": {
+              "value": "4.442857",
+              "lower": null,
+              "upper": null
+            },
+            "fat_g": {
+              "value": "0.574286",
+              "lower": null,
+              "upper": null
+            },
+            "carbs_g": {
+              "value": "4.414286",
+              "lower": null,
+              "upper": null
+            }
+          }
+        }
+      }
+    }
+  ],
+  "notes": [
+    "Continues 08_recipe_needs_finished_weight. Persist original ingredient amounts and instructions, per-100-g values, and calculation provenance. No food consumed; no default serving or preparation entity."
+  ]
+}
