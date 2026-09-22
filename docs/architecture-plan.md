@@ -2,7 +2,7 @@
 
 Date: 2026-09-22
 
-Status: current design overview. Product choices and technical proposals are distinguished in the decision register. Typed contracts and the local M1 persistence/application slice are implemented. Live interpretation, Telegram transport, later domains, and deployment remain unimplemented.
+Status: current design overview. Product choices and technical proposals are distinguished in the decision register. Typed contracts, M1 persistence, and W002 private Telegram transport are implemented. Transport checks use synthetic API responses. Live interpretation, later domains, and deployment remain unimplemented.
 
 Input: the personal nutrition tracker architecture brief dated 2026-09-21.
 
@@ -61,7 +61,7 @@ A message may yield independent operations and pending questions. Persist operat
 
 ## 4. System boundary and target processes
 
-One repository, one modular Python application, one PostgreSQL database. M1 provides local services and CLI commands. The diagram shows the target runtime, including future adapters and background processes; it is not a diagram of currently running services. No microservices or Redis are needed for the initial design.
+One repository, one modular Python application, one PostgreSQL database. M1 provides persistence services; W002 adds a private long-polling Telegram adapter and bot-scoped delivery, verified with synthetic API responses. The diagram shows the target runtime, including future interpretation and background processes; it is not a diagram of currently running services. No microservices or Redis are needed for the initial design.
 
 ```mermaid
 flowchart LR
@@ -100,9 +100,11 @@ Module responsibilities:
 | Reporting | Derived totals, coverage, weight trends, report snapshots and scheduled notifications. |
 | Infrastructure | Database access, durable jobs, provider adapters, telemetry and transport. |
 
-Python/PostgreSQL with SQLAlchemy Core, psycopg, and Alembic is the accepted M1 stack; D003 records its pinned versions. Transport dependencies and provider contracts remain later decisions. FastAPI is useful if selecting webhooks and HTTP operational endpoints; it is not a mandatory second business layer. Decide polling versus webhooks with hosting requirements rather than embedding transport assumptions in the domain.
+Python/PostgreSQL with SQLAlchemy Core, psycopg, and Alembic is the accepted and implemented M1 stack; D003 records its pinned versions. Transport/framework dependencies and provider contracts remain choices for later slices. FastAPI is useful if selecting webhooks and HTTP operational endpoints; it is not a mandatory second business layer. Decide polling versus webhooks with hosting requirements rather than embedding transport assumptions in the domain.
 
 ## 5. Persistence, concurrency, and revisions
+
+W002 uses D007's private account mappings and durable polling cursor. A per-bot PostgreSQL advisory lock prevents competing pollers from acknowledging an in-flight batch. Inbox writes commit before the next offset; no transaction spans the network wait. The separate sender claims only its bot's responses, records successful Telegram message IDs, defers explicit rate limits, and preserves ambiguous sends as uncertain. Transport does not parse incoming text into food. Live operation and provider/data policies remain separate from synthetic verification.
 
 Accepted continuous-persistence semantics are recorded in D001. The accepted M1 relational revision decision is [0003-relational-storage.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0003-relational-storage.md?type=file&root=%252F): keep current pointers and ordinary immutable revisions without requiring full event replay.
 

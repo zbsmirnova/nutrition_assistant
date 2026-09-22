@@ -1,0 +1,55 @@
+{
+  "base_commit": "0500e9918dad269d5e74ff11f13c05fedb55af83",
+  "closeout_validation": {
+    "git_diff_check": "passed",
+    "links_and_formatting": "passed",
+    "local_links_checked": 226,
+    "markdown_documents": 28,
+    "retained_w002_command": ".venv/bin/python -m unittest discover -s tests/qa -p test_w002_independent.py -v",
+    "retained_w002_duration_seconds": 1.218,
+    "retained_w002_result": "passed",
+    "retained_w002_tests": 6
+  },
+  "date": "2026-09-22",
+  "limits": "Lead closeout records packaging/docs only. Independent verdict and exact inherited/targeted execution evidence are in the retained QA report; M2 and live interpretation are incomplete.",
+  "post_review_documentation_changes": {
+    "README.md": {
+      "closeout_sha256": "67f704936f0a69c61f13295ea3a6987fb7796019def7c73e9b89e13a26007ee0",
+      "reviewed_sha256": "e8adcabee8ab72aa13b5d136e2ee44ce476f3d41f4a64f0e0c8fd03c0a18edcb"
+    },
+    "docs/qa/strategy.md": {
+      "closeout_sha256": "8a476d347e540bde81610e14fe90f69729754c823503cd263781bef93dc0d218",
+      "reviewed_sha256": "11847fea13e7e63f4603fa32a0f13df85df34b52df67c7594359fcd807b2b34e"
+    },
+    "docs/roadmap.md": {
+      "closeout_sha256": "64f12ebcd769648b47f08fd0e7c0d19e2c729de6776d5f75b11f08b567f22997",
+      "reviewed_sha256": "f8ed4da7e91ef04b5a0ca9a070bf4f4f806af1fed1f38f165d7a67d4cf46ba97"
+    },
+    "docs/work/002-telegram-transport.md": {
+      "closeout_sha256": "a9989a405447c584dbf06d41bc607ba77bf95b13b6fcd0f9cc5a37a3605631f1",
+      "reviewed_sha256": "dd6fb4f87b7fae4ee3dbb6bea4b47858aa4fac5020b3f64259f7c79642e6be2b"
+    }
+  },
+  "retained_artifact_sha256": {
+    "artifacts/qa/w002-independent-probes-original.py": "01436b8757c82321726a60aa3cc5b5154ae4f8b81307a0d41ea407ff00bb776e",
+    "artifacts/qa/w002-independent-report-original.md": "28d7352c7d50c41f332de5e4d8bd23be6a4c9a0dadd2effd5ac5a0954f0f794b",
+    "docs/qa/reports/002-developer-integration-output.txt": "137e3c319cc4557e4b0f672ffaf520aab99959e905ef168d1438297be4e427fc",
+    "docs/qa/reports/002-developer-retained-qa-output.txt": "5401153371ae77ae4e0357df0da03ac1d65e09056a863e0bb057d3713e3ed94a",
+    "docs/qa/reports/002-developer-unit-output.txt": "d9a9c2de60624191d89a3546635b9cf533f2658fd36845d63cc1e7e2b4739918",
+    "docs/qa/reports/002-qa-independent-db-output.txt": "eef256d69eb0b9709d302832377dcdad9492179738be6cf86332bcc364bb3015",
+    "docs/qa/reports/002-qa-integration-output.txt": "26bacf68a06586f7068a6b8bf8860713fae843e1803a0abc5cd13f6228016279",
+    "docs/qa/reports/002-qa-protocol-recheck-output.txt": "e999cd8226b12403610059db820de4ef6de1f0e2947eb899c31575a562ee5cd3",
+    "docs/qa/reports/002-qa-receipt-original-output.txt": "8890d108bc761749c823dcff24f20ddc3a7e7cc8ada58679da861c7a64678249",
+    "docs/qa/reports/002-qa-receipt-recheck-output.txt": "97f34072f09e4400f342141cfd3464d391fd5d175ca5748cfdc9a3a8d7a3b8a8",
+    "docs/qa/reports/002-qa-retained-output.txt": "9d261d922530836270346e1fe366d1b6bdbe55670379982c77fcff46d536dc72",
+    "docs/qa/reports/002-qa-retained-receipt-output.txt": "0b12bad4f992860a13ab845fe0561021416cb42d16a0117351e5ba9b9dd4e57f",
+    "docs/qa/reports/002-source-manifest-attempt1.json": "532553656ab5ab871a89558ebe32bb6a8a75aac5b8948c0782b98e302c3d3888",
+    "docs/qa/reports/002-source-manifest.json": "e6c64bf35d1ff26bae54118fb1fa0d2bb023e53f442ac568dc7ff88f4e31febb",
+    "docs/qa/reports/002-telegram-transport-developer.md": "52bd31e4d6d947d4ab0550162275d5bc4ac387097659d1f90b6684ee33927afe",
+    "docs/qa/reports/002-telegram-transport-qa.md": "5bada12bc365af129962e44f53b8ea1fed9e8b9b879dc86dc10cffff0de525c3",
+    "tests/qa/test_w002_independent.py": "fda84a3283837fce4f7e823c1130812b79ea5e1770caba6a9f045f4ec0d9bc80"
+  },
+  "reviewed_archive_sha256": "dfdca2d2eade182f1c7b3c0d82d475f847d301ef7781f1f46e0ae8c0ab626963",
+  "reviewed_runtime_migration_dependency_configuration_and_existing_test_hashes_unchanged": true,
+  "reviewed_source_id": "4ba4769b0cddba32ece9d2b001011ce51ef7614c694d5964c19c22b1c30f2ba2"
+}

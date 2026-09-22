@@ -1,4 +1,4 @@
-"""M1's queryable relational model. Alembic revisions freeze migration history."""
+"""Queryable relational model. Alembic revisions freeze migration history."""
 
 from uuid import uuid4
 
@@ -66,6 +66,9 @@ inbox_updates = owned("inbox_updates",
     sa.Column("source_time_zone", sa.Text, nullable=False),
     sa.Column("text", sa.Text, nullable=False),
     sa.Column("payload_hash", sa.String(64), nullable=False),
+    sa.Column("reply_to_message_id", sa.BigInteger),
+    sa.Column("forwarded", sa.Boolean, nullable=False, server_default=sa.false()),
+    sa.CheckConstraint("reply_to_message_id IS NULL OR reply_to_message_id > 0", name="positive_reply"),
     sa.ForeignKeyConstraint(["user_id", "telegram_account_id", "bot_id"],
                            ["telegram_accounts.user_id", "telegram_accounts.id", "telegram_accounts.bot_id"]),
     sa.UniqueConstraint("bot_id", "telegram_update_id", name="uq_inbox_transport_delivery"))
@@ -182,6 +185,9 @@ outbox = owned("outbox",
     sa.Column("claim_token", UUID(as_uuid=True)),
     sa.Column("lease_until", sa.DateTime(timezone=True)),
     sa.Column("sent_at", sa.DateTime(timezone=True)),
+    sa.Column("next_attempt_at", sa.DateTime(timezone=True)),
+    sa.Column("telegram_message_id", sa.BigInteger),
+    sa.CheckConstraint("telegram_message_id IS NULL OR (telegram_message_id > 0 AND status = 'sent')", name="sent_message"),
     sa.ForeignKeyConstraint(["user_id", "operation_id"], ["applied_operations.user_id", "applied_operations.id"]),
     sa.ForeignKeyConstraint(["user_id", "telegram_account_id"], ["telegram_accounts.user_id", "telegram_accounts.id"]),
     sa.UniqueConstraint("user_id", "operation_id", name="uq_outbox_operation"),
@@ -194,3 +200,8 @@ outbox = owned("outbox",
 sa.Index("ix_food_revisions_day", food_entry_revisions.c.user_id, food_entry_revisions.c.food_day_id)
 sa.Index("ix_prepared_origin", prepared_operations.c.user_id, prepared_operations.c.origin_update_id)
 sa.Index("ix_outbox_dispatch", outbox.c.status, outbox.c.created_at)
+
+telegram_poll_cursors = sa.Table("telegram_poll_cursors", metadata,
+    sa.Column("bot_id", sa.BigInteger, primary_key=True),
+    sa.Column("next_update_id", sa.BigInteger, nullable=False, server_default="0"),
+    sa.CheckConstraint("bot_id > 0 AND next_update_id >= 0", name="valid_cursor"))

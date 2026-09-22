@@ -34,7 +34,7 @@ Python models are the source for portable JSON Schemas. Regenerate schemas from 
 4. **Developer checks and handoff.** Run checks appropriate to the slice. Provide reproducible setup, revision, results, and known limitations in the same brief.
 5. **Independent QA.** Derive checks from requirements, evaluate the stated revision, and record results and defects. Do not label developer self-checks as independent review.
 6. **Fix and recheck.** Preserve previous evidence and associate new checks with the changed revision.
-7. **Close the slice.** Verify its definition of done, link actual QA evidence, update task status, and update milestone status only when the milestone's criteria are met.
+7. **Close and commit the slice.** Verify its definition of done, link actual QA evidence, update task/milestone status appropriately, and create a focused local Git commit containing the slice's code, documentation, and evidence. The user has authorized this as the ongoing workflow; do not ask again for each completed slice. Preserve unrelated changes and do not push or deploy without the corresponding authorization.
 
 Documentation-only work needs document/link/status consistency checks; it does not require a simulated application QA report.
 
@@ -57,7 +57,7 @@ The constitution describes enduring accepted rules; detailed specifications refi
 | Developer | Implementation, relevant checks, affected technical documentation, reproducible handoff. |
 | QA | Independent expected outcomes, revision-specific verification, defects, coverage limits, rechecks. |
 
-These are responsibilities, not a requirement to run several agents for every task. Parallel editing requires applicable authorization, isolated branches/worktrees, and explicit file ownership. QA can work sequentially from a concrete handoff. Do not create commits or expose unrelated user changes solely to supply a revision number; explicitly captured working-tree snapshots are acceptable when fully reproducible.
+These are responsibilities, not a requirement to run several agents for every task. Parallel editing requires applicable authorization, isolated branches/worktrees, and explicit file ownership. QA can work sequentially from a concrete handoff. A reproducible working-tree snapshot can identify work awaiting review; commit the completed, tested slice afterward under the user's standing instruction. Do not expose unrelated changes or commit incomplete work merely to supply a revision number.
 
 ## Maintenance checkpoints
 

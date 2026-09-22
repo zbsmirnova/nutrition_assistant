@@ -4,11 +4,11 @@ A personal Telegram assistant for conversational food logging, recipes, daily bo
 
 ## Current stage
 
-The first local persistence slice is implemented: PostgreSQL migrations, owned seeded product data, deterministic food/day totals, stable prepared commands, atomic changes/results/reply intent, and a fake delivery adapter. Typed contracts and 20 authored parser scenarios remain the foundation for later conversation work.
+The local persistence service saves resolved food commands with deterministic totals and safe retries. The next slice adds private Telegram ingestion, durable polling, account linking, Russian response rendering, and bot-scoped delivery. Its developer checks use synthetic Telegram responses and real local PostgreSQL; no real bot messages have been sent.
 
-Developer verification on 2026-09-22: 41 contract/arithmetic tests and 26 PostgreSQL integration tests passed, including real process crashes and concurrent requests. Independent QA passed this local persistence scope (with lead-assisted database execution); the current work brief is [001-persist-food-entry.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/001-persist-food-entry.md?type=file&root=%252F).
+M1 completed on 2026-09-22. Verification passed: 41 contract/arithmetic tests, 26 PostgreSQL integration tests, and 10 additional independently authored QA checks. Independent QA passed the local persistence scope; database execution was assisted by the lead. The completed brief is [001-persist-food-entry.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/001-persist-food-entry.md?type=file&root=%252F), with evidence in [001-persist-food-entry-qa.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/001-persist-food-entry-qa.md?type=file&root=%252F).
 
-There is no live Telegram ingress, LLM parser/resolver, correction workflow, recipe engine, daily-observation service, scheduler, or deployed nutrition application yet. The local CLI accepts resolved commands as a trusted development operator; it is not a public authentication interface.
+Current work: [002-telegram-transport.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/002-telegram-transport.md?type=file&root=%252F). Independent QA passed the transport scope after a receipt-validation fix. Evidence is in [002-telegram-transport-qa.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/002-telegram-transport-qa.md?type=file&root=%252F). There is no LLM parser/resolver, conversational correction workflow, recipe engine, daily-observation service, scheduler, or deployed nutrition application yet. Received text is durable inbox input; it is not automatically interpreted or saved as food. The local CLI is a trusted operator interface, with explicitly provisioned Telegram accounts.
 
 ## Run the synthetic local demo
 
@@ -39,6 +39,26 @@ To stop local PostgreSQL while preserving its volume:
 docker compose -f compose.dev.yml stop db
 ~~~
 
+## Telegram transport development
+
+Apply migration head 0003 before using transport commands. No new runtime dependencies are needed. The API adapter uses normal HTTPS certificate verification; if your environment uses a custom CA, configure its trusted CA through Python's standard SSL_CERT_FILE setting.
+
+The local transport harness is verified with synthetic data. Real-message data handling and the model provider remain open decisions. These commands are documented for explicit operator use; they are not run by the test suite. Configure NUTRITION_TELEGRAM_TOKEN and NUTRITION_TELEGRAM_BOT_ID in your local environment; do not place a token in a command argument, chat message, or repository file.
+
+Create an owner with user-create, or use an existing internal user ID. Link that owner to numeric Telegram bot/user/private-chat IDs obtained through your own account. Replace the uppercase placeholders below:
+
+~~~sh
+.venv/bin/python -m nutrition_app migrate
+.venv/bin/python -m nutrition_app user-create --time-zone Europe/Berlin
+.venv/bin/python -m nutrition_app telegram-link --user INTERNAL_USER_UUID --bot-id BOT_ID --telegram-user-id TELEGRAM_USER_ID --chat-id PRIVATE_CHAT_ID
+.venv/bin/python -m nutrition_app telegram-poll --timeout 25
+.venv/bin/python -m nutrition_app telegram-send
+~~~
+
+Each poll command receives one batch into the durable inbox; it does not run a parser or create food entries. Each send command attempts one committed food response for the configured bot. Repeated invocations resume from persisted state. A future conversation worker will interpret inbox messages and produce validated commands. Existing fake dispatch remains available for synthetic demos.
+
+The adapter refuses an active webhook without changing it. Unknown accounts, groups, bot senders, edited messages, and non-text updates create no food. Reply references and forwarding indicators are preserved for later interpretation. Failed and uncertain sends remain in the outbox for explicit investigation; uncertain sends are not automatically repeated. A 429 response defers retry according to retry_after, with at most three proven-unsent attempts.
+
 ## Verification
 
 ~~~sh
@@ -49,7 +69,7 @@ docker compose -f compose.dev.yml stop db
 git diff --check
 ~~~
 
-The first command runs the 32 contract tests plus 9 arithmetic tests. The QA command runs 10 retained independent checks. The explicit integration command runs 26 additional tests against local PostgreSQL; each creates and removes its own randomly named schema. It does not reset development data. An unavailable database fails the integration run; there is no silent skip or SQLite substitute.
+The first command runs 52 checks: 32 contract, 9 arithmetic, and 11 Telegram protocol/rendering tests. The integration command runs 38 tests against local PostgreSQL, including 12 transport checks; the separate QA command runs 16 retained checks from M1 and W002. The 106 checks have passing evidence, with revision-specific rechecks documented in the QA reports. Each database test creates and removes its own randomly named schema. These commands do not reset development data or call Telegram. An unavailable database fails the run; there is no silent skip or SQLite substitute.
 
 Runtime dependencies are pinned in [requirements-runtime.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/requirements-runtime.txt?type=file&root=%252F), including [requirements-contracts.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/requirements-contracts.txt?type=file&root=%252F). For contract-only work, install the latter and run unittest discovery with the pattern test_contracts.py. No provider credentials are needed.
 

@@ -1,0 +1,20 @@
+Executor: independent QA agent; W002 attempt 2.
+Command: .venv/bin/python -m unittest discover -s tests -p test_telegram.py -v
+Exit code: 0
+
+test_long_multiline_description_does_not_hide_totals_or_exceed_limit (test_telegram.RussianReplyTests.test_long_multiline_description_does_not_hide_totals_or_exceed_limit) ... ok
+test_unknown_partial_and_zero_are_not_conflated (test_telegram.RussianReplyTests.test_unknown_partial_and_zero_are_not_conflated) ... ok
+test_unsupported_outcome_is_not_presented_as_saved (test_telegram.RussianReplyTests.test_unsupported_outcome_is_not_presented_as_saved) ... ok
+test_bot_identity_and_webhook_are_verified_without_mutation (test_telegram.TelegramProtocolTests.test_bot_identity_and_webhook_are_verified_without_mutation) ... ok
+test_cross_bot_send_is_rejected_before_api_call (test_telegram.TelegramProtocolTests.test_cross_bot_send_is_rejected_before_api_call) ... ok
+test_invalid_or_wrong_chat_receipt_does_not_claim_success (test_telegram.TelegramProtocolTests.test_invalid_or_wrong_chat_receipt_does_not_claim_success) ... ok
+test_rate_limit_and_permanent_failure_are_distinct (test_telegram.TelegramProtocolTests.test_rate_limit_and_permanent_failure_are_distinct) ... ok
+test_rejection_does_not_expose_server_description (test_telegram.TelegramProtocolTests.test_rejection_does_not_expose_server_description) ... ok
+test_sender_uses_plain_text_and_disables_link_previews (test_telegram.TelegramProtocolTests.test_sender_uses_plain_text_and_disables_link_previews) ... ok
+test_server_error_and_invalid_success_are_uncertain (test_telegram.TelegramProtocolTests.test_server_error_and_invalid_success_are_uncertain) ... ok
+test_token_is_not_in_repr_or_errors (test_telegram.TelegramProtocolTests.test_token_is_not_in_repr_or_errors) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.006s
+
+OK

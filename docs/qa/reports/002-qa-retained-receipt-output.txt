@@ -1,0 +1,10 @@
+Executor: independent QA agent; W002 attempt2 retained probe copy.
+Command: .venv/bin/python -m unittest qa_w002_retained.ReceiptProtocolQA -v
+Exit code: 0
+
+test_qa01_receipt_chat_identity_requires_integer_not_coercive_equality (qa_w002_retained.ReceiptProtocolQA.test_qa01_receipt_chat_identity_requires_integer_not_coercive_equality) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.001s
+
+OK

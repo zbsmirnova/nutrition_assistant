@@ -1,2 +1,2 @@
-# Raw test logs retain their exact bytes, including a final empty output line.
-docs/qa/reports/*-output.txt whitespace=-blank-at-eof
+# Raw test logs retain their exact bytes, including trailing output whitespace.
+docs/qa/reports/*-output.txt whitespace=-blank-at-eof,-blank-at-eol

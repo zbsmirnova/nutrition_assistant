@@ -1,0 +1,15 @@
+Executor: lead assistant at independent QA request; attempt1 frozen snapshot.
+Command: .venv/bin/python -m unittest qa_w002_independent.TransportDatabaseQA -v
+Exit code: 0
+
+test_qa02_checkpoint_database_failure_keeps_source_and_releases_lock (qa_w002_independent.TransportDatabaseQA.test_qa02_checkpoint_database_failure_keeps_source_and_releases_lock) ... ok
+test_qa03_partial_batch_failure_replays_committed_prefix_once (qa_w002_independent.TransportDatabaseQA.test_qa03_partial_batch_failure_replays_committed_prefix_once) ... ok
+test_qa04_reply_and_forward_metadata_cannot_change_on_replay (qa_w002_independent.TransportDatabaseQA.test_qa04_reply_and_forward_metadata_cannot_change_on_replay) ... ok
+test_qa05_sender_runs_after_commit_without_domain_or_claim_row_locks (qa_w002_independent.TransportDatabaseQA.test_qa05_sender_runs_after_commit_without_domain_or_claim_row_locks) ... ok
+test_qa06_concurrent_operator_linking_cannot_reassign_identity (qa_w002_independent.TransportDatabaseQA.test_qa06_concurrent_operator_linking_cannot_reassign_identity) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 1.272s
+
+OK
+

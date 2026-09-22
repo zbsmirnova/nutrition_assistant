@@ -10,7 +10,7 @@ Explicit user decisions govern the project. Reflect them in the documents. When 
 
 ## Current implementation boundary
 
-The executable implementation now includes the typed contracts and a local M1 persistence service: migrations, deterministic product-based food calculations, frozen commands, owned revisions, atomic results/outbox, and fake delivery. Live parsing, Telegram ingress/delivery, conversational corrections, recipes, observations, and scheduling remain future slices. Keep contract, arithmetic, database, and live-model evidence distinct.
+The executable implementation includes M1 persistence and W002 private Telegram transport: account mapping, durable polling, reply/source metadata, bot-scoped delivery, and Russian food acknowledgments. Transport verification uses synthetic API responses and real PostgreSQL; no live bot integration is claimed. Parsing/resolution, conversational corrections, recipes, observations, and scheduling remain future slices. Keep protocol, database, live-transport, and live-model evidence distinct.
 
 The existing deployment files describe Open WebUI, not the new nutrition backend. The first implementation brief covers local synthetic-data development. Deployment and real-data provider use have unresolved requirements recorded in the decision register.
 
@@ -38,7 +38,7 @@ Do not duplicate the backlog, decision narrative, or acceptance criteria across 
 - Use synthetic examples during development. Do not place credentials or real personal messages in fixtures, commits, ordinary logs, or QA reports.
 - Reuse the existing contract types. Python models are the schema source; do not edit generated JSON Schemas by hand.
 - Keep migrations, calculations, and transactional failure behavior reviewable. Do not claim an outbox ensures exactly-once visible Telegram delivery.
-- Inspect repository state first and preserve unrelated user changes. Do not stage, commit, deploy, or rewrite Git history merely to manufacture a QA handoff.
+- Inspect repository state first and preserve unrelated user changes. The user has authorized a focused local commit after each completed, tested slice, including its maintained documentation and QA evidence. Continue this practice without asking again. Do not include unrelated or unfinished work, push, deploy, or rewrite existing commits without the corresponding authorization. Review snapshots may still identify work before its completion commit.
 - Roles are architect, developer, and QA; they need not run concurrently. Do not spawn additional agents without applicable authorization. If parallel work is authorized, use isolated branches/worktrees and explicit file ownership.
 
 ## Verified checks
@@ -48,6 +48,7 @@ From the repository root, install the pinned runtime dependencies and start loca
 ~~~sh
 .venv/bin/python -m unittest discover -s tests -v
 .venv/bin/python -m unittest discover -s tests/integration -v
+.venv/bin/python -m unittest discover -s tests/qa -v
 git diff --check
 ~~~
 
@@ -59,7 +60,7 @@ When a contract model changes, regenerate schemas before those checks:
 
 The existing suite checks generated-schema drift. For documentation-only changes, inspect links, document ownership/status consistency, and formatting; do not add implementation-mirroring tests or claim independent QA occurred.
 
-The explicit integration suite requires local PostgreSQL and creates/removes only its own random schemas. It fails when the database is unavailable. Default test discovery runs contract/arithmetic checks only. Live-model and real Telegram checks do not exist yet. A changed contract requires regeneration; a changed migration/transaction requires the PostgreSQL suite.
+The explicit integration and retained QA suites require local PostgreSQL and create/remove only their own random schemas. They fail when the database is unavailable. Default test discovery runs contract/arithmetic checks only. Live-model and real Telegram checks do not exist yet. A changed contract requires regeneration; a changed migration/transaction requires both PostgreSQL suites.
 
 ## Completion and handoff
 

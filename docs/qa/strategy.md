@@ -9,22 +9,27 @@ QA reads accepted requirements in [CONSTITUTION.md](air-file://fai6b8iclscp0tss0
 
 The developer provides runnable setup, synthetic seeds, the revision under review, checks already run, and known limitations. The QA report distinguishes its own checks from reported developer results. If no separate QA review ran, describe the evidence as developer verification.
 
-Current task: [001-persist-food-entry.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/001-persist-food-entry.md?type=file&root=%252F). Use [TEMPLATE.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/TEMPLATE.md?type=file&root=%252F) for real executions; template placeholders are not results.
+Current task: [002-telegram-transport.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/002-telegram-transport.md?type=file&root=%252F). Use [TEMPLATE.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/TEMPLATE.md?type=file&root=%252F) for real executions; template placeholders are not results.
 
 ## Current verification boundary
 
-Developer verification now includes 32 contract tests, 9 arithmetic tests, and 26 real PostgreSQL integration tests, run on Python 3.14.0 / PostgreSQL 17.11. These are observed developer results, not an independent QA verdict. Authored parser fixtures remain expected outputs, not measured live-model behavior.
+Current developer suites contain 32 contract tests, 9 arithmetic tests, 11 protocol/rendering checks, 38 real PostgreSQL integration tests, and 16 retained independent checks from M1/W002. Independent W002 review passed after a receipt-validation fix and targeted rechecks. Database executions were root-assisted and assessed by QA. Runtime remains Python 3.14.0 / PostgreSQL 17.11. Independent M1 QA passed after source/requirement review, rerunning those checks, and adding 10 separate probes. The QA agent ran contract/arithmetic checks; database execution was root-assisted and its raw outputs assessed by QA. The separate report preserves that attribution. Authored parser fixtures remain expected outputs, not measured live-model behavior.
 
 From the repository root, after following [README.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/README.md?type=file&root=%252F):
 
 ~~~sh
 .venv/bin/python -m unittest discover -s tests -v
 .venv/bin/python -m unittest discover -s tests/integration -v
+.venv/bin/python -m unittest discover -s tests/qa -v
 ~~~
 
-The first command runs contracts/arithmetic; the second explicitly exercises local PostgreSQL. Each integration test owns a random schema with no fallback to public. It verifies real constraints and process loss, then removes only its schema. A missing database fails the run. No live-model or Telegram evaluation command exists yet.
+The first command runs contracts/arithmetic; the second and third explicitly exercise local PostgreSQL. Each database test owns a random schema with no fallback to public, then removes only that schema. The independent suite adds database insertion/commit failures, populated migration rollback, conflicting concurrent payloads, and frozen date/version checks. A missing database fails the run. No live-model or Telegram evaluation command exists yet.
 
 Source entry points: [test_contracts.py](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/tests/test_contracts.py?type=file&root=%252F), [test_nutrition.py](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/tests/test_nutrition.py?type=file&root=%252F), and [test_food_service.py](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/tests/integration/test_food_service.py?type=file&root=%252F). The recorded M1 developer handoff/evidence is [001-persist-food-entry-developer.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/001-persist-food-entry-developer.md?type=file&root=%252F).
+
+Independent evidence is in [001-persist-food-entry-qa.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/001-persist-food-entry-qa.md?type=file&root=%252F), with retained probes in [test_w001_independent.py](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/tests/qa/test_w001_independent.py?type=file&root=%252F). Its closeout addendum distinguishes the reviewed source from later documentation and evidence packaging.
+
+W002 evidence is in [002-telegram-transport-qa.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/002-telegram-transport-qa.md?type=file&root=%252F), including its original receipt failure and passing recheck. Additional retained checks are in [test_w002_independent.py](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/tests/qa/test_w002_independent.py?type=file&root=%252F). The original probe and the separately hashed retention copy are both preserved.
 
 ## Coverage by layer
 
@@ -32,10 +37,10 @@ Source entry points: [test_contracts.py](air-file://fai6b8iclscp0tss0s3r/Users/Z
 | --- | --- | --- |
 | Contract | Closed shapes, malformed inputs, candidate scope, source/revision guards, generated-schema drift. | Executable suite exists; not a substitute for stateful checks. |
 | Nutrition/domain | Independently calculated scaling and aggregation; units/basis; bounds; unknowns; rounding and overflow boundaries; recipe yield. | Nine product-food arithmetic tests plus database overflow/unknown-value checks. Recipe arithmetic remains authored-fixture coverage only. |
-| Persistence/application | Real PostgreSQL constraints and transactions; current pointers; idempotency; concurrent work; fault injection; process restart; ownership. | 26 real PostgreSQL tests cover the M1 subset, including child-process crashes and concurrency. Independent M1 QA passed with lead-assisted database execution; the work brief links its report. |
+| Persistence/application | Real PostgreSQL constraints and transactions; current pointers; idempotency; concurrent work; fault injection; process restart; ownership. | 38 integration checks cover M1 plus W002 transport; 16 retained QA checks cover both slices. Independent W002 review passed after the recorded receipt fix/recheck. |
 | Conversation | Intent distinctions, pending state, mixed messages, target ambiguity, corrections/undo, source dates, dependent actions. | Authored expected examples exist; executable flows planned for M2. |
 | LLM evaluation | Fixed annotated cases, held-out cases, reproducible provider/model/prompt/schema versions, measured intent/argument/clarification errors. | Not run; provider and thresholds unresolved. |
-| Transport/scheduler | Authenticated ingress; outbox recovery; uncertain sends; stale callbacks; dinner/21:00 races; DST and date-bound responses. | M1 fake-outbox claiming/recovery/uncertain-send checks exist. Real ingress/delivery and scheduling remain unimplemented. |
+| Transport/scheduler | Authenticated ingress; outbox recovery; uncertain sends; stale callbacks; dinner/21:00 races; DST and date-bound responses. | Private Telegram ingress and sending adapters exist, with synthetic protocol tests and real-database recovery checks. No live bot or scheduler checks have run. |
 | Personal release | End-to-end scenarios, startup/deployment, monitoring redaction, backup/restore, agreed export/deletion and retention behavior. | Not run; M6. |
 
 The original 27 behavioral scenarios are preserved in [scenarios-v1.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/scenarios-v1.md?type=file&root=%252F), with explicit coverage limits. They are an input to test design, not a completed QA report.

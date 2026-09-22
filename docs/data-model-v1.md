@@ -257,7 +257,13 @@ Implemented tables: users, telegram_accounts, inbox_updates, prepared_operations
 - User context and food-day revision counters are present. M1 uses short user-row locks rather than a user-processing-lease table. It revalidates pinned explicit additive commands under that lock; dependent conversational operations are future work.
 - Composite current-pointer foreign keys include both owner and parent identity and are deferred until commit. Ordinary snapshot updates are rejected by database triggers. Snapshot deletion/retention workflows remain a separate requirement.
 - Food-day completeness fields exist so additions can preserve them; M1 has no user-facing completion command or notification/check-in tables. Pending counts are zero because pending workflows are not implemented.
-- The outbox holds one committed result per operation, with pending/sending/sent/uncertain/failed states, bounded proven-unsent retries, and token/lease-guarded acknowledgments. It currently dispatches only through a fake adapter.
+- The outbox holds one committed result per operation, with pending/sending/sent/uncertain/failed states, bounded proven-unsent retries, and token/lease-guarded acknowledgments. M1 initially used a fake adapter; W002's transport extensions are recorded below.
 - Numeric behavior follows [0006-numeric-policy.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0006-numeric-policy.md?type=file&root=%252F). Day queries aggregate persisted current component snapshots; partial and unknown nutrients remain distinguishable.
 
 The integration checks in [test_food_service.py](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/tests/integration/test_food_service.py?type=file&root=%252F) exercise constraints, migrations, failure/restart boundaries, concurrency, and ownership. No RLS policy or public transport authentication is claimed by this slice.
+
+## 14. W002 transport additions
+
+Migration [0003_telegram_transport.py](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/migrations/versions/0003_telegram_transport.py?type=file&root=%252F) adds a per-bot polling cursor, nullable reply-to message identity and a forwarding flag on inbox sources, and a next-attempt timestamp plus Telegram delivery message ID on the outbox. Existing M1 delivery hashes remain compatible when the new source metadata is absent.
+
+The cursor is transport state, not user data or parser completion. It advances only after supported source messages commit; unsupported updates may be acknowledged without storing their personal payloads. Source ownership still comes from the mapped bot/user/private-chat identity. Inbox parsing and clarification state are not implemented by this migration. Account provisioning cannot reassign a previously linked identity.

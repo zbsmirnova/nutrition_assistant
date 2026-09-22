@@ -1,0 +1,30 @@
+Executor: independent QA agent; W002 attempt1 failure captured for preserved regression evidence.
+Command: .venv/bin/python -m unittest qa_w002_independent.ReceiptProtocolQA -v
+Exit code: 1
+
+test_qa01_receipt_chat_identity_requires_integer_not_coercive_equality (qa_w002_independent.ReceiptProtocolQA.test_qa01_receipt_chat_identity_requires_integer_not_coercive_equality) ... 
+  test_qa01_receipt_chat_identity_requires_integer_not_coercive_equality (qa_w002_independent.ReceiptProtocolQA.test_qa01_receipt_chat_identity_requires_integer_not_coercive_equality) (claimed='True') ... FAIL
+  test_qa01_receipt_chat_identity_requires_integer_not_coercive_equality (qa_w002_independent.ReceiptProtocolQA.test_qa01_receipt_chat_identity_requires_integer_not_coercive_equality) (claimed='1.0') ... FAIL
+
+======================================================================
+FAIL: test_qa01_receipt_chat_identity_requires_integer_not_coercive_equality (qa_w002_independent.ReceiptProtocolQA.test_qa01_receipt_chat_identity_requires_integer_not_coercive_equality) (claimed='True')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/nutrition-w002-qa-_cl3ar4f/qa_w002_independent.py", line 48, in test_qa01_receipt_chat_identity_requires_integer_not_coercive_equality
+    with self.assertRaises(TelegramUnavailable):
+         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+AssertionError: TelegramUnavailable not raised
+
+======================================================================
+FAIL: test_qa01_receipt_chat_identity_requires_integer_not_coercive_equality (qa_w002_independent.ReceiptProtocolQA.test_qa01_receipt_chat_identity_requires_integer_not_coercive_equality) (claimed='1.0')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/nutrition-w002-qa-_cl3ar4f/qa_w002_independent.py", line 48, in test_qa01_receipt_chat_identity_requires_integer_not_coercive_equality
+    with self.assertRaises(TelegramUnavailable):
+         ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+AssertionError: TelegramUnavailable not raised
+
+----------------------------------------------------------------------
+Ran 1 test in 0.002s
+
+FAILED (failures=2)

@@ -32,6 +32,8 @@ class IncomingMessage(Contract):
     telegram_user_id: PositiveCount
     sent_at: AwareDatetime
     text: Text
+    reply_to_message_id: PositiveCount | None = None
+    forwarded: bool = False
 
 
 def operation_id_for(update_id: UUID) -> UUID:
@@ -64,6 +66,11 @@ class FoodService:
         message = IncomingMessage.model_validate_json(message.model_dump_json())
         payload = message.model_dump(mode="json")
         payload["sent_at"] = message.sent_at.astimezone(timezone.utc).isoformat()
+        # Preserve the hashes of M1 messages that predate transport metadata.
+        if message.reply_to_message_id is None:
+            payload.pop("reply_to_message_id")
+        if not message.forwarded:
+            payload.pop("forwarded")
         request_hash = digest(payload)
         with self.engine.begin() as connection:
             user = self._user(connection, actor)
@@ -91,6 +98,7 @@ class FoodService:
                 telegram_update_id=message.telegram_update_id, telegram_message_id=message.telegram_message_id,
                 source_sent_at=message.sent_at, source_time_zone=user["time_zone"], text=message.text,
                 payload_hash=request_hash,
+                reply_to_message_id=message.reply_to_message_id, forwarded=message.forwarded,
             ).on_conflict_do_nothing(index_elements=["bot_id", "telegram_update_id"]).returning(db.inbox_updates.c.id)).scalar_one_or_none()
             if inserted is None:
                 raise Conflict("Delivery identity is unavailable")
