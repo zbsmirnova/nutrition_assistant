@@ -1,6 +1,6 @@
 # V1 conversation contract
 
-Status: step 2 interaction decisions are reflected in strict Pydantic contracts, generated JSON Schema, and 20 authored examples. Accepted rules below come from the product conversation; remaining implementation defaults are explicitly proposed. Examples use Russian because that is the brief's chat language. M1 now implements deterministic product-food calculations and persistence for already resolved commands. The conversational resolver, live model, and Telegram service remain unimplemented.
+Status: step 2 interaction decisions are reflected in strict Pydantic contracts, generated JSON Schema, and 20 authored examples. Accepted rules below come from the product conversation; remaining implementation defaults are explicitly proposed. Examples use Russian because that is the brief's chat language. M1 implements deterministic product-food calculations and persistence for already resolved commands. W002 implements private Telegram ingress and delivery, verified with synthetic API responses. The conversational resolver and live model remain unimplemented; W003 defines the next worker slice.
 
 ## 1. Requirements and status
 

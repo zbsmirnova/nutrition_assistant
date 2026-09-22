@@ -9,7 +9,7 @@ QA reads accepted requirements in [CONSTITUTION.md](air-file://fai6b8iclscp0tss0
 
 The developer provides runnable setup, synthetic seeds, the revision under review, checks already run, and known limitations. The QA report distinguishes its own checks from reported developer results. If no separate QA review ran, describe the evidence as developer verification.
 
-Current task: [002-telegram-transport.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/002-telegram-transport.md?type=file&root=%252F). Use [TEMPLATE.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/TEMPLATE.md?type=file&root=%252F) for real executions; template placeholders are not results.
+Next review target: [003-conversation-worker.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/003-conversation-worker.md?type=file&root=%252F), once implemented and handed off. Its controlled parser responses will verify the worker/resolver boundary, not live interpretation accuracy. W002 remains the latest completed independent review. Use [TEMPLATE.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/TEMPLATE.md?type=file&root=%252F) for real executions; template placeholders are not results.
 
 ## Current verification boundary
 

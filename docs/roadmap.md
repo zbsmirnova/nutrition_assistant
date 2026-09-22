@@ -27,9 +27,9 @@ Milestone statuses: planned, in progress, complete, blocked. The first implement
 
 ## Implementation sequence now
 
-1. Resolve Q09/Q10 sufficiently for the parser adapter: provider/local-model preference and permitted message context. A preference was requested; until answered, verification remains synthetic.
-2. Define and implement the conversation-worker slice, including durable inbox resumption, scoped product resolution, and explicit food-message evaluation cases.
-3. Extend to clarification, mixed messages, and same-entry corrections through subsequent M2 tasks.
+1. Implement [003-conversation-worker.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/003-conversation-worker.md?type=file&root=%252F): resume the durable inbox, validate controlled parser proposals, resolve one clear product-food addition, and recover without duplicate saves. Provider-neutral development uses synthetic inputs and can proceed while Q09/Q10 remain open.
+2. Resolve Q09 for a live parser adapter and measured Russian-language evaluation. Settle Q10's permitted message context and real-data handling before connecting personal messages. A cloud/local/synthetic preference has been requested; none is assumed.
+3. Extend to durable clarification/resumption and mixed-message partial saving, then same-entry correction/delete/undo through subsequent M2 tasks. W003's deliberately narrow development scope does not replace these accepted requirements.
 
 Use [README.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/README.md?type=file&root=%252F) for unresolved questions and blockers. Use [strategy.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/strategy.md?type=file&root=%252F) for verification expectations.
 
