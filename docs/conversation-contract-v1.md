@@ -6,7 +6,7 @@ Status: step 2 interaction decisions are reflected in strict Pydantic contracts,
 
 The enduring product baseline is [CONSTITUTION.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/CONSTITUTION.md?type=file&root=%252F). This specification refines FOOD-001–FOOD-006, RECIPE-001–RECIPE-003, OBS-001/OBS-002, DAY-001–DAY-003, and the calculation/ownership rules into observable conversation behavior.
 
-Accepted product choices and their evidence are recorded in D001/D004 in [README.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/README.md?type=file&root=%252F). Detailed interpretation, pending-closure, dinner-recognition, and delivery defaults remain proposals where indicated; they are not accepted merely because a contract shape can represent them.
+Accepted product choices and their evidence are recorded in D001/D004/D010 in [README.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/README.md?type=file&root=%252F). Detailed interpretation, pending-closure, dinner-recognition, and delivery defaults remain proposals where indicated; they are not accepted merely because a contract shape can represent them.
 
 ## 2. Decisions made in this discussion
 
@@ -15,6 +15,7 @@ Accepted product choices and their evidence are recorded in D001/D004 in [README
 | A message contains clear and unclear food items | Save independent clear items; ask about unclear ones and exclude only those from totals. Resolving one pending item must not repeat another item. |
 | Entering a recipe | Accept arbitrary ingredient quantities, clarify missing details, and calculate nutrition per 100 g. Save the original amounts and cooking instructions when present for reuse. Direct per-100-g input also fits the recipe model. |
 | Normal food reply | Brief entry/correction summary with its kcal/macros and the updated daily kcal/macros. Indicate pending items and partial nutrient coverage. |
+| Dairy product identity | Ask for missing fat percentage when it affects the product/nutrition-profile choice; reuse an explicitly supplied percentage or an exact identified product/label without asking again. |
 
 The recipe clarification explicitly expands the saved recipe details to include ingredients and instructions while retaining the decision not to store portion sizes or preparation batches.
 
@@ -50,6 +51,22 @@ The backend selects the current matching recipe version and scales each known nu
 Unknown nutrients remain unknown in both entry and daily summaries. A saved recipe can contain known calories and unknown carbohydrates. The bot must not fill the missing field from an energy balance or display it as zero.
 
 Default dates use the source message's local date. An explicit “yesterday” overrides it. Unknown meal type can remain unspecified rather than prompting solely to classify breakfast/lunch/dinner; explicitly identified dinner enables the accepted check-in behavior.
+
+### Dairy fat percentage and product identity
+
+Accepted refinement of FOOD-002, recorded in D010: a generic dairy name and consumed quantity are not sufficient when fat percentage is still a material unknown. This applies to творог and other dairy products such as milk, kefir, yogurt, cream, and sour cream when their variant remains unresolved.
+
+> User: Съела 100 г творога.
+>
+> Bot: Какая жирность у творога? Пока не включаю его в итог.
+>
+> User: 5%.
+
+The original 100 g and date remain pending while the bot resolves the product. Once the answer identifies a suitable nutrition profile, save the original food operation once and show its entry/day totals. A percentage answer describes the product; it does not replace the eaten quantity with 5 g or mean another portion. If quantity is also missing, combine the questions: “Сколько граммов и какой жирности был творог?”
+
+Skip the fat question if the user already supplied it, or explicitly identified a saved product/label that resolves the variant. A catalog containing only one творог entry is not evidence that an unspecified message refers to that fat percentage. An explicit percentage that conflicts with a saved candidate must not be ignored; select a matching source or clarify the conflict. Reuse confirmed product details, but do not create an implicit preference for all future generic dairy mentions.
+
+Fat percentage is a product-selection detail, not a complete nutrition profile. Do not derive calories, protein, or carbohydrates from that percentage alone, or silently substitute an average product. If the remaining product/source identity is unclear, keep it pending and ask only for the remaining material details. A clearly identified source may still have honestly unknown nutrients under CALC-002. An estimated substitute requires explicit approval under the existing estimation rules.
 
 ## 5. Clarifying a quantity
 
@@ -188,6 +205,6 @@ Recommendations for idempotency and context:
 - Dates and catalog references are preserved during clarification, with deliberate revalidation. Changing the current catalog version must not silently change a previously shown calculation; make any necessary new interpretation visible.
 - Save mutations and response intents together, then send the reply. Retries cannot add a second portion, duplicate an increment, or create extra daily observations.
 
-Formal discriminated parser/command/outcome schemas and 20 authored fixtures are implemented, with schema validation and semantic contract tests. The fixtures are expected outputs for future evaluation, not measured live-model results. The three product choices in section 2 are resolved; reference resolution and real reply delivery still need application handlers. M1 now implements resolved product-food transactions and fake delivery; the other illustrated command families remain unimplemented.
+Formal discriminated parser/command/outcome schemas and 20 authored fixtures are implemented, with schema validation and semantic contract tests. The fixtures are expected outputs for future evaluation, not measured live-model results. The product choices in section 2 are resolved; conversational reference/clarification resolution still needs application handlers. M1 implements resolved product-food transactions and W002 supplies synthetic-verified Telegram delivery; the other illustrated command families remain unimplemented. D010's dairy clarification behavior is specified but has not been implemented or evaluated.
 
 Delivery progress belongs in [roadmap.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/roadmap.md?type=file&root=%252F); open behavior choices belong in [README.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/README.md?type=file&root=%252F). Keep this document focused on current interaction semantics rather than task status.

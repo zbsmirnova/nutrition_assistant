@@ -7,7 +7,7 @@ Updated: 2026-09-22.
 
 ## Outcome and scope
 
-Connect the durable Telegram inbox to the existing food service through a parser interface and backend resolver. For one explicit consumption statement, such as “Съела 100 г творога”, use an unambiguous owned product and compatible quantity to save one entry and queue the existing Russian entry-plus-day acknowledgment. The product's nutrition comes from its pinned catalog version, never from model arithmetic.
+Connect the durable Telegram inbox to the existing food service through a parser interface and backend resolver. For one explicit consumption statement, such as “Съела 100 г творога 5% «Марка А»”, use an unambiguous owned synthetic product and compatible quantity to save one entry and queue the existing Russian entry-plus-day acknowledgment. The product's nutrition comes from its pinned catalog version, never from model arithmetic. Under D010, generic “100 г творога” remains unresolved when the fat percentage/product variant is unknown.
 
 This slice implements the worker and resolution boundary using controlled parser responses. It does not establish that a live model understands Russian messages. The user selected Nebius Token Factory cloud inference and will supply its key as a secret (D009). A separate Nebius adapter and measured evaluation follow; the exact model and Q10's remaining data-lifecycle choices are still open. Worker development does not require the key.
 
@@ -18,6 +18,8 @@ Clarification replies, mixed-message partial saving, corrections/delete/undo, re
 ## Requirements and decisions
 
 FOOD-001, FOOD-002, FOOD-005, FOOD-006, CALC-001/CALC-002, and DATA-001–DATA-003 govern this slice. Reuse D002's frozen commands and atomic execution, D003's scoped relational storage, D006's arithmetic, and D007's inbox/outbox transport.
+
+D010 refines FOOD-002 for dairy product identity. The resolver must recognize missing/conflicting fat percentage as material even if the user's catalog has only one dairy candidate. An exact identified product/profile or an explicit matching percentage can resolve that detail without another question. The full question/answer flow remains subsequent clarification work.
 
 The existing ParserOutput type and validate_parser_context function own proposal validation; CommandEnvelope owns the trusted command boundary. Read the conversation and typed-contract specifications before implementation. Do not invent a second parser schema or let a provider choose the actor, operation ID, database identity, or nutrition totals.
 
@@ -39,6 +41,7 @@ Q04's broader conversational ambiguity choices remain open. This slice can use t
 | W003-A08 | Upgrade from populated migration 0003 preserves inbox, prepared operations, food, and delivery state. Existing prepared/applied inputs resume without another parse or another addition. New worker state preserves owner-scoped constraints. |
 | W003-A09 | Operator commands expose/resume worker progress with synthetic fixtures and no provider credentials. Operational errors omit personal message text, model payloads, and secrets. Record interpretation/schema/context versions needed to reproduce the synthetic check. |
 | W003-A10 | Developer evidence and an independent review identify the exact tested source. Distinguish controlled-proposal checks from live-model accuracy and real Telegram checks, which remain not run in this slice. |
+| W003-A11 | An unspecified material dairy fat percentage or conflict with a candidate yields durable unresolved work and no food mutation, even with only one catalog candidate. An explicitly identified matching product/profile passes without a redundant fat question. A percentage alone never becomes eaten grams or a complete invented nutrition profile. |
 
 ## Implementation checklist
 

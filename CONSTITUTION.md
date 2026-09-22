@@ -35,7 +35,7 @@ These IDs are stable references for specifications, work briefs, and QA. Product
 | ID | Requirement |
 | --- | --- |
 | FOOD-001 | Save independently clear consumed-food entries continuously. A close-day action is not required to persist food. |
-| FOOD-002 | Ask about material missing details. Persist the pending message/action, but exclude unresolved new food from totals; an uncertain correction leaves the previously committed entry intact. An estimated portion requires explicit approval. |
+| FOOD-002 | Ask about material missing details, including dairy fat percentage when needed to identify the consumed product/nutrition profile. Do not ask again when the message or exact identified product/label already resolves it. Persist the pending message/action, but exclude unresolved new food from totals; an uncertain correction leaves the previously committed entry intact. An estimated portion requires explicit approval. |
 | FOOD-003 | Correct the same logical entry with retained revision history; changing 100 g to 80 g must not add another portion. |
 | FOOD-004 | In a mixed message, save clear independent items and clarify unresolved ones. Answering later must not repeat the already saved items. |
 | FOOD-005 | Plans, questions, and product/recipe definitions are not evidence of consumption. |
