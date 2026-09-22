@@ -43,7 +43,7 @@ W002 evidence is in [002-telegram-transport-qa.md](air-file://fai6b8iclscp0tss0s
 | Transport/scheduler | Authenticated ingress; outbox recovery; uncertain sends; stale callbacks; dinner/21:00 races; DST and date-bound responses. | Private Telegram ingress and sending adapters exist, with synthetic protocol tests and real-database recovery checks. No live bot or scheduler checks have run. |
 | Personal release | End-to-end scenarios, startup/deployment, monitoring redaction, backup/restore, agreed export/deletion and retention behavior. | Not run; M6. |
 
-The original 27 behavioral scenarios are preserved in [scenarios-v1.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/scenarios-v1.md?type=file&root=%252F), with explicit coverage limits. The user-authored real-life Russian evaluation corpus is [real-life-evals-v1.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/real-life-evals-v1.md?type=file&root=%252F). Both are inputs to test design, not completed QA reports.
+The original 27 behavioral scenarios are preserved in [scenarios-v1.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/scenarios-v1.md?type=file&root=%252F), with explicit coverage limits. They are an input to test design, not a completed QA report.
 
 ## Required regression families
 
@@ -60,7 +60,7 @@ These are coverage categories, not a duplicate of every test case. Add executabl
 | Isolation/recovery | DATA-001–DATA-003 | Foreign-user references rejected; before/after-commit failure; replayed increments; stale versions; process restart; current-pointer integrity; privacy-safe operational logs. |
 | Replies and reports | FOOD-006, CALC-002, UX-001 | Committed entry plus fresh day totals, visible pending/partial coverage, no false zero-intake day, complete-day denominators, nonjudgmental language. |
 
-The existing 20 authored examples are indexed by [typed-contracts-v1.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/typed-contracts-v1.md?type=file&root=%252F). The 50-case real-life corpus is a versioned development evaluation set, not a hidden holdout. Preserve the distinction from an unpublished held-out evaluation set: cases used in prompts or implementation tuning must not also be presented as unseen evaluation cases.
+The existing 20 authored examples are indexed by [typed-contracts-v1.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/typed-contracts-v1.md?type=file&root=%252F). Preserve their distinction from a held-out evaluation set: examples used in prompts or implementation tuning must not also be presented as unseen evaluation cases.
 
 ## Revision and environment evidence
 
