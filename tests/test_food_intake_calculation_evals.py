@@ -7,10 +7,10 @@ from pathlib import Path
 import unittest
 
 
-CORPUS = Path(__file__).parents[1] / "evals" / "intake_v1.json"
+CORPUS = Path(__file__).parents[1] / "evals" / "food_intake_calculation_v1.json"
 
 
-class IntakeEvalTests(unittest.TestCase):
+class FoodIntakeCalculationEvalTests(unittest.TestCase):
     def test_cases_have_stable_ids_and_evaluable_context(self) -> None:
         corpus = json.loads(CORPUS.read_text(encoding="utf-8"))
         cases = corpus["cases"]

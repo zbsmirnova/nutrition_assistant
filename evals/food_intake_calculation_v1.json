@@ -1,6 +1,6 @@
 {
   "format_version": "1.0",
-  "title": "Russian intake interpretation and resolution evaluation draft",
+  "title": "Russian food-intake calculation evaluation draft",
   "status": "authored from user-provided cases; numeric fixture values pending",
   "evaluation_layers": [
     "interpretation: classify the message, normalize wording, extract quantities and references",

@@ -1,9 +1,9 @@
-# Intake evaluation draft v1
+# Food-intake calculation evaluation draft v1
 
 Status: authored from user-provided real-life cases; fixture values and live execution are pending.
 Owner: product owner supplies behavior; QA/lead assistant maintains the executable representation.
 
-[intake_v1.json](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/evals/intake_v1.json?type=file&root=%252F) records the nine agreed intake cases. A case is a reproducible episode: user turns, explicit fixture requirements, expected interpretation/resolution/persistence/calculation behavior, and prohibited behavior.
+[food_intake_calculation_v1.json](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/evals/food_intake_calculation_v1.json?type=file&root=%252F) records the nine agreed intake cases. A case is a reproducible episode: user turns, explicit fixture requirements, expected interpretation/resolution/persistence/calculation behavior, and prohibited behavior.
 
 ## How this set is scored
 
