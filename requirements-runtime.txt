@@ -1,0 +1,6 @@
+-r requirements-contracts.txt
+SQLAlchemy==2.0.54
+alembic==1.20.0
+psycopg[binary]==3.3.6
+Mako==1.4.1
+MarkupSafe==3.0.3

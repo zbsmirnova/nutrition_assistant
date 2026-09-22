@@ -1,24 +1,24 @@
-# Nutrition assistant: architecture discussion and action plan
+# Nutrition assistant: architecture overview
 
 Date: 2026-09-22
 
-Status: working proposal; product choices below await discussion.
+Status: current design overview. Product choices and technical proposals are distinguished in the decision register. Typed contracts and the local M1 persistence/application slice are implemented. Live interpretation, Telegram transport, later domains, and deployment remain unimplemented.
 
 Input: the personal nutrition tracker architecture brief dated 2026-09-21.
 
-## 1. Outcome and scope
+## 1. Purpose and document boundaries
 
-Build a personal Telegram assistant that records consumed food, accepts later corrections, and provides traceable nutrition estimates. Preserve a path to multiple users through explicit ownership and isolation from the beginning.
+The product idea, v1 scope, and enduring rules are maintained in [CONSTITUTION.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/CONSTITUTION.md?type=file&root=%252F). This document owns system structure, trust boundaries, data flow, reliability, and operational design; detailed behavior and persistence have their own specifications.
 
-The brief remains the target scope. The proposed first usable milestone is narrower: food logging, personal products, corrections, weight, steps, and reporting. Recipes, detailed workouts, other measurements, and menstrual-cycle context follow in independent slices unless the product owner prioritizes them earlier.
+Milestones and progress live in [roadmap.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/roadmap.md?type=file&root=%252F). Consequential choices, accepted/proposed status, and the only open-question register live in [README.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/README.md?type=file&root=%252F). The current implementation brief is [001-persist-food-entry.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/001-persist-food-entry.md?type=file&root=%252F).
 
-Repository inspection found deployment configuration for Open WebUI, but no application implementation. Treat that deployment as context, not a constraint on the new domain or stack. Do not change or deploy it during architecture discussion.
+The source brief supplies historical context; later accepted decisions supersede its save-on-close and broader v1 assumptions. Existing Open WebUI deployment configuration is context, not a constraint on the new application.
 
-## 2. Decision to discuss first: what does “close day” mean?
+## 2. Accepted decision: continuous saving and optional completion
 
 Saving data, estimating its accuracy, and knowing whether a log is complete are three different concerns.
 
-**Recommendation:** save accepted food entries immediately. Replace mandatory closure with an optional “Everything logged” action if complete-day statistics are useful. Keep “close day” as a conversational alias if desired. Neither action saves previously unsaved entries or prevents future edits.
+**Accepted:** save accepted food entries immediately. Provide an optional “Everything logged” action and recognize “close the day” as the equivalent conversational intent. Neither action saves previously unsaved entries or prevents future edits. An accepted close-day message suppresses the completion button for that date.
 
 | Concern | Proposed behavior |
 | --- | --- |
@@ -27,42 +27,41 @@ Saving data, estimating its accuracy, and knowing whether a log is complete are 
 | Nutrition accuracy | Mark each applicable value as sourced or estimated; retain assumptions, ranges, and unknown values. |
 | Completeness | A day starts unconfirmed; the user can attest that all consumed food has been logged. |
 | History | Every accepted entry is immediately visible in history, including unconfirmed days. |
-| Reports | Show recorded intake for all logged days. If using complete-day averages, restrict them to confirmed days and display the denominator and exclusions. |
+| Reports | Show recorded intake for all logged days. Restrict complete-day averages to confirmed days and display the denominator and exclusions. |
 | Missing day | Absence of entries means missing data, not zero intake. A zero-intake day requires an explicit statement. |
 | Late changes | Accept additions, corrections, and deletions with an audit trail; never silently freeze a day. |
 
-Proposed completeness transitions:
+Completeness transitions (late additions preserve completion):
 
 ```mermaid
 stateDiagram-v2
     [*] --> Unconfirmed
     Unconfirmed --> ConfirmedComplete: User confirms all food logged
-    ConfirmedComplete --> Unconfirmed: Add or remove consumed food
-    ConfirmedComplete --> ConfirmedComplete: Correct quantity or nutrition only
+    ConfirmedComplete --> ConfirmedComplete: Add forgotten food or correct nutrition
     Unconfirmed --> Unconfirmed: Log or correct food
 ```
 
-This is a proposed default, not an approved replacement for the brief's draft/closed semantics. A completeness confirmation requires no unresolved food candidates for that date. Numeric corrections revise totals without asserting that another meal existed; additions or removals request a new completeness confirmation. Do not add a persistent “reopened” state unless a real workflow requires it.
+The user has explicitly chosen to keep a day complete when adding forgotten food. New entries and numerical corrections revise totals without requiring closure again or another automatic check-in. Proposed consistent defaults also preserve existing completeness after deletion/date corrections, but moving food onto another date does not confirm that destination. Proposed closure default: new completion confirmations require unresolved food candidates to be clarified first. An already completed day with a pending food question retains its complete flag while reports label the unresolved data separately; resolving the question does not require re-closing. Do not add a persistent “reopened” state without a separate workflow need.
 
-Alternative: remove completeness entirely. Then every summary must be explicitly about recorded intake, and the app cannot identify reliably complete days. Automatic midnight closure would only establish a time boundary; it cannot establish logging completeness.
+Automatic midnight closure is not used: a time boundary cannot establish logging completeness. A natural-language closure and a button press invoke the same domain command, so notification behavior does not depend on which interface was used.
 
 A complete-day average describes only those selected days. Do not present it as a representative whole-week average when other days are missing or unconfirmed.
 
-## 3. Conversation and interpretation rules
+### Check-in boundary
 
-- Process messages into explicit intents: consumed food, correction, deletion, query, plan, observation, workout action, or clarification response. A food mention alone is not evidence of consumption.
-- A message can describe several items or actions. Validate a mutation batch before applying it. If one food batch needs clarification, keep that batch pending and make its status clear; other independent user messages can still be processed.
-- Use Telegram replies and backend-provided candidate references to resolve “that chicken.” Do not let the model invent authoritative database IDs or choose another user's records.
-- Default dates use the user's configured time zone and the source message time, not the eventual processing time. Preserve the UTC timestamp, effective local date, and time-zone context. Honor explicit “yesterday” and allow backdating; clarify when the intended date is materially ambiguous.
-- Proposed uncertainty policy: use confirmed personal defaults first; otherwise permit a clearly stated, reasonable estimate. Ask when competing portions, products, dates, or correction targets would materially change the action. Model confidence alone is insufficient.
-- An unknown “coffee as usual” requires a one-time definition. Saving an estimate must not silently create a permanent personal default.
-- Replies explain what changed and offer an easy correction or undo. A pending message is described as pending, not logged.
-- Explicit corrections and reply-to-entry edits are in the first milestone. Telegram message edits require separate revision handling before being enabled; deleting a Telegram message is not a supported way to delete a domain record.
-- Weight is a timestamped observation. Steps default to a daily cumulative count: “8,200 steps today” replaces the current total with a revision, whereas “another 500 steps” increments only when explicitly stated. Do not conflate those commands.
+The accepted product choice and its rationale are recorded in [0001-continuous-food-saving.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0001-continuous-food-saving.md?type=file&root=%252F). The full dinner/21:00 interaction and proposed delivery defaults now live in section 9 of [conversation-contract-v1.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/conversation-contract-v1.md?type=file&root=%252F). Notification state is separate from food completeness; both trigger paths share one logical daily offer.
 
-## 4. Proposed system boundary
+## 3. Interpretation boundary
 
-One repository, one modular application, one PostgreSQL database. API and background processing may run as separate processes built from the same application. No microservices or Redis are needed for the initial design.
+Treat message text and model output as untrusted proposals. The backend supplies authenticated identity, scoped reference candidates, source timestamps/local dates, pending context, and catalog versions. It validates and resolves the proposal before producing an application command.
+
+A message may yield independent operations and pending questions. Persist operation identity and dependency state so a delayed answer cannot replay a committed item. Pending conversation state must not hold a database transaction or block unrelated user input. Dates are resolved from the originating context rather than eventual processing time.
+
+[conversation-contract-v1.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/conversation-contract-v1.md?type=file&root=%252F) owns detailed add/correct/clarify, recipe, observation, and check-in behavior. [typed-contracts-v1.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/typed-contracts-v1.md?type=file&root=%252F) owns the executable boundary guide. Full conversational corrections are in M2; M1 accepts an already resolved food command. Telegram message edits require explicit revision handling before being enabled; transport message deletion is not a domain delete command.
+
+## 4. System boundary and target processes
+
+One repository, one modular Python application, one PostgreSQL database. M1 provides local services and CLI commands. The diagram shows the target runtime, including future adapters and background processes; it is not a diagram of currently running services. No microservices or Redis are needed for the initial design.
 
 ```mermaid
 flowchart LR
@@ -75,7 +74,7 @@ flowchart LR
         Interpretation --> Commands[Validated application commands]
         Commands --> Food[Food log]
         Commands --> Observations[Body and activity observations]
-        Commands --> Workouts[Workouts]
+        Commands --> Workouts[Workouts - v2]
         Food --> Nutrition[Nutrition engine and catalog]
         Scheduler[Scheduler] --> Reports[Reports and notification rules]
         Commands --> Outbox[Notification outbox]
@@ -96,59 +95,36 @@ Module responsibilities:
 | Conversation | Raw updates, interpretation attempts, relevant context, pending clarifications and target resolution. |
 | Food log | Consumed entries, logical identities, revisions, meal grouping, optional completeness. |
 | Nutrition and catalog | Product and recipe versions, source selection, units, arithmetic, uncertainty and provenance. |
-| Observations | Weight, steps, typed measurements, cycle observations and other activity records. |
-| Workouts | Sessions, exercises and sets; incremental persistence and session completion. |
+| Observations | Daily weight and steps in v1; other measurements, cycle observations, and activity records are future scope. |
+| Workouts (v2) | Sessions, exercises and sets; incremental persistence and session completion. |
 | Reporting | Derived totals, coverage, weight trends, report snapshots and scheduled notifications. |
 | Infrastructure | Database access, durable jobs, provider adapters, telemetry and transport. |
 
-Use the brief's Python/PostgreSQL stack as a candidate, not a finalized dependency list. Pin library versions and verify provider contracts during implementation preparation. FastAPI is useful if selecting webhooks and HTTP operational endpoints; it is not a mandatory second business layer. Decide polling versus webhooks with hosting requirements rather than embedding transport assumptions in the domain.
+Python/PostgreSQL with SQLAlchemy Core, psycopg, and Alembic is the accepted M1 stack; D003 records its pinned versions. Transport dependencies and provider contracts remain later decisions. FastAPI is useful if selecting webhooks and HTTP operational endpoints; it is not a mandatory second business layer. Decide polling versus webhooks with hosting requirements rather than embedding transport assumptions in the domain.
 
 ## 5. Persistence, concurrency, and revisions
 
-**Proposed ADR A — continuous persistence:** application state is durable immediately. Completion is metadata used by reports, not permission to persist.
-
-**Proposed ADR B — ordinary relational state with revisions:** keep a current version pointer and immutable entity revisions. Read current state normally; retain prior revisions for correction history. Do not require full event sourcing or replay of every chat to reconstruct state.
+Accepted continuous-persistence semantics are recorded in D001. The accepted M1 relational revision decision is [0003-relational-storage.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0003-relational-storage.md?type=file&root=%252F): keep current pointers and ordinary immutable revisions without requiring full event replay.
 
 Immutability applies to ordinary editing. Explicit account erasure and agreed retention rules may purge personal revisions and source data; an audit trail is not an exception to deletion policy.
 
-**Proposed ADR C — durable asynchronous processing:** first authenticate and commit an inbox record; acknowledge receipt only after durable acceptance. Process LLM work outside long-running database transactions. Commit the validated domain mutation, revision, processing outcome, and response outbox record in one short transaction.
+The accepted M1 execution decision is [0002-command-execution.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0002-command-execution.md?type=file&root=%252F): first authenticate and commit an inbox record; acknowledge receipt only after durable acceptance. Process LLM work outside long-running database transactions. Commit the validated domain mutation, revision, processing outcome, and response outbox record in one short transaction.
 
 - Deduplicate transport deliveries by bot identity plus Telegram update ID. A Telegram message identity includes its chat; message edits are new source revisions, not duplicate additions.
 - Assign each validated operation a stable key derived from its inbox item and operation position. Reprocessing must return the prior outcome rather than apply another mutation.
 - Deduplicate scheduled runs using user, notification rule, and scheduled occurrence. Deduplicate notification creation separately from delivery.
-- Serialize mutation processing per user with a renewable durable lease and fencing/version checks. A lease expiry or worker restart must not allow a stale interpretation to overwrite newer state. Re-read and re-resolve if the expected context revision changed.
+- The dinner-triggered and 21:00 fallback completion offers additionally share a single `(user_id, local_date, daily_check_in)` identity. Track offered/delivered/dismissed/suppressed state separately from food completeness. Completing the day through either interface suppresses the completion action.
+- M1 serializes short mutations with a PostgreSQL user-row lock and revalidates explicit dates, quantity bases, and pinned immutable references. Fully resolved additions commute across context revisions; state-dependent corrections require their own expected-version handling in M2. The earlier user-processing lease/fencing proposal is not implemented or needed for this synchronous slice.
 - A clarification waiting for the user must not hold a database lock or block that user's entire inbox. A later answer revalidates its target versions before application.
 - Do not deduplicate distinct user messages only because their text matches: two identical coffees can represent two actual servings. Offer undo for accidental repeated user submissions.
 - Separate retries for provider calls, command application, and message delivery. Use bounded retries and visible failed/pending states; never report an unsuccessful write as saved.
 - An outbox prevents lost response intent, but cannot by itself guarantee exactly-once delivery through an external messaging service. Resolve ambiguous sends conservatively; guarantee that duplicate replies cannot duplicate food entries.
 
-## 6. Data model direction
+## 6. V1 database model
 
-The following is a conceptual ER model. Final columns, indexes, composite foreign keys, and migration DDL are a next architecture deliverable.
+Step 1 is documented in [data-model-v1.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/data-model-v1.md?type=file&root=%252F): concrete table/column proposals, an ER diagram, keys and ownership constraints, versioning, transaction boundaries, indexes, and scenario walkthroughs. It describes the full logical model; its M1 subsection identifies the now-implemented physical subset. Step 2's interaction decisions are in [conversation-contract-v1.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/conversation-contract-v1.md?type=file&root=%252F); its implemented Pydantic/JSON Schema contracts and examples are indexed in [typed-contracts-v1.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/typed-contracts-v1.md?type=file&root=%252F). M1 migrations and command handlers now exist; later domain tables remain unimplemented.
 
-```mermaid
-erDiagram
-    USER ||--o{ INBOX_UPDATE : owns
-    INBOX_UPDATE ||--o{ INTERPRETATION : produces
-    INTERPRETATION ||--o{ PENDING_ACTION : proposes
-    USER ||--o{ FOOD_DAY : tracks
-    FOOD_DAY ||--o{ FOOD_ENTRY : contains
-    FOOD_ENTRY ||--|{ ENTRY_REVISION : retains
-    ENTRY_REVISION ||--o{ FOOD_COMPONENT : contains
-    NUTRITION_VERSION ||--o{ FOOD_COMPONENT : sources
-    PRODUCT ||--|{ NUTRITION_VERSION : versions
-    DATA_SOURCE ||--o{ NUTRITION_VERSION : supports
-    RECIPE ||--|{ RECIPE_VERSION : versions
-    RECIPE_VERSION ||--|{ RECIPE_INGREDIENT : contains
-    NUTRITION_VERSION ||--o{ RECIPE_INGREDIENT : supplies
-    RECIPE_VERSION ||--o{ FOOD_COMPONENT : sources
-    USER ||--o{ BODY_OBSERVATION : owns
-    USER ||--o{ ACTIVITY : owns
-    USER ||--o{ WORKOUT_SESSION : owns
-    WORKOUT_SESSION ||--o{ EXERCISE_SET : contains
-    USER ||--o{ REPORT_SNAPSHOT : receives
-    USER ||--o{ NOTIFICATION_RUN : owns
-```
+The model separates consumed entries and revisions; products and nutrition versions; recipes with original ingredient amounts/instructions and per-100-g nutrition; eaten grams on food entries; pending clarifications; one daily weight and one daily step total; completeness confirmations and notification delivery. Training and other unconfirmed observation categories have no v1 tables.
 
 User ownership applies to all personal records and child records, including products, recipes, interpretations, revisions, aliases, and pending actions. Shared reference data is explicitly distinguished from private data. Use ownership-preserving foreign keys and scoped queries; add PostgreSQL row-level security with a runtime role that cannot bypass it before multi-user access.
 
@@ -169,20 +145,25 @@ Every parser response needs a schema version, one or more discriminated intents,
 Initial command families:
 
 - `AddConsumedFood`, `CorrectFoodEntry`, `DeleteFoodEntry`, `GetDaySummary`.
-- `ConfirmDayComplete` only if the completeness option is selected.
-- `RecordWeight`, `SetDailySteps`, `IncrementDailySteps`.
+- `ConfirmDayComplete`, shared by the completion button and natural-language closure; `DismissDailyCheckIn` for “Later”.
+- `SetDailyWeight`, `SetDailySteps`, `IncrementDailySteps`.
 - `DefineProduct`, `ReviseProduct`, `DefineAlias` with explicit confirmation.
-- Later: `DefineRecipe`, `StartWorkout`, `RecordExerciseSets`, `FinishWorkout`, typed observations.
+- V1 recipes: `DefineRecipe`, `ReviseRecipe`, and `GetRecipe`, preserving original ingredient amounts/instructions and per-100-g nutrition. A clarification/calculation workflow supplies validated recipe data; consuming a recipe uses `AddConsumedFood` with a recipe-version reference and eaten grams. No stored preparation entity is required.
+- V2: `StartWorkout`, `RecordExerciseSets`, `FinishWorkout`. Other typed observations are deferred pending release scope.
 
-Trusted mutation envelopes include an actor, operation ID, source update, effective date, resolved target, and expected target revision where applicable. Domain events include `FoodEntryAdded`, `FoodEntryRevised`, `FoodEntryDeleted`, `DayCompletenessChanged`, and `ObservationRecorded`; event metadata carries IDs and revisions rather than raw health text into logs.
+Trusted mutation envelopes include an actor, operation ID, source update, effective date, resolved target, and expected target revision where applicable. Conceptual domain events include `FoodEntryAdded`, `FoodEntryRevised`, `FoodEntryDeleted`, `DayCompletenessChanged`, and `ObservationRecorded`; event metadata carries IDs and revisions rather than raw health text into logs.
 
-Before implementation, formalize this contract as Pydantic models/JSON Schema and validate it against real Russian examples. JSON shape compliance is only the first check; backend validation must also verify units, ownership, references, intent, and plausible ranges.
+The parser, command, and outcome boundaries now have strict Pydantic models, generated JSON Schema, and 20 authored Russian-language examples. The conceptual events listed above are not an implemented event-contract package. JSON shape compliance is only the first check; scoped-context and cross-field validators add checks, while future backend resolution must still verify units, ownership, references, intent, and domain rules against actual state. The examples have not been evaluated with a live model.
 
-## 8. Workouts and import boundary
+## 8. Recipes, future workouts, and import boundaries
 
-Persist workout sets as they arrive. `FinishWorkout` has a useful domain meaning: it groups a completed session and can trigger its summary. It must not be required to save sets. Proposed states are `in_progress -> completed`, with `in_progress -> abandoned` and an explicit resume operation when needed. Corrections to completed sets create revisions; inactivity alone does not establish session completion.
+Accepted recipe model after clarification: save original ingredient amounts and cooking instructions when supplied, along with name, versioned kcal/protein/fat/carbohydrate values per 100 g, and provenance. Calculate nutrition from arbitrary supplied ingredient quantities, asking for missing material details and a usable finished edible weight when needed. Preserve the original amounts for cooking again; do not rescale the saved ingredient list to a 100 g recipe. A proposed provenance field retains the finished-weight basis used in the calculation. There are no default portion sizes, serving counts, or separate cooked-batch records. A food entry stores eaten grams and scales the chosen immutable recipe version by `grams / 100`. Saving a recipe does not log consumption, and updating it does not silently recalculate historical meals.
+
+For v2, persist workout sets as they arrive. `FinishWorkout` has a useful domain meaning: it groups a completed session and can trigger its summary. It must not be required to save sets. Proposed states are `in_progress -> completed`, with `in_progress -> abandoned` and an explicit resume operation when needed. Corrections to completed sets create revisions; inactivity alone does not establish session completion.
 
 An external importer will submit versioned domain DTOs through application services using an external namespace, record ID, revision, effective date/time-zone context, ownership mapping, and provenance. Imports use stable idempotency keys, support validation/dry runs and per-record errors, and obey the same calculation and revision invariants. Do not design legacy mappings, inspect an old database, or introduce legacy fields during this phase.
+
+A future Apple Health connector uses an activity-source adapter and those same validation/ownership boundaries, whether its transport is MCP or something else. Provider availability, supported measurements, permissions, and sync behavior require a separate integration investigation; no working MCP connection is assumed. Preserve manual-versus-imported provenance and external record identity, and decide source reconciliation before enabling synchronization. In particular, do not add an imported daily step total on top of a manual total. Manual reminders may be suppressed only when the relevant day's data has actually been received and accepted, not merely because an account is connected. Connector implementation is outside v1.
 
 ## 9. Privacy, deployment, and operations
 
@@ -199,48 +180,14 @@ Private-chat-only access and an allowlisted Telegram account are proposed for th
 
 Proposed telemetry: update accepted/deduplicated; processing started/failed; parser contract rejected; clarification requested/resolved; command applied/rejected; revision conflict; calculation/source failure; scheduled run created; outbox retry/sent/uncertain; backlog age and provider latency/cost. Operational telemetry contains no food text or body measurements by default.
 
-Retention is a product decision still pending: raw messages, model request/response bodies, normalized revisions, and backups need separate durations. Proposal for discussion: retain necessary source text and normalized revisions for the user's history; retain verbose model payloads only briefly, with a candidate 30-day limit. No secondary analytics or training use by default. Agree this before storing real health data; do not silently implement the candidate limit.
+Retention and provider-data policies are unresolved under Q10 in [README.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/README.md?type=file&root=%252F); do not silently turn an earlier candidate retention duration into implemented policy. Local synthetic-data development can proceed while real-data requirements are settled.
 
-The existing deployment settings allow zero running machines. A reminder design must therefore explicitly provide either a running worker or an external scheduled wake-up mechanism; an in-process timer cannot run while its process is stopped. Hosting, database region, provider processing regions, availability, and budget remain to be decided. Do not assume a configured app region determines every service's data residency. Current vendor API/deployment details still require verification; web documentation lookup was unavailable during this discussion.
+The existing deployment settings allow zero running machines. Reminder delivery needs either a running worker or an external wake-up mechanism; an in-process timer cannot run while its process is stopped. Hosting, region, budget, and availability choices are tracked under Q11. Verify current vendor contracts before selecting or deploying the new runtime.
 
-## 10. Action plan and acceptance criteria
+## 10. Delivery and verification references
 
-| Stage | Concrete work | Exit criteria |
-| --- | --- | --- |
-| 0. Product decisions | Resolve completeness, estimation behavior, and first-release scope. Write explicit examples for dates, corrections, and steps. | Each decision is recorded as accepted, rejected, or deferred; reports cannot confuse missing data with zero intake. |
-| 1. Architecture contracts | Finalize C4/container boundaries, ER model, parser/command schemas, state machines, and ADRs for persistence, history, concurrency, and versioning. Agree privacy and hosting before real-data deployment. | Contracts cover the scenario set; no unresolved product choice blocks the first vertical slice. |
-| 2. First food slice | Establish migrations, identity, durable inbox, seeded personal products, deterministic calculation, explicit food commands, persistence, and reply delivery. | One meal survives restart; the reply matches persisted state; duplicate transport delivery produces one meal; cross-user access is rejected. |
-| 3. Conversational corrections | Add Russian-language parsing behind an adapter, pending clarifications, reference resolution, correction/delete/undo, and a small annotated evaluation set. | “Another 80 g” and “80 g instead” have different correct effects; bones revise edible weight; stale and ambiguous targets cannot silently change records; plans create no meals. |
-| 4. Daily use | Add weight, daily steps, completeness if selected, on-demand history and weekly report, export/delete, and one deployed personal environment. | Backdated records use the intended day; repeated step totals replace rather than double; reports show coverage; export and deletion behave as documented; restore rehearsal passes. |
-| 5. Scheduled use | Add configurable evening checks, weekly schedule, and durable notification runs. | Reminders survive restarts, honor local time and daylight-saving transitions, avoid duplicate run creation, and support disabling. No auto-confirmation of completeness. |
-| 6. Domain expansion | Add recipes with finished yield, workouts/sets, measurements, cycle context, and activity according to priority. | Recipe revisions preserve history; sets survive interrupted sessions; sensitive observations stay isolated and out of unrelated prompts. |
-| 7. Convenience and future users | Confirmed aliases, habit suggestions, optional external catalogs/barcodes, and a multi-user readiness review. | Suggestions never silently change defaults; model/prompt releases pass regression evaluation; isolation and deletion tests pass before inviting other users. |
+The maintained roadmap is [roadmap.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/roadmap.md?type=file&root=%252F); the current implementation slice is [001-persist-food-entry.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/001-persist-food-entry.md?type=file&root=%252F). Do not maintain another milestone status table here.
 
-Stages 2 and 3 should be built around one complete scenario, not separate infrastructure projects. Do not add a catalog integration before local products and manual label values work. Decide whether simple saved meal combinations belong in the first milestone after seeing actual “usual meal” examples.
+The original 27 behavioral scenarios are preserved in [scenarios-v1.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/scenarios-v1.md?type=file&root=%252F). QA expectations and evidence rules are in [strategy.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/strategy.md?type=file&root=%252F). Current contract checks are not proof that those flows execute through a database, live parser, or Telegram.
 
-## 11. Initial scenario set
-
-1. “2 eggs, 43 g bread, coffee as usual”: resolve known defaults; clarify an unknown coffee alias.
-2. “Add another 80 g of pâté to lunch”: add an actual portion once, including after transport retries.
-3. “It was 80 g, not 100”: revise the referenced entry; ambiguous targets prompt a question.
-4. “The chicken included 33 g of bones”: preserve gross weight and revise edible weight and totals.
-5. “Maybe pizza tonight”: no consumed-food entry.
-6. “Yesterday I also ate an apple”: backdate it, update history and relevant report calculations, and apply the chosen completeness policy.
-7. “8,200 steps today”, then “9,000 steps today”: final daily total is 9,000.
-8. Only breakfast logged: history contains breakfast; the weekly report does not call it confirmed full-day intake.
-9. Provider timeout, then worker restart: retain the pending message and apply any eventual mutation once.
-10. One known nutrient and one unknown component: show a partial total rather than invent missing values.
-11. Product or recipe update: previously logged food retains the version used at the time.
-12. A correction arrives while another is being parsed: version checks prevent stale overwrites.
-13. A user attempts to reference another user's entry: authorization rejects the command.
-14. A reminder is scheduled across a daylight-saving change: create one intended occurrence in the user's local time.
-
-## 12. Discussion queue
-
-First round: optional completeness versus no confirmation; estimation versus clarification; first usable release scope.
-
-Second round, before deployment: hosting/budget and regional constraints; allowed LLM data sharing; raw-message/model-payload retention; export/deletion expectations; whether the existing reminder times are still wanted.
-
-Can be decided without blocking the first slice: calendar-day attribution with explicit backdating; immediate revision-based corrections; manual labels before barcode integration; personal defaults only after confirmation; no autonomous code changes; no legacy migration work yet.
-
-Do not treat unanswered questions as accepted requirements. This document is an architecture proposal and implementation sequence, not authorization to deploy or a claim that implementation is complete.
+Open choices and their blocking milestones are maintained in [README.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/README.md?type=file&root=%252F). The workflow and document-maintenance responsibilities are defined in [development-process.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/development-process.md?type=file&root=%252F) and [AGENTS.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/AGENTS.md?type=file&root=%252F).

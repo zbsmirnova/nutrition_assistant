@@ -1,0 +1,19 @@
+# Synthetic local development only; credentials are deliberately non-production.
+services:
+  db:
+    image: postgres:17@sha256:f4c66b820c6f974249089d3d16d86a3698eae11e8746eb6644b2271031e91232
+    environment:
+      POSTGRES_USER: nutrition
+      POSTGRES_PASSWORD: nutrition_local_dev
+      POSTGRES_DB: nutrition_dev
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - nutrition_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nutrition -d nutrition_dev"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+volumes:
+  nutrition_pgdata:

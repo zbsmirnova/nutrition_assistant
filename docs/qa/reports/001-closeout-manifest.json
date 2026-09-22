@@ -1,0 +1,56 @@
+{
+  "base_commit": "0500e9918dad269d5e74ff11f13c05fedb55af83",
+  "closeout_validation": {
+    "documentation_links_and_formatting": "passed",
+    "git_diff_check": "passed",
+    "postgresql_direct_read": "17.11 (Debian 17.11-1.pgdg13+2)",
+    "retained_qa_command": ".venv/bin/python -m unittest discover -s tests/qa -p test_w001_independent.py -v",
+    "retained_qa_duration_seconds": 2.39,
+    "retained_qa_result": "passed",
+    "retained_qa_tests": 10
+  },
+  "date": "2026-09-22",
+  "limits": "Closeout is lead verification of documentation/evidence packaging; independent verdict applies to the frozen source plus its identified QA probes.",
+  "post_review_documentation_changes": {
+    "AGENTS.md": {
+      "closeout_sha256": "cb5ddebbb9ac41d9bad29a257df7664927aa4813c47ba01dc8e397c16ee0e27a",
+      "reviewed_sha256": "6f131a1d0135f06ed40891a1f91df274d2251b7c49b9f8eff229d27a5e8e1b5c"
+    },
+    "README.md": {
+      "closeout_sha256": "e9c240906f4bc26022e0ff6373afef9d0b8acab5ebb5ac320c9ce70ace53b6c8",
+      "reviewed_sha256": "bf77abebfbfd2a741c48eac810bb19531baf45479db9447bc428a8ecc76ce622"
+    },
+    "docs/architecture-plan.md": {
+      "closeout_sha256": "a164150f7e09517d7a08041b0bdbd3bf82653501229d62465ff18e61f7fd1c54",
+      "reviewed_sha256": "aae1da3860d9ce1df462aedb171bcd626bc41772d48630ff0bdaf48a293f5954"
+    },
+    "docs/qa/strategy.md": {
+      "closeout_sha256": "885e9decac67e31f2e0ccfd43ed3bdfd3fad27b644be5e42d7aa3ccb2d1e7122",
+      "reviewed_sha256": "b4768a08ea52dac629003514e8fdc3603cf8034c80dae19fa1758575e31d080c"
+    },
+    "docs/roadmap.md": {
+      "closeout_sha256": "f06649c71f854356e4aea50928f76d662f66995d71a0edb7df41ed97413a8c84",
+      "reviewed_sha256": "27c99670ecbe34e3df31afcf68ca056d4223efd385b7798c7469e8a52450dcb4"
+    },
+    "docs/typed-contracts-v1.md": {
+      "closeout_sha256": "1b5802fcff3e5d50fb601ac267fcacdbe8c318fdb5030b918187223c455ddfbc",
+      "reviewed_sha256": "01467aad6b47eb993685e2a7cac1db035c3f8bbffe89934df76633773affcbb3"
+    },
+    "docs/work/001-persist-food-entry.md": {
+      "closeout_sha256": "f1d6612eb27624f800eadf56b25a4d63206d0f0a8ac02b7257f77349c25c07e2",
+      "reviewed_sha256": "2fa4a406cf4b0690bda628aa2b072280034b5a28421c8a8f5269a0a2e6ec019b"
+    }
+  },
+  "production_contract_dependency_migration_configuration_and_original_test_hashes_unchanged": true,
+  "retained_qa_artifacts_sha256": {
+    "artifacts/qa/w001-independent-report-original.md": "fab689921ea74edfe85970d93a4a494e02826d8736f6400cdb4508adf41de6a8",
+    "docs/qa/reports/001-independent-output.txt": "5f2c7109bd88934bbd851e02806bd131dc9ba0afa70f1ce71568d6db1df018e4",
+    "docs/qa/reports/001-integration-output.txt": "31c2bc9a585bb1b7624b1bcb9cb4a2acfe0cdffae353c7a62ca6d58a03704286",
+    "docs/qa/reports/001-persist-food-entry-developer.md": "d6fbe69076c9989435ad300ac14e1f980d6d023a44bf402d4587f8601cb146f2",
+    "docs/qa/reports/001-persist-food-entry-qa.md": "c92f4121fb14e13732de3f58e9341b31098a8cbcb1470bb2c8a96c28c78d5c37",
+    "docs/qa/reports/001-source-manifest.json": "d4dcd4e1d1eb8eb90c7eb1c828b377004d0a6d841fb6d10f05dcaa376cb64548",
+    "tests/qa/test_w001_independent.py": "72dcd7343d2a374eeb1e9b4018a6ce6edf9bd17a6ec54d7d22ad94ca2ecc5808"
+  },
+  "reviewed_archive_sha256": "9ee20613c0ebbb2d3ba0091f736cdabb146682b319ba48bceb7180366345fe5c",
+  "reviewed_source_id": "7eb70aa8e2166b5a64bf218b5674adab55eefe02d10c32af8ff2aff4230e5c57"
+}

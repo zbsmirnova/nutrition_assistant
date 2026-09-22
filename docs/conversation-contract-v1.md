@@ -1,0 +1,193 @@
+# V1 conversation contract
+
+Status: step 2 interaction decisions are reflected in strict Pydantic contracts, generated JSON Schema, and 20 authored examples. Accepted rules below come from the product conversation; remaining implementation defaults are explicitly proposed. Examples use Russian because that is the brief's chat language. M1 now implements deterministic product-food calculations and persistence for already resolved commands. The conversational resolver, live model, and Telegram service remain unimplemented.
+
+## 1. Requirements and status
+
+The enduring product baseline is [CONSTITUTION.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/CONSTITUTION.md?type=file&root=%252F). This specification refines FOOD-001–FOOD-006, RECIPE-001–RECIPE-003, OBS-001/OBS-002, DAY-001–DAY-003, and the calculation/ownership rules into observable conversation behavior.
+
+Accepted product choices and their evidence are recorded in D001/D004 in [README.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/README.md?type=file&root=%252F). Detailed interpretation, pending-closure, dinner-recognition, and delivery defaults remain proposals where indicated; they are not accepted merely because a contract shape can represent them.
+
+## 2. Decisions made in this discussion
+
+| Topic | Accepted behavior |
+| --- | --- |
+| A message contains clear and unclear food items | Save independent clear items; ask about unclear ones and exclude only those from totals. Resolving one pending item must not repeat another item. |
+| Entering a recipe | Accept arbitrary ingredient quantities, clarify missing details, and calculate nutrition per 100 g. Save the original amounts and cooking instructions when present for reuse. Direct per-100-g input also fits the recipe model. |
+| Normal food reply | Brief entry/correction summary with its kcal/macros and the updated daily kcal/macros. Indicate pending items and partial nutrient coverage. |
+
+The recipe clarification explicitly expands the saved recipe details to include ingredients and instructions while retaining the decision not to store portion sizes or preparation batches.
+
+## 3. Distinguishing intent
+
+Proposed interpretation defaults:
+
+| Message | Meaning | Effect |
+| --- | --- | --- |
+| “На обед 250 г моего супа” | Consumed food | Resolve the saved soup, date, and grams; add one consumed-food entry. |
+| “Суп 250 г” in an ordinary food-logging context | Concise consumption statement | Same add command if the soup identity is clear; otherwise ask. |
+| “Планирую суп на ужин” | Planned food | No consumed-food entry. |
+| “Сколько калорий в 250 г супа?” | Information request | Calculate/answer if the recipe is known; no consumed-food entry. |
+| “Сохрани рецепт: мой суп, на 100 г ...” | Catalog definition | Save recipe nutrition; no food consumed. |
+| “Суп был 200 г, не 250” | Quantity correction | Revise the referenced consumed-food entry. |
+| “Ещё 80 г хлеба” | Additional consumption | Add 80 g as another actual consumption; do not replace the preceding bread amount. |
+| “Всего хлеба было 80 г” | Replacement/correction | Resolve which existing bread entry or group the total describes, then revise; ask if several interpretations fit. |
+| “Вес сегодня 76,1” | Daily body weight | Set today's sole current weight to 76.1 kg. |
+| “Сегодня 9000 шагов” | Daily cumulative steps | Set today's sole current steps to 9,000. |
+
+A food noun is not enough to override explicit planning, question, or catalog language. If an intent remains ambiguous, ask a short question before mutation. Recipe creation and eating can both be requested in one message, but the two effects remain explicit and the food entry depends on a valid recipe profile.
+
+## 4. Adding known food
+
+Example catalog fixture: “мой суп” has 70 kcal, 4 g protein, 2 g fat, and 9 g carbohydrates per 100 g. These are illustrative supplied values, not values inferred for an arbitrary soup.
+
+> User: На обед 250 г моего супа.
+>
+> Bot: Добавлено к обеду: суп, 250 г — 175 ккал; Б 10 г, Ж 5 г, У 22,5 г.
+
+The backend selects the current matching recipe version and scales each known nutrient by 2.5. It saves the entry, source-version reference, computed snapshot, and response intent before saying it was added. Append “За день: ...” with the current backend-calculated kcal/protein/fat/carbohydrate totals. The examples show the action-specific line; every normal saved/corrected-food response also includes that daily summary. Show the relevant local date when modifying a previous day.
+
+Unknown nutrients remain unknown in both entry and daily summaries. A saved recipe can contain known calories and unknown carbohydrates. The bot must not fill the missing field from an energy balance or display it as zero.
+
+Default dates use the source message's local date. An explicit “yesterday” overrides it. Unknown meal type can remain unspecified rather than prompting solely to classify breakfast/lunch/dinner; explicitly identified dinner enables the accepted check-in behavior.
+
+## 5. Clarifying a quantity
+
+> User: Ел мой суп.
+>
+> Bot: Сколько граммов супа вы съели?
+>
+> User: 250.
+>
+> Bot: Добавлено: суп, 250 г — 175 ккал; Б 10 г, Ж 5 г, У 22,5 г.
+
+Rules proposed for the clarification workflow:
+
+1. Save the original input and pending action, with the intended date and already resolved facts. Do not add the unresolved food to totals.
+2. A bare number can answer a question that explicitly requested grams when exactly one matching question is active. Otherwise ask which question it answers. Do not guess from the numerical magnitude.
+3. Prefer Telegram reply-to linkage; otherwise use an explicit food/date reference and an unambiguous active question. A reply to a message containing multiple candidates may still require disambiguation.
+4. New explicit actions remain new actions. “Вес 76,1” while soup is pending records weight; it does not become 76.1 g of soup.
+5. Keep the original food date if an answer arrives after midnight. An explicitly changed date must be interpreted and acknowledged rather than ignored.
+6. Ask for all currently known blocking details in one concise question when useful. Do not demand information already provided, and do not require every catalog nutrient to be known before logging a clearly identified food with honest nutrient gaps.
+7. If the user does not know the amount, offer an estimate for explicit approval or let them cancel the pending entry. Lack of a reply never counts as approval.
+8. “Отмени запись супа” cancels an uncommitted soup action when that is the clear target. It does not delete unrelated already saved food. A cancellation is acknowledged and never silently marks the food as eaten.
+9. A pending correction does not remove the currently committed entry from totals. Explain that its old value remains until corrected; only an unresolved new entry contributes nothing.
+
+Clarifications must not hold a database transaction or block unrelated messages. Revalidate referenced records before applying an answer; a record may have changed while the question was open.
+
+## 6. Accepted mixed-message behavior
+
+Input: “200 г моего супа и немного хлеба.” The soup exists in the catalog; bread grams are missing.
+
+Save the resolved soup and clarify only the bread:
+
+> Bot: Суп 200 г добавлен. Сколько граммов хлеба вы съели? Хлеб пока не включён в итог.
+>
+> User: 40 г.
+>
+> Bot: Хлеб 40 г добавлен.
+
+Each successful food write also includes the updated daily totals. The clarification completes only the pending bread operation. It must not parse the entire original message into a second soup addition. A request to cancel the bread leaves the soup in the log.
+
+The same rule applies to a new recipe plus unrelated food: known independent food can be saved while recipe inputs are clarified. Consuming the new recipe depends on the recipe becoming valid and must wait for it. Related changes that must succeed together remain atomic; partial saving is not permission to apply half of one correction.
+
+“Dinner ...; close the day” must not offer a completion button between actions. Resolved dinner items may be saved while other items wait, but a closure request is not acknowledged as successful until its unresolved food prerequisites are handled. Proposed check-in default: when this dinner message itself still needs clarification, send the clarification first and defer its completion offer until those dinner items are resolved or cancelled. Keep the single daily-check-in identity throughout. Reporting totals uses the resulting committed state.
+
+## 7. Correcting and adding more food
+
+> User, replying to the saved 250 g soup entry: На самом деле 200 г.
+>
+> Bot: Исправлено: суп 250 → 200 г. Теперь 140 ккал; Б 8 г, Ж 4 г, У 18 г.
+
+The entry keeps its identity. A new revision replaces the current values; the earlier revision remains in history. The model identifies the intended target and changed fields; the backend performs arithmetic.
+
+Proposed target-resolution order: explicit reply plus named food, explicit day/meal/food reference, then a uniquely established current conversation target. Do not choose the newest record solely because it is newest when several records fit. Ask the user to select or name a target in that case.
+
+“Ещё 80 г” means an addition only when the food/context is unambiguous. “Было 80 г” replaces the selected quantity. If “80 g total” refers to multiple records, resolve that scope before changing any of them.
+
+“В курице было 33 г костей” revises gross/inedible/edible weights only when the referenced chicken and original weight basis are known. If the existing 200 g already meant edible meat, ask before subtracting bones from it.
+
+Undo creates a new revision restoring the chosen prior state. “Undo the last food change” refers to a domain change, not the last bot message or summary. Ambiguous deletion/undo targets require clarification, just like ambiguous quantity corrections.
+
+## 8. Recipe input and updates
+
+Direct profile entry is supported by the accepted model:
+
+> User: Сохрани рецепт «мой суп»: на 100 г 70 ккал, Б 4, Ж 2, У 9.
+>
+> Bot: Рецепт «мой суп» сохранён: на 100 г 70 ккал, Б 4 г, Ж 2 г, У 9 г.
+
+An explicit “save recipe” instruction authorizes that catalog write without a second redundant confirmation. No eaten amount or food entry is created. If the name matches an existing recipe and the intent is unclear, ask whether this is a replacement or a different recipe. An explicit update creates a new immutable version.
+
+Catalog changes affect future food selections. If the user intends to correct already logged meals, identify those entries explicitly before changing their nutrition. A corrected catalog value must not silently rewrite historical food.
+
+The ingredient-based path is also required:
+
+> User: Сохрани мой суп: картофель 300 г, морковь 120 г, курица 250 г, вода 800 г. Варить 30 минут.
+>
+> Bot, if needed: Уточните, курица взвешена сырой или готовой, и сколько весит готовый суп?
+
+Ask only for facts not already known from the message and product context. Resolve ingredient sources and weight bases, calculate their nutrients in the backend, and normalize each nutrient as `sum_for_all_ingredients / finished_edible_weight_g * 100`. Any unknown nutrient stays unknown. Do not silently assume finished weight equals the sum of raw ingredients; if the user cannot supply a usable weight, offer an explicit estimate for approval or leave the calculation pending.
+
+Save the ingredient quantities as initially supplied, including their units, and the optional cooking instructions. Save the resulting nutrition per 100 g. Proposed provenance storage retains the finished-weight basis and source versions used for the calculation; this is not a default portion or a separate preparation entity. A recipe can be retrieved later with its original ingredient list and instructions. Normal recipe-save replies summarize the saved profile and do not claim any food was consumed.
+
+Editing ingredient quantities creates a new recipe version and requires an appropriate recalculation before publishing new nutrition. Editing only the cooking text need not invent new nutrition values, but if the edit changes the calculation assumptions, clarify them. Do not use the LLM as the arithmetic authority. Source messages and interpretation attempts remain under the normal retention policy.
+
+For consumption, “one portion of my soup” needs clarification of eaten grams. The accepted recipe model does not supply a stored default serving size.
+
+## 9. Daily body weight, steps, and completion
+
+> User: Вес сегодня 76,3.
+>
+> Bot: Вес за сегодня записан: 76,3 кг.
+>
+> User: Вес сегодня 76,1.
+>
+> Bot: Вес за сегодня обновлён: 76,3 → 76,1 кг.
+
+There is one current value of 76.1 kg, with the earlier value in history. The same absolute-set rule applies to “8,200 steps” followed by “9,000 steps.” Repeating an identical set-value request changes nothing. Steps increase by addition only for an explicit increment intent such as “another 500”; if the starting total is unknown, ask rather than assume zero.
+
+Both observations use an explicit or resolved local date. A bare “76.1” without an appropriate active question is ambiguous; do not automatically treat it as weight. Replacing a different day's existing value through a date correction must resolve any target conflict.
+
+“Закрой день” and the “Everything logged” action invoke the same completion command. Missing steps allow closure and an activity-only invitation. Proposed pending-closure behavior (Q05): if a food clarification is pending, explain what remains before successful closure; a stored closure request can resume after all its food prerequisites resolve, using a fresh state check. Food added after closure updates totals while the day remains complete and triggers no new automatic check-in.
+
+### Dinner and evening check-in
+
+The combined check-in is accepted: after dinner or the 21:00 fallback, offer “Everything logged”, “Add steps”, and “Later”, with an activity invitation only when data is missing. Missing steps do not block food completion; conversational closure suppresses the completion button while allowing an activity-only action. Offer one check-in per day, including when dinner follows the 21:00 reminder. Additional activity fields beyond steps remain undecided. The following operational details refine that accepted flow; unconfirmed implementation choices remain proposed defaults:
+
+1. Treat “after dinner” as successful logging of food explicitly identified as dinner by the user or existing meal context. Do not infer dinner solely from the clock or introduce a mandatory “finish dinner” command. A planned dinner or unresolved dinner entry does not qualify as a logged dinner.
+2. Attach the combined check-in to the dinner acknowledgment. At 21:00 in the user's configured time zone (initially Europe/Berlin), create it only if no dinner has been recorded, the day has not already been completed, and no check-in has already been offered for that date.
+3. Accepted dinner example: “Dinner logged. Have you logged all food for today? Steps are still missing.” Actions: “Everything logged”, “Add steps”, “Later”. The 21:00 fallback omits “Dinner logged” when there is no recorded dinner. Omit the activity invitation and “Add steps” action when the required daily activity data is already present. Proposed “Later” behavior: dismiss this offer without scheduling another reminder automatically.
+4. Store one logical check-in per user and local date. Dinner and the 21:00 scheduler use the same check-in identity, including when dinner is recorded after 21:00. Further dinner messages update the meal without creating another check-in. Retries must not create new offers.
+5. Process every action in a message before deciding whether to offer a check-in. “Dinner was ...; close the day” must not generate a completion button between those two actions. Pending food details must be resolved before acknowledging successful closure. For a partly resolved dinner message, save clear items and ask the needed question first; the proposed default defers that dinner's completion offer until its pending items resolve or are cancelled, using the same daily-check-in identity.
+6. A conversational close or completion-button press cancels any unsent completion offer and removes or deactivates an existing completion button. Re-check completion state immediately before dispatch, and validate old button presses against current state. A transport race can make a stale button temporarily visible; it must never reopen or duplicate anything.
+7. Food completeness and activity availability are separate. Missing steps do not block food completion. If the user writes “close the day” while steps are missing, the closure acknowledgment may contain an “Add steps” action, but no completion button. Prompt only for missing values; a confirmed zero step count is a value, not missing data.
+8. Bind all check-in buttons and replies to the prompted date. A response after midnight records steps for that date unless the user explicitly specifies another date. An unqualified new message uses the normal date-resolution policy.
+9. If a send was already queued during dinner logging or closure, cancel/suppress the superseded offer. Persist notification state so a restart cannot lose the dinner-triggered check-in. Do not silently send a backlog of old 21:00 prompts after a long outage; expiry/catch-up policy must be specified with the notification contract.
+
+Only steps are confirmed as a structured v1 activity metric so far. The scope of “steps, etc.” is an open product question. The daily prompt should be based on configured required activity fields rather than hard-coded assumptions about future metrics.
+
+## 10. Implemented typed contract boundaries
+
+The executable contracts, portable schemas, examples, validation instructions, and remaining backend responsibilities are indexed in [typed-contracts-v1.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/typed-contracts-v1.md?type=file&root=%252F). The following is their semantic outline:
+
+| Layer | Must contain | Must not control |
+| --- | --- | --- |
+| Parser proposal | Schema version; action type; extracted food/recipe names, original ingredient amounts, optional instructions and explicitly supplied nutrient values; quantities with explicit or missing units; date expressions; reply/context candidate references; unresolved fields. | User identity, authorization, authoritative database IDs, model-computed nutrition, or direct writes. |
+| Resolved application command | Backend user ID; stable operation key; resolved date and scoped target/version; validated quantities; validated catalog nutrition where explicitly supplied; pending-action linkage. | Arbitrary execution or model-invented ownership. |
+| Command outcome | `applied`, `no_change`, `needs_clarification`, or `rejected`; affected entity/revision IDs; applied values; pending questions; derived summary and coverage. | A claim that an uncommitted operation was saved. |
+
+Initial command families: `AddConsumedFood`, `CorrectFoodEntry`, `DeleteFoodEntry`, `GetDaySummary`, `SetDailyWeight`, `SetDailySteps`, `IncrementDailySteps`, `DefineRecipe`, `ReviseRecipe`, `GetRecipe`, `DefineProduct`, `ReviseProduct`, and `ConfirmDayComplete`. Clarification resolution and cancellation target a pending action. Recipe calculation is a workflow producing a validated `DefineRecipe` or `ReviseRecipe` input with ingredient amounts/instructions and nutrition per 100 g; it creates no stored preparation entity. `GetRecipe` returns the saved original amounts, cooking instructions, and per-100-g values.
+
+Recommendations for idempotency and context:
+
+- Assign operation identities when persisting the validated interpretation's operation list. Freeze that list before executing any item; a retry must not reinterpret and reorder already applied items under new IDs.
+- A clarification resolves its original pending operation key. The reply's update ID is an additional source, not authorization to rerun previously applied items.
+- With the accepted independent-item policy, an inbox row can stay `waiting_for_user` while some linked operations are already applied. Summarize this explicitly in the response; do not infer that the entire message is saved or wholly unsaved from that inbox state alone.
+- A correction includes an expected target revision. Re-resolve and clarify conflicts instead of blindly overwriting newer changes.
+- Dates and catalog references are preserved during clarification, with deliberate revalidation. Changing the current catalog version must not silently change a previously shown calculation; make any necessary new interpretation visible.
+- Save mutations and response intents together, then send the reply. Retries cannot add a second portion, duplicate an increment, or create extra daily observations.
+
+Formal discriminated parser/command/outcome schemas and 20 authored fixtures are implemented, with schema validation and semantic contract tests. The fixtures are expected outputs for future evaluation, not measured live-model results. The three product choices in section 2 are resolved; reference resolution and real reply delivery still need application handlers. M1 now implements resolved product-food transactions and fake delivery; the other illustrated command families remain unimplemented.
+
+Delivery progress belongs in [roadmap.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/roadmap.md?type=file&root=%252F); open behavior choices belong in [README.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/README.md?type=file&root=%252F). Keep this document focused on current interaction semantics rather than task status.

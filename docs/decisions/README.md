@@ -1,0 +1,45 @@
+# Decisions and open questions
+
+Updated: 2026-09-22. Maintainer: lead assistant.
+This index is the decision log and the single register of unresolved choices. The constitution and specifications describe current requirements; records preserve the reasoning and authority behind consequential choices.
+
+## Decision log
+
+| ID | Kind | Status | Recorded | Decision |
+| --- | --- | --- | --- | --- |
+| D001 | Product | Accepted | 2026-09-22 | [0001-continuous-food-saving.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0001-continuous-food-saving.md?type=file&root=%252F) — continuous saving and optional completion/activity check-in. |
+| D002 | Technical | Accepted for M1 | 2026-09-22 | [0002-command-execution.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0002-command-execution.md?type=file&root=%252F) — durable inbox, stable operations, atomic changes/results/outbox, and retry handling. |
+| D003 | Technical | Accepted for M1 | 2026-09-22 | [0003-relational-storage.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0003-relational-storage.md?type=file&root=%252F) — modular Python application, PostgreSQL, relational snapshots/revisions, and scoped references. |
+| D004 | Product | Accepted | 2026-09-22 | [0004-revisions-recipes-observations.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0004-revisions-recipes-observations.md?type=file&root=%252F) — entry corrections, recipe data, partial logging, and one daily weight/steps value. |
+| D005 | Process | Accepted | 2026-09-22 | [0005-document-maintenance.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0005-document-maintenance.md?type=file&root=%252F) — repository documentation and assistant maintenance responsibility. |
+| D006 | Technical | Accepted for M1 | 2026-09-22 | [0006-numeric-policy.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0006-numeric-policy.md?type=file&root=%252F) — decimal precision, component rounding, unknowns, bounds, and overflow. |
+
+Recorded dates are dates these records were written. Earlier conversation decisions do not have independently verified timestamps; their acceptance evidence is described in each record.
+
+Statuses: proposed, accepted, rejected, superseded. Use [TEMPLATE.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/TEMPLATE.md?type=file&root=%252F) for consequential decisions. Record the actual decision authority: user decision, source brief constraint, or an explicitly delegated technical choice. Do not attribute an agent's recommendation to the user.
+
+## Open-question register
+
+“Needed by” identifies the dependent work, not a reason to stop unrelated work. The architect owns routine technical choices within delegated scope; product-owner input is needed for unresolved user behavior or constraints.
+
+| ID | Choice / current proposal | Owner | Needed by | Status |
+| --- | --- | --- | --- | --- |
+| Q01 | M1 uses short user-row locks, frozen command identities, pinned source revalidation, atomic mutation/result/outbox, and claim-token delivery. D002/D003 record the decision; M2 conversational concurrency remains Q04. | Architect | M1 persistence implementation | Resolved for M1 under delegated implementation authority. |
+| Q02 | Python 3.14.0 verified; intended minimum 3.12+. PostgreSQL 17.11 image pinned by digest; SQLAlchemy Core 2.0.54, psycopg 3.3.6, Alembic 1.20.0. Local Compose database and disposable test schemas are implemented. | Architect/developer | M1 setup and migrations | Resolved for M1; versions recorded in D003. |
+| Q03 | Decimal precision 64; numeric(18,6); round-half-up per persisted component; sum persisted snapshots; reject overflow; preserve unknowns and only compatible units/bases. | Architect/developer | M1 nutrition engine | Resolved for M1 in D006; recipe/conversion extensions remain later scope. |
+| Q04 | Finalize target/date resolution, clarification resumption/conflict handling, edited-message support, and unknown-date behavior. Proposed defaults are in the conversation specification; source-message date should survive delayed replies. | Architect; product owner for user-visible ambiguity | M2 conversation implementation | Open. |
+| Q05 | Confirm closure while food is pending, empty-day declarations, deletion/date-move effects, and complete-but-unresolved reporting eligibility. Existing consistent defaults are proposals; late-addition completeness is already accepted. | Product owner, with architect recommendation | M4 completion; M5 reporting | Open; does not block M1. |
+| Q06 | Confirm dinner recognition and “Later” behavior; settle delayed reminder expiry, outage catch-up, and uncertain sends. Proposed defaults: explicit meal context; dismiss without automatic rescheduling. | Product owner for reminder behavior; architect for delivery | M5 check-in | Open; 21:00 timing and combined check-in are already accepted. |
+| Q07 | Decide whether “steps, etc.” means additional structured activity fields. Current v1 baseline is steps; no additional metric is assumed. | Product owner | Before expanding M4/M5 scope | Open; proceed with steps. |
+| Q08 | Confirm weekly-report contents and whether Monday 08:00 is wanted. That schedule comes from the source brief, not a later accepted reminder decision. | Product owner | M5 reporting schedule | Open. |
+| Q09 | Choose parser provider/model, evaluation threshold, request context, and provider adapter behavior. Verify current provider contracts during implementation. | Architect; product owner for data-sharing constraints | M2 live adapter/evaluation; before personal-data calls | Open; synthetic/offline work can proceed. |
+| Q10 | Agree raw-message/model-payload/revision/backup retention, permitted provider data sharing, export/delete requirements, and any secondary analytics. The earlier 30-day payload limit is only a candidate. | Product owner, with architect recommendation | Before storing/processing real personal data; M6 | Open. |
+| Q11 | Agree hosting, budget, regions, availability, backup/restore objectives, and scheduling while compute is stopped. Existing Open WebUI deployment is context only. | Product owner for constraints; architect for solution | M6; informs M5 scheduler integration | Open. |
+
+When resolving a question, mark it resolved here, link the decision/specification, and update the dependent work brief. Keep the history so a later agent does not ask the same question again. Accepted decisions D001/D004 are not open questions.
+
+## Source and traceability
+
+The original brief dated 2026-09-21 supplied the initial design context. The product discussion superseded draft-only saving, the 21:30 fallback, broader v1 training scope, cooked-batch/default-portion modeling, and multiple current weight readings.
+
+The current baseline is [CONSTITUTION.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/CONSTITUTION.md?type=file&root=%252F). Technical and interaction details are maintained in [architecture-plan.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/architecture-plan.md?type=file&root=%252F), [data-model-v1.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/data-model-v1.md?type=file&root=%252F), and [conversation-contract-v1.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/conversation-contract-v1.md?type=file&root=%252F). Do not reopen settled decisions just because an older brief or a proposal differs.

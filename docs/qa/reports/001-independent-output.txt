@@ -1,0 +1,20 @@
+Executor: lead assistant via approved root tool, isolated QA checkout.
+Command: .venv/bin/python -m unittest qa_independent -v
+Exit code: 0
+
+test_qa01_fractional_volume_bounds_and_known_zero (qa_independent.IndependentQA.test_qa01_fractional_volume_bounds_and_known_zero) ... ok
+test_qa02_frozen_version_survives_catalog_change_before_execution (qa_independent.IndependentQA.test_qa02_frozen_version_survives_catalog_change_before_execution) ... ok
+test_qa03_database_outbox_insert_failure_rolls_back_entire_mutation (qa_independent.IndependentQA.test_qa03_database_outbox_insert_failure_rolls_back_entire_mutation) ... ok
+test_qa04_deferred_failure_at_commit_never_returns_success (qa_independent.IndependentQA.test_qa04_deferred_failure_at_commit_never_returns_success) ... ok
+test_qa05_mixed_foreign_component_is_atomic (qa_independent.IndependentQA.test_qa05_mixed_foreign_component_is_atomic) ... ok
+test_qa06_populated_upgrade_preserves_frozen_result_and_trigger (qa_independent.IndependentQA.test_qa06_populated_upgrade_preserves_frozen_result_and_trigger) ... ok
+test_qa07_failed_upgrade_is_transactional_and_preserves_trigger (qa_independent.IndependentQA.test_qa07_failed_upgrade_is_transactional_and_preserves_trigger) ... ok
+test_qa08_simultaneous_identical_delivery_freezes_one_source (qa_independent.IndependentQA.test_qa08_simultaneous_identical_delivery_freezes_one_source) ... ok
+test_qa09_changed_payload_under_concurrent_operation_has_single_winner (qa_independent.IndependentQA.test_qa09_changed_payload_under_concurrent_operation_has_single_winner) ... ok
+test_qa10_frozen_timezone_survives_profile_change_and_dst_source (qa_independent.IndependentQA.test_qa10_frozen_timezone_survives_profile_change_and_dst_source) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 2.384s
+
+OK
+
