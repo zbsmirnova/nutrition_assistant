@@ -1,0 +1,129 @@
+{
+  "format_version": "1.0",
+  "title": "Russian intake interpretation and resolution evaluation draft",
+  "status": "authored from user-provided cases; numeric fixture values pending",
+  "evaluation_layers": [
+    "interpretation: classify the message, normalize wording, extract quantities and references",
+    "resolution: select the expected user-scoped recipe, product, historical entry, or clarification",
+    "application: calculate using pinned fixture sources, persist only authorized resolved items, and update totals"
+  ],
+  "fixture_contract": {
+    "catalog": "Synthetic catalog entries named in each case must have pinned kcal/macro values and preparation/basis metadata.",
+    "recipes": "Named saved recipes must have a current immutable nutrition version.",
+    "profile": "The coffee-as-usual rule and the short post-meal grouping window are explicit per-user fixtures.",
+    "history": "Cases that use a prior food reference or an existing meal declare the required owner-scoped history.",
+    "numeric_oracle": "Exact kcal and macro assertions are generated from the pinned fixture sources; this corpus does not invent nutrition values."
+  },
+  "cases": [
+    {
+      "id": "INTAKE-001",
+      "turns": ["Завтрак: яичница яйцо + белок 1:1, 115 гр, хлеб 52, тунцовая намазка 45, масло 7 гр, кофе как обычно"],
+      "fixtures": ["profile.usual_coffee", "recipe.tuna_spread.current", "catalog.egg", "catalog.egg_white", "catalog.whole_grain_bread", "catalog.butter"],
+      "expect": {
+        "intent": "consumed_breakfast",
+        "normalization": ["split 115 g omelet into 57.5 g egg and 57.5 g egg white"],
+        "resolution": ["use recipe.tuna_spread.current for 45 g", "use profile.usual_coffee"],
+        "persistence": ["save the resolved breakfast components with source/version provenance"],
+        "calculation": ["calculate each component and the day total from pinned fixture values"],
+        "must_not": ["substitute a generic tuna spread when the saved recipe exists", "invent unknown macros"]
+      }
+    },
+    {
+      "id": "INTAKE-002",
+      "turns": ["Добавь шоколад 85% 10 гр"],
+      "fixtures": ["catalog.dark_chocolate_85", "profile.post_meal_grouping_window", "history.no_recent_meal"],
+      "expect": {
+        "intent": "consumed_food",
+        "resolution": ["resolve catalog.dark_chocolate_85"],
+        "persistence": ["save one 10 g entry in the snack grouping when no recent meal falls inside the configured window"],
+        "calculation": ["calculate kcal and all available macros from the resolved product version"],
+        "must_not": ["silently choose among multiple matching chocolate products"]
+      }
+    },
+    {
+      "id": "INTAKE-003",
+      "turns": ["Обед в столовой: два куриных бедра без кожи, граммов 120\nОвощи тушеные баклажан, кабачок, фасоль, граммов 100\nСалат овощной без заправки 100 гр"],
+      "fixtures": ["catalog.cafeteria_chicken_thigh", "catalog.cafeteria_stewed_vegetables_high_fat", "catalog.vegetable_salad_no_dressing"],
+      "expect": {
+        "intent": "consumed_lunch_with_uncertainty",
+        "resolution": ["do not search user recipes", "use conservative cafeteria/high-fat prepared-food sources for items with unspecified preparation", "use the no-dressing salad source"],
+        "clarifications": ["ask whether there was sauce", "ask whether 120 g chicken includes bones or is edible meat"],
+        "calculation": ["render a cautious nutrition range and explain preparation uncertainty"],
+        "must_not": ["add dressing to the explicitly unseasoned salad", "select lean home-cooked defaults for unspecified cafeteria preparation"]
+      }
+    },
+    {
+      "id": "INTAKE-004",
+      "turns": ["Персик 100 гр и одна ягодка физалиса"],
+      "fixtures": ["catalog.peach", "catalog.physalis", "catalog.physalis.standard_single_berry_weight"],
+      "expect": {
+        "intent": "consumed_food",
+        "resolution": ["resolve peach at 100 g", "resolve one physalis berry using the catalog's standard single-berry weight"],
+        "persistence": ["save the physalis assumed weight, estimate flag, and estimate provenance"],
+        "calculation": ["calculate both items from their pinned sources"],
+        "must_not": ["represent the physalis estimate as a weighed quantity"]
+      }
+    },
+    {
+      "id": "INTAKE-005",
+      "turns": ["Завтрак 2 яйца, хлеб цз 43, паштет 40, масло сливочное 3, кофе как обычно"],
+      "fixtures": ["catalog.egg_category_0", "catalog.whole_grain_bread", "catalog.butter", "profile.usual_coffee", "recipes.pate.multiple_or_unspecified"],
+      "expect": {
+        "intent": "consumed_breakfast_partial",
+        "normalization": ["normalize цз to цельнозерновой", "apply the category-0 egg weight/nutrition rule"],
+        "resolution": ["resolve coffee from profile.usual_coffee", "require pâté source clarification"],
+        "persistence": ["save eggs, bread, butter, and coffee once", "keep pâté pending and out of totals until its recipe/source is confirmed"],
+        "clarifications": ["ask whether pâté is from the user's saved recipes"],
+        "must_not": ["treat the pâté as a generic catalog product before confirmation", "repeat already saved breakfast items after the answer"]
+      }
+    },
+    {
+      "id": "INTAKE-006",
+      "turns": ["Брезель 30 грамм"],
+      "fixtures": ["catalog.bretzel"],
+      "expect": {
+        "intent": "consumed_food",
+        "normalization": ["normalize Брезель to Брецель for lookup while preserving original source text"],
+        "resolution": ["resolve catalog.bretzel"],
+        "persistence": ["save one 30 g entry with the normalized source identity"],
+        "calculation": ["calculate available nutrition from the pinned product version"]
+      }
+    },
+    {
+      "id": "INTAKE-007",
+      "turns": ["Сыр 20 грамм, тот же что раньше"],
+      "fixtures": ["history.user_last_cheese", "catalog.user_last_cheese.version"],
+      "expect": {
+        "intent": "consumed_food_by_history_reference",
+        "resolution": ["resolve тот же to the authenticated user's most recently logged cheese", "reuse the referenced product's pinned source version"],
+        "persistence": ["save one new 20 g cheese entry"],
+        "calculation": ["calculate from the referenced product version"],
+        "must_not": ["read another user's history", "guess when no prior cheese or an ambiguity exists"]
+      }
+    },
+    {
+      "id": "INTAKE-008",
+      "turns": ["Картошка и батат запеченные 1:1, всего 120 грамм\nМасла к картошке было 3 грамма"],
+      "fixtures": ["catalog.baked_potato", "catalog.baked_sweet_potato", "catalog.oil"],
+      "expect": {
+        "intent": "consumed_food",
+        "normalization": ["split the 120 g total 1:1 by weight into 60 g potato and 60 g sweet potato"],
+        "persistence": ["save 3 g oil as a component of the same meal"],
+        "calculation": ["calculate the three components from pinned sources"],
+        "must_not": ["add hidden cooking oil in addition to the explicitly stated 3 g"]
+      }
+    },
+    {
+      "id": "INTAKE-009",
+      "turns": ["Две запеченные куриные ножки с кожей и костью, всего 150 грамм\nМасло к курице не добавляла"],
+      "fixtures": ["catalog.baked_chicken_leg_with_skin", "history.no_pending_chicken"],
+      "expect": {
+        "intent": "consumed_food_needs_edible_weight",
+        "normalization": ["retain 150 g as gross chicken weight including skin and bones"],
+        "clarifications": ["ask for separately weighed bone mass"],
+        "persistence": ["persist pending work with gross weight and explicit no-oil fact", "after a bone answer, calculate edible weight as 150 g minus bone mass and save once"],
+        "must_not": ["add cooking oil", "include unresolved chicken in confirmed totals"]
+      }
+    }
+  ]
+}
