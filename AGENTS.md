@@ -10,7 +10,7 @@ Explicit user decisions govern the project. Reflect them in the documents. When 
 
 ## Current implementation boundary
 
-The executable implementation includes M1 persistence, W002 private Telegram transport, and W003's provider-neutral conversation worker with a controlled synthetic parser and bounded single-food resolver. Job state and product identity metadata use migration 0004. Independent completion/review status belongs in the work brief. No live bot/model integration is claimed. Nebius interpretation, conversational clarification/corrections, recipes, observations, and scheduling remain future slices. Keep protocol, database, live-transport, and live-model evidence distinct.
+The executable implementation includes M1 persistence, W002 private Telegram transport, and W003's provider-neutral conversation worker with a controlled synthetic parser and bounded single-food resolver. Job state and product identity metadata use migration 0004. Independent completion/review status belongs in the work brief. No live bot/model integration is claimed. W004 adds the Nebius adapter and explicit worker/synthetic-smoke commands, with protocol checks using injected responses. Live compatibility/model quality, conversational clarification/corrections, recipes, observations, and scheduling remain future work. Keep protocol, database, live-transport, and live-model evidence distinct.
 
 The existing deployment files describe Open WebUI, not the new nutrition backend. The first implementation brief covers local synthetic-data development. Deployment and real-data provider use have unresolved requirements recorded in the decision register.
 
@@ -60,7 +60,7 @@ When a contract model changes, regenerate schemas before those checks:
 
 The existing suite checks generated-schema drift. For documentation-only changes, inspect links, document ownership/status consistency, and formatting; do not add implementation-mirroring tests or claim independent QA occurred.
 
-The explicit integration and retained QA suites require local PostgreSQL and create/remove only their own random schemas. They fail when the database is unavailable. Default test discovery runs offline contract, arithmetic, protocol, and resolver checks. Live-model and real Telegram checks do not exist yet. A changed contract requires regeneration; a changed migration/transaction requires both PostgreSQL suites.
+The explicit integration and retained QA suites require local PostgreSQL and create/remove only their own random schemas. They fail when the database is unavailable. Default test discovery runs offline contract, arithmetic, protocol, and resolver checks. An explicit synthetic Nebius smoke command exists but has not been run live. Real Telegram checks remain unverified. A changed contract requires regeneration; a changed migration/transaction requires both PostgreSQL suites.
 
 ## Completion and handoff
 

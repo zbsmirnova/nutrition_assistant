@@ -37,4 +37,6 @@ Official Nebius documentation checked on 2026-09-22:
 - [Structured output and JSON](https://docs.tokenfactory.nebius.com/ai-models-inference/json): JSON Schema response format and model-dependent support.
 - [Text generation](https://docs.tokenfactory.nebius.com/api-reference/examples/text-generation): chat-completions request fields.
 
-The current adapter remains future work; these sources establish its intended integration contract, not live verification. This resolves the provider portion of Q09 without superseding D002–D007's execution, storage, calculation, or transport rules.
+At this decision's initial recording, the adapter was future work; these sources established its intended integration contract, not live verification. This resolved the provider portion of Q09 without superseding D002–D007's execution, storage, calculation, or transport rules.
+
+Implementation follow-up: D012 and [004-nebius-adapter.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/004-nebius-adapter.md?type=file&root=%252F) record the adapter added after this decision. Its offline checks do not establish live compatibility.

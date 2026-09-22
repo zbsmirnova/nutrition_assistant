@@ -1,0 +1,6 @@
+test_qa05_http_date_retry_survives_restart_and_key_rotation (qa_w004_independent.RetryDatabaseQA.test_qa05_http_date_retry_survives_restart_and_key_rotation) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 0.337s
+
+OK

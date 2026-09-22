@@ -1,0 +1,54 @@
+Executor: independent QA; original W004 source 3b4ee706e7d0fab4b917d9711c2355da08cba8a3d6f2eb89c56fdb205
+test_qa01_retry_after_http_whitespace_preserves_delay_and_limit (qa_w004_independent.ProtocolQA.test_qa01_retry_after_http_whitespace_preserves_delay_and_limit) ... 
+  test_qa01_retry_after_http_whitespace_preserves_delay_and_limit (qa_w004_independent.ProtocolQA.test_qa01_retry_after_http_whitespace_preserves_delay_and_limit) (value='120 ') ... FAIL
+  test_qa01_retry_after_http_whitespace_preserves_delay_and_limit (qa_w004_independent.ProtocolQA.test_qa01_retry_after_http_whitespace_preserves_delay_and_limit) (value='120\t') ... FAIL
+  test_qa01_retry_after_http_whitespace_preserves_delay_and_limit (qa_w004_independent.ProtocolQA.test_qa01_retry_after_http_whitespace_preserves_delay_and_limit) (value='86401 ') ... ERROR
+test_qa02_catalog_instructions_are_data_and_overflow_makes_no_request (qa_w004_independent.ProtocolQA.test_qa02_catalog_instructions_are_data_and_overflow_makes_no_request) ... FAIL
+test_qa03_read_failure_closes_once_and_smoke_error_is_redacted (qa_w004_independent.ProtocolQA.test_qa03_read_failure_closes_once_and_smoke_error_is_redacted) ... ok
+test_qa04_smoke_rejects_wrong_quantity_without_writes (qa_w004_independent.ProtocolQA.test_qa04_smoke_rejects_wrong_quantity_without_writes) ... ok
+
+======================================================================
+ERROR: test_qa01_retry_after_http_whitespace_preserves_delay_and_limit (qa_w004_independent.ProtocolQA.test_qa01_retry_after_http_whitespace_preserves_delay_and_limit) (value='86401 ')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/nutrition-w004-qa-2r5idwct/qa_w004_independent.py", line 54, in test_qa01_retry_after_http_whitespace_preserves_delay_and_limit
+    with self.assertRaises(ParserRejected):parser.parse(request())
+                                           ~~~~~~~~~~~~^^^^^^^^^^^
+  File "/private/tmp/nutrition-w004-review-mvgeurf2/nutrition_app/nebius.py", line 130, in parse
+    raise ParserUnavailable("Nebius temporarily unavailable", retry_after=delay)
+nutrition_app.interpretation.ParserUnavailable: Nebius temporarily unavailable
+
+======================================================================
+FAIL: test_qa01_retry_after_http_whitespace_preserves_delay_and_limit (qa_w004_independent.ProtocolQA.test_qa01_retry_after_http_whitespace_preserves_delay_and_limit) (value='120 ')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/nutrition-w004-qa-2r5idwct/qa_w004_independent.py", line 57, in test_qa01_retry_after_http_whitespace_preserves_delay_and_limit
+    self.assertEqual(caught.exception.retry_after,expected)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 60 != 120
+
+======================================================================
+FAIL: test_qa01_retry_after_http_whitespace_preserves_delay_and_limit (qa_w004_independent.ProtocolQA.test_qa01_retry_after_http_whitespace_preserves_delay_and_limit) (value='120\t')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/nutrition-w004-qa-2r5idwct/qa_w004_independent.py", line 57, in test_qa01_retry_after_http_whitespace_preserves_delay_and_limit
+    self.assertEqual(caught.exception.retry_after,expected)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 60 != 120
+
+======================================================================
+FAIL: test_qa02_catalog_instructions_are_data_and_overflow_makes_no_request (qa_w004_independent.ProtocolQA.test_qa02_catalog_instructions_are_data_and_overflow_makes_no_request)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/private/tmp/nutrition-w004-qa-2r5idwct/qa_w004_independent.py", line 74, in test_qa02_catalog_instructions_are_data_and_overflow_makes_no_request
+    self.assertEqual(body['response_format']['json_schema'],exported)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: {'$de[34219 chars]ject'} != {'$de[34219 chars]ject', '$schema': 'https://json-schema.org/dra[76 chars]put'}
+Diff is 97644 characters long. Set self.maxDiff to None to see it.
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.090s
+
+FAILED (failures=3, errors=1)
+
+Exit status: 1

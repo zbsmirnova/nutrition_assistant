@@ -15,7 +15,7 @@ from nutrition_contracts.parser import ParserOutput
 from . import schema as db
 from .errors import ApplicationError, NotFound
 from .interpretation import (CONTEXT_VERSION, MAX_CANDIDATES, RESOLVER_VERSION,
-                             Parser, Resolution, parser_request, resolve)
+                             Parser, ParserRejected, ParserUnavailable, Resolution, parser_request, resolve)
 from .service import FoodService, operation_id_for
 
 
@@ -159,7 +159,7 @@ class ConversationWorker:
                                    .values(pending_food_date=resolution.pending_food_date))
         return True
 
-    def _failure(self, claim, reason, *, retryable, require_claim=True):
+    def _failure(self, claim, reason, *, retryable, require_claim=True, retry_after=None):
         with self.engine.begin() as connection:
             self.service._user(connection, claim.actor)
             if self._applied(connection, claim.actor, claim.origin):
@@ -175,8 +175,9 @@ class ConversationWorker:
             status = "retry" if retryable and row["attempts"] < MAX_ATTEMPTS else "failed"
             self._set(connection, claim.actor, claim.origin, status, reason)
             if status == "retry":
+                delay = max(2 ** row["attempts"], retry_after or 0)
                 connection.execute(db.conversation_jobs.update().where(self._where(claim.actor, claim.origin))
-                    .values(next_attempt_at=sa.func.clock_timestamp() + timedelta(seconds=2 ** row["attempts"])))
+                    .values(next_attempt_at=sa.func.clock_timestamp() + timedelta(seconds=delay)))
             return status
 
     def run_one(self, actor: UUID, parser: Parser, *, origin: UUID | None = None, fault=None):
@@ -199,6 +200,12 @@ class ConversationWorker:
             else:
                 try:
                     raw = parser.parse(parser_request(context))
+                except ParserRejected:
+                    status = self._failure(claim, "parser_rejected", retryable=False)
+                    return {"status": status, "origin_update_id": str(claim.origin)}
+                except ParserUnavailable as exc:
+                    status = self._failure(claim, "parser_unavailable", retryable=True, retry_after=exc.retry_after)
+                    return {"status": status, "origin_update_id": str(claim.origin)}
                 except Exception:
                     # Provider exceptions can contain message text, endpoints, or keys.
                     status = self._failure(claim, "parser_unavailable", retryable=True)

@@ -41,6 +41,15 @@ class Parser(Protocol):
 class ParserUnavailable(ApplicationError):
     code = "parser_unavailable"
 
+    def __init__(self, message="Parser unavailable", *, retry_after=None):
+        super().__init__(message)
+        self.retry_after = retry_after if type(retry_after) is int and 0 <= retry_after <= 86400 else None
+
+
+class ParserRejected(ApplicationError):
+    """A permanent provider/configuration/proposal failure, never silently retried."""
+    code = "parser_rejected"
+
 
 class SyntheticParser:
     """Explicit controlled response, bound to exact source text and catalog names.

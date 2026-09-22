@@ -1,6 +1,6 @@
 # V1 conversation contract
 
-Status: step 2 interaction decisions are reflected in strict Pydantic contracts, generated JSON Schema, and 20 authored examples. Accepted rules below come from the product conversation; remaining implementation defaults are explicitly proposed. Examples use Russian because that is the brief's chat language. M1 implements resolved product-food persistence; W002 implements private Telegram ingress/delivery. W003 adds a bounded standalone-food resolver driven by controlled parser responses, including deferral of unresolved dairy identity. A live model and interactive clarifications/corrections remain unimplemented; the work brief owns verification status.
+Status: step 2 interaction decisions are reflected in strict Pydantic contracts, generated JSON Schema, and 20 authored examples. Accepted rules below come from the product conversation; remaining implementation defaults are explicitly proposed. Examples use Russian because that is the brief's chat language. M1 implements resolved product-food persistence; W002 implements private Telegram ingress/delivery. W003 adds a bounded standalone-food resolver driven by controlled parser responses, including deferral of unresolved dairy identity. W004 adds the explicit Nebius adapter, tested with injected responses. Live model compatibility and interactive clarifications/corrections remain unverified/unimplemented respectively; work briefs own verification status.
 
 ## 1. Requirements and status
 

@@ -8,7 +8,7 @@ The local persistence service saves resolved food commands with deterministic to
 
 M1 completed on 2026-09-22. Verification passed: 41 contract/arithmetic tests, 26 PostgreSQL integration tests, and 10 additional independently authored QA checks. Independent QA passed the local persistence scope; database execution was assisted by the lead. The completed brief is [001-persist-food-entry.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/001-persist-food-entry.md?type=file&root=%252F), with evidence in [001-persist-food-entry-qa.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/001-persist-food-entry-qa.md?type=file&root=%252F).
 
-Completed slice: [003-conversation-worker.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/003-conversation-worker.md?type=file&root=%252F) implements a provider-neutral message-to-food worker using controlled parser responses. The worker resolves one clear product-food input, defers missing dairy details, and resumes frozen commands after failures. W002 and W003 passed independent review within their synthetic scope; exact evidence belongs in their briefs. The Nebius adapter, conversational clarification/corrections, recipe engine, observations, scheduler, and deployment remain future work. The local CLI is a trusted operator interface, with explicitly provisioned Telegram accounts.
+Completed slice: [003-conversation-worker.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/003-conversation-worker.md?type=file&root=%252F) implements a provider-neutral message-to-food worker using controlled parser responses. The worker resolves one clear product-food input, defers missing dairy details, and resumes frozen commands after failures. W002 and W003 passed independent review within their synthetic scope; exact evidence belongs in their briefs. W004 adds an explicit Nebius adapter, independently reviewed with injected responses; live compatibility and quality remain unverified. Conversational clarification/corrections, recipes, observations, scheduler, and deployment remain future work. The local CLI is a trusted operator interface, with explicitly provisioned Telegram accounts.
 
 ## Run the synthetic local demo
 
@@ -81,9 +81,27 @@ The resolver currently supports one product with explicit g/ml quantity and supp
 
 ## Nebius provider setup
 
-The user selected Nebius Token Factory cloud inference and will supply an API key as a secret. Expose that secret to the application process as NEBIUS_API_KEY. The exact model ID will use NUTRITION_LLM_MODEL; model selection follows evaluation rather than an assumed default. The non-secret [.env.example](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/.env.example?type=file&root=%252F) records these names. The application does not automatically load .env files, and no provider adapter or live model call is implemented yet.
+The user selected Nebius Token Factory cloud inference and will supply an API key as a secret. Expose that secret to the application process as NEBIUS_API_KEY. The exact model ID will use NUTRITION_LLM_MODEL; model selection follows evaluation rather than an assumed default. The non-secret [.env.example](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/.env.example?type=file&root=%252F) records these names. The application does not automatically load .env files, and no live model call has been verified.
 
-Nebius's documented API base is https://api.tokenfactory.nebius.com/v1/. The worker and its synthetic checks can be implemented without credentials. Supplying the secret will not automatically run inference, process stored messages, or deploy the application. The provider decision, official references, and remaining evaluation requirements are in [0009-nebius-cloud-provider.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0009-nebius-cloud-provider.md?type=file&root=%252F).
+Nebius's documented API base is https://api.tokenfactory.nebius.com/v1/. The worker and offline provider checks run without credentials. Supplying the secret will not automatically run inference, process stored messages, or deploy the application. The provider decision, official references, and remaining evaluation requirements are in [0009-nebius-cloud-provider.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0009-nebius-cloud-provider.md?type=file&root=%252F).
+
+After configuring the two environment variables through your secret mechanism, an explicit synthetic check is available:
+
+~~~sh
+.venv/bin/python -m nutrition_app nebius-smoke
+~~~
+
+This sends one fixed synthetic dairy entry to Nebius, validates the returned action through the existing resolver, and prints validation flags plus a parser fingerprint. It never opens the database and does not print the source, response or key. No live smoke result is recorded yet; the configured model must support the actual schema.
+
+For an explicit identified inbox source, the operator command is:
+
+~~~sh
+.venv/bin/python -m nutrition_app conversation-nebius --user INTERNAL_USER_UUID --source INBOX_UUID
+~~~
+
+This command sends source text/date/time zone and bounded public product context to Nebius, then applies W003's validation, dairy/quantity/date guards, authorization, arithmetic and idempotency. It does not poll, send Telegram replies, or process the whole inbox. Real-data lifecycle choices remain Q10; start live verification with the synthetic check. Existing conversation-run remains the controlled-fixture path. Model/prompt/schema changes fence unfinished work; key rotation preserves parser identity. Frozen commands resume without another model call.
+
+Transient failures retry through durable job state, with three total claims and valid Retry-After delays. Permanent provider errors or invalid output become visible failed jobs without food. Terminal recovery after correcting configuration is later explicit tooling. Requests use the fixed HTTPS endpoint, verified TLS, a 30-second socket timeout and 256-KiB size limits; no redirect, provider fallback, schema downgrade or hidden retry occurs. D012 and [004-nebius-adapter.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/004-nebius-adapter.md?type=file&root=%252F) record scope and review status.
 
 ## Verification
 
@@ -95,7 +113,7 @@ Nebius's documented API base is https://api.tokenfactory.nebius.com/v1/. The wor
 git diff --check
 ~~~
 
-The first command runs 65 checks: 32 contract, 9 arithmetic, 11 Telegram protocol/rendering, and 13 controlled resolver tests. The integration command runs 53 tests against local PostgreSQL, including 15 worker checks; the separate QA command runs 27 retained checks from M1, W002, and W003. Developer verification and independent review are distinguished in the W003 brief and QA reports. Each database test creates and removes its own randomly named schema. These commands do not reset development data or call Telegram/Nebius. An unavailable database fails the run; there is no silent skip or SQLite substitute.
+The first command runs 79 checks: 32 contract, 9 arithmetic, 11 Telegram protocol/rendering, 13 controlled resolver, and 14 Nebius protocol/CLI tests. The integration command runs 59 tests against local PostgreSQL, including 15 worker and 6 Nebius-worker checks; the separate QA command runs 32 retained checks from M1, W002, W003, and W004. Developer verification and independent review are distinguished in the work briefs and QA reports. Each database test creates and removes its own randomly named schema. These commands do not reset development data or call Telegram/Nebius. An unavailable database fails the run; there is no silent skip or SQLite substitute.
 
 Runtime dependencies are pinned in [requirements-runtime.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/requirements-runtime.txt?type=file&root=%252F), including [requirements-contracts.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/requirements-contracts.txt?type=file&root=%252F). For contract-only work, install the latter and run unittest discovery with the pattern test_contracts.py. No provider credentials are needed.
 

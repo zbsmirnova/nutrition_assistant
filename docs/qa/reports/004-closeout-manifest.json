@@ -1,0 +1,209 @@
+{
+  "reviewed_source_id": "d31d4079dfe8ecf0cae2309ad734f1bcf5d347cc31b37294811d7fd1d1492087",
+  "base_commit": "7bea583d1f567e0971d48993bccfc59b35d8a5ae",
+  "reviewed_code_prompt_test_contract_dependency_migration_files_unchanged": 68,
+  "post_review_changed_reviewed_files": [
+    {
+      "path": "README.md",
+      "reviewed_sha256": "351c06e041a966d354b43e8a373aaf6e80beda1279dc65545475d686fe3c8007",
+      "sha256": "7b4ed4becd63e3cbceac5c710807bcebe610ff6f162789e3b8c984a4e6845982"
+    },
+    {
+      "path": "docs/qa/strategy.md",
+      "reviewed_sha256": "d356bea2f0d247ce4f73d57a78cbf8147aa0ba6aa64c84e55e696b573c161d66",
+      "sha256": "c10d13c35e3ee58a0272695299cf117312b52bd051a83411831e741905a5f5b8"
+    },
+    {
+      "path": "docs/roadmap.md",
+      "reviewed_sha256": "e77b09096be281dbfef42c02401f00c518ce5dcd8056ddc7a2528303915ac9db",
+      "sha256": "b6023f70ca037ac49dbad5259274322cfbff625c87acc0dc51a66c4e2696cac5"
+    },
+    {
+      "path": "docs/work/004-nebius-adapter.md",
+      "reviewed_sha256": "96a5d29d018dbcfb936df7a62504f89f3e90592c91f8bf65ee7f9c1bea39c58d",
+      "sha256": "ddd9cc60f7bc3a9b4f00b273a1e1b01e2af35c8ddb69022e39bee394ad6c28e6"
+    }
+  ],
+  "owned_commit_files": [
+    {
+      "path": ".env.example",
+      "sha256": "c429ca8ebc525c1f9663564c705bfbdf2dda585869daa279f0d588d798a4d871"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "aa06e3000a72c412e5e15e87d81def9cd1f4b1b99a62b41db8b848c726fdd3ff"
+    },
+    {
+      "path": "README.md",
+      "sha256": "7b4ed4becd63e3cbceac5c710807bcebe610ff6f162789e3b8c984a4e6845982"
+    },
+    {
+      "path": "docs/architecture-plan.md",
+      "sha256": "dfb183b65d50c0acb8b7ad6aebe24363a44104ab7780fc86069d770c6dbdc31d"
+    },
+    {
+      "path": "docs/conversation-contract-v1.md",
+      "sha256": "50017aeb63521ca11559461ad15f9b1cc16e4c2726fb0b6c67317078d2403182"
+    },
+    {
+      "path": "docs/decisions/0009-nebius-cloud-provider.md",
+      "sha256": "51362acf1d178e2f7d3440b38c5e787dda60863b905b3ca10eadebb8e34201e2"
+    },
+    {
+      "path": "docs/decisions/0012-nebius-adapter.md",
+      "sha256": "f017e01748ceb4213770f4a2bd00589586260793870182f263d671be9f86ef49"
+    },
+    {
+      "path": "docs/decisions/README.md",
+      "sha256": "ce985246d25cf17953b9c504b78312e3359b2b9aa2de9057d1afe689f801b1d4"
+    },
+    {
+      "path": "docs/qa/reports/004-developer-integration-attempt2-output.txt",
+      "sha256": "1fcfd5c62cf10d243b72883892ed79a65091d345494772a9fd3fd8f1135a354d"
+    },
+    {
+      "path": "docs/qa/reports/004-developer-integration-final-output.txt",
+      "sha256": "3465aca0ddebb2138066b86f985e1d9654f582d976e7258d1a69779002fdaf69"
+    },
+    {
+      "path": "docs/qa/reports/004-developer-integration-output.txt",
+      "sha256": "74bb4fa87cd31af9aaf63edc788261a445e353974483009bc3a0b80f11ac72c2"
+    },
+    {
+      "path": "docs/qa/reports/004-developer-retained-final-output.txt",
+      "sha256": "c582cabd4cddd7c3d1a5630d144c71051f12b97eea38ec70f712a47bba6a4ad6"
+    },
+    {
+      "path": "docs/qa/reports/004-developer-retained-output.txt",
+      "sha256": "6e86bcc344d2b5f30fd5286df13e8988e85f8c5f3bcc98a47162bfdca05b76d9"
+    },
+    {
+      "path": "docs/qa/reports/004-developer-unit-attempt2-output.txt",
+      "sha256": "de14783b2332c6d06c396d97b344eb0d0e991999f1020a1cb61559f56970c431"
+    },
+    {
+      "path": "docs/qa/reports/004-developer-unit-original-output.txt",
+      "sha256": "20bcd9e95a67663d9465dba57d242453389f88daa5a78fdf9c20c512b0caf190"
+    },
+    {
+      "path": "docs/qa/reports/004-developer-unit-output.txt",
+      "sha256": "68f86833620cd744d6506faa8aefb4752d9e2243cc20740489a26a36e7ca039e"
+    },
+    {
+      "path": "docs/qa/reports/004-nebius-adapter-developer.md",
+      "sha256": "b9009266cee34199279a0f860df150dc4890a73ea5f2ab995befe8f03090f357"
+    },
+    {
+      "path": "docs/qa/reports/004-nebius-adapter-qa-attempt1.md",
+      "sha256": "e880ea9100fb1abd8e3cb0fabac2698fad2e37ea13f007177afdf4f11b26c838"
+    },
+    {
+      "path": "docs/qa/reports/004-nebius-adapter-qa-original.md",
+      "sha256": "cca21ccd992fdb9ffa339aa17ede7ec5098dd64320175d0a3f6d1e6061d6c6cc"
+    },
+    {
+      "path": "docs/qa/reports/004-nebius-adapter-qa.md",
+      "sha256": "0e6f6745c6d0fb71e4d1c042c60d9073f4009c628f08a365c825522f0aac80e4"
+    },
+    {
+      "path": "docs/qa/reports/004-original-qa_w004_independent.py",
+      "sha256": "594ce71f502d42211f98e87e069395582d1c48569c8caffc6434a5da468d31a1"
+    },
+    {
+      "path": "docs/qa/reports/004-probe-authoring-v0.py.txt",
+      "sha256": "2ac0253c6339eebfbadfec786b9cc472bccdc96225a424e226d49d18161e7a6a"
+    },
+    {
+      "path": "docs/qa/reports/004-qa-db-final-output.txt",
+      "sha256": "ea432fb41d6b423f6613440f3326b5b2010bc3b4c3c15d50c47d112bbfe1defd"
+    },
+    {
+      "path": "docs/qa/reports/004-qa-protocol-attempt2-output.txt",
+      "sha256": "98444962e16c7c0c0a0040c93582ecc163e291ecff015334b3df1005c538f443"
+    },
+    {
+      "path": "docs/qa/reports/004-qa-protocol-authoring-output.txt",
+      "sha256": "9e915992d44b48ae0f2d46037dc6605d3b63af9410907d1fc894ce04ce21b1ae"
+    },
+    {
+      "path": "docs/qa/reports/004-qa-protocol-original-output.txt",
+      "sha256": "81304c8de08b6f4209ee560c5a95992932bb323b29f6ba801990d4dabb484342"
+    },
+    {
+      "path": "docs/qa/reports/004-qa-unit-attempt2-output.txt",
+      "sha256": "96ec85d59bb3ea76bfec243bb54346511ac8dd6d7367b153f855cf6b520bc909"
+    },
+    {
+      "path": "docs/qa/reports/004-qa-unit-original-output.txt",
+      "sha256": "bfbcd225700af48c27c5a41b0366e259d63666bdf4e8f98f863e41be2b01ae06"
+    },
+    {
+      "path": "docs/qa/reports/004-source-manifest-attempt1.json",
+      "sha256": "71e3956669b91d30cd20a6b68e00a05fbd8ebc4c3cbdb07bf91fa48b6f27d55a"
+    },
+    {
+      "path": "docs/qa/reports/004-source-manifest.json",
+      "sha256": "945bfc081c39da8b40b7df225cec7b203a3807291ece1897ce3893dfbbb20c7c"
+    },
+    {
+      "path": "docs/qa/strategy.md",
+      "sha256": "c10d13c35e3ee58a0272695299cf117312b52bd051a83411831e741905a5f5b8"
+    },
+    {
+      "path": "docs/roadmap.md",
+      "sha256": "b6023f70ca037ac49dbad5259274322cfbff625c87acc0dc51a66c4e2696cac5"
+    },
+    {
+      "path": "docs/typed-contracts-v1.md",
+      "sha256": "d6562840f7597cab5384c4c6fb11ddb5dd624bae940f0c50f429cc3756c5de30"
+    },
+    {
+      "path": "docs/work/004-nebius-adapter.md",
+      "sha256": "ddd9cc60f7bc3a9b4f00b273a1e1b01e2af35c8ddb69022e39bee394ad6c28e6"
+    },
+    {
+      "path": "nutrition_app/__main__.py",
+      "sha256": "d584f80802756ef5b6eab7096be77d3fe2ac38d6994464eb99b0b2b2de187d0f"
+    },
+    {
+      "path": "nutrition_app/conversation.py",
+      "sha256": "166a8323b60a5c449325366f603eebc0b26a3a9d0ef8eca19c5b7f183f4b76a1"
+    },
+    {
+      "path": "nutrition_app/interpretation.py",
+      "sha256": "b6abfdb45cec8cc811440e7d0cc2d9119a9c5b821cb9268a03eb78e6bf282eee"
+    },
+    {
+      "path": "nutrition_app/nebius.py",
+      "sha256": "6b3f0b6985c43a2ed06b588a7019417a9422c2b789cb00e988b62ec16e6ca0ae"
+    },
+    {
+      "path": "nutrition_app/nebius_prompt.txt",
+      "sha256": "6dddaf259fe26dbff9be676c14ca8f49c4bc952797d10c870f62beff8ff18ae2"
+    },
+    {
+      "path": "tests/integration/test_nebius_worker.py",
+      "sha256": "8aa97a27491c959682501d57c5ad204acfc7045e20d0873998a175645c3fb477"
+    },
+    {
+      "path": "tests/qa/test_w004_independent.py",
+      "sha256": "d5cc683d759e6a432ef34070e75c9930934cca7d09df7f8f891db4eee022bca2"
+    },
+    {
+      "path": "tests/test_nebius.py",
+      "sha256": "47a285f171ebc1408de7820098f1a6d55f6d22bfd8a0d9c36ac032fdb694f069"
+    }
+  ],
+  "verification": {
+    "offline": 79,
+    "integration": 59,
+    "retained_qa": 32,
+    "total": 170,
+    "independent_verdict": "pass A01-A08 on attempt2",
+    "markdown_documents": 43,
+    "file_links_checked": 331,
+    "missing_links": 0,
+    "formatting": "git diff --check passed; staged check required before commit"
+  },
+  "limits": "No live inference, model selection, general language evaluation or real Telegram verification."
+}

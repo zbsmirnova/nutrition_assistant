@@ -1,0 +1,431 @@
+{
+  "source_id": "d31d4079dfe8ecf0cae2309ad734f1bcf5d347cc31b37294811d7fd1d1492087",
+  "base_commit": "7bea583d1f567e0971d48993bccfc59b35d8a5ae",
+  "file_count": 105,
+  "files": [
+    {
+      "path": ".env.example",
+      "sha256": "c429ca8ebc525c1f9663564c705bfbdf2dda585869daa279f0d588d798a4d871"
+    },
+    {
+      "path": ".gitattributes",
+      "sha256": "f182c844b4c9becd40730a6b0a7cf744c2b9a53f710ea087f286c80752cf9282"
+    },
+    {
+      "path": ".gitignore",
+      "sha256": "344fee9583cf11fec596d8c161b5ccf9774f27250d71e3761b43434c0759d67f"
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "aa06e3000a72c412e5e15e87d81def9cd1f4b1b99a62b41db8b848c726fdd3ff"
+    },
+    {
+      "path": "CONSTITUTION.md",
+      "sha256": "1efd0aff7b599d978f81eae5524b7713111c5a6b095124615c6e890c0b859675"
+    },
+    {
+      "path": "Dockerfile",
+      "sha256": "bf18cdaf21424c0d0cff14c3482a101787bc417f026dd965f14ace58d2c77355"
+    },
+    {
+      "path": "README.md",
+      "sha256": "351c06e041a966d354b43e8a373aaf6e80beda1279dc65545475d686fe3c8007"
+    },
+    {
+      "path": "alembic.ini",
+      "sha256": "e7955a0ffb9c32a9c5067d7885ee9197328f17a4a12fb4a5bb556c2b85763aa2"
+    },
+    {
+      "path": "compose.dev.yml",
+      "sha256": "e89fe183c9d26559f6c3287ca88cdf5093928b4520a362aa96106bfec4c5bd9e"
+    },
+    {
+      "path": "contracts/v1/command.schema.json",
+      "sha256": "a022bf47333682f27d2ed3266302d5d4ae3a2ac20f5dfba63735ea07d9d203f5"
+    },
+    {
+      "path": "contracts/v1/examples/01_add_food.json",
+      "sha256": "5837b37f81d0a71aca687dd09425d1b36574d12a6d2211a25d2c5af122162715"
+    },
+    {
+      "path": "contracts/v1/examples/02_mixed_food.json",
+      "sha256": "6dac01245d5d9579de9e322d8fba1a10f4f33e01b4c74fedcb13871fd797b613"
+    },
+    {
+      "path": "contracts/v1/examples/03_clarification_after_midnight.json",
+      "sha256": "484eef3cd4572c2e5998fd183d5c3aff3afa20d70116573ad69f4a0e58250ae4"
+    },
+    {
+      "path": "contracts/v1/examples/04_correct_food.json",
+      "sha256": "f62153c9b5eca17c4e3b696d3e1104602afac48603e86689a22c1151eb78c419"
+    },
+    {
+      "path": "contracts/v1/examples/05_replace_daily_weight.json",
+      "sha256": "8e53c59cfce31ac4e3aaebaf09a96cd88f5f748e533189a11f5ab44ef41cf894"
+    },
+    {
+      "path": "contracts/v1/examples/06_same_daily_steps.json",
+      "sha256": "8921c878230d83a12ba233d85fe1669d546827e5a858ca1f7b72f3fbe86b2692"
+    },
+    {
+      "path": "contracts/v1/examples/07_increment_daily_steps.json",
+      "sha256": "19cdfeac94c6348b3e247c3285f90aeb570de29ecb7bab048a6097c33495873a"
+    },
+    {
+      "path": "contracts/v1/examples/08_recipe_needs_finished_weight.json",
+      "sha256": "d05af48502fb6b96f508f9347b84c9e01d90eb9feb39d13569ff1327dafa28d4"
+    },
+    {
+      "path": "contracts/v1/examples/09_recipe_calculation_answer.json",
+      "sha256": "584db8fb959a67c099408fd579ad8b1f1ae5c7a28b23c5c288da854208febce7"
+    },
+    {
+      "path": "contracts/v1/examples/10_recipe_direct_input.json",
+      "sha256": "c5d210688af049bbfbfbc3857b529028fba2d0654b6d9f7f95f23b16afa5c0f9"
+    },
+    {
+      "path": "contracts/v1/examples/11_define_recipe_then_eat.json",
+      "sha256": "d421cc45633fe5b4d45b63e048e509e277b39bf6428432f79a1d1354c7706364"
+    },
+    {
+      "path": "contracts/v1/examples/12_planned_food.json",
+      "sha256": "856241992e79ad4c9ea6145820da699e6b089dbdc5d3269c401b3c1a434015b2"
+    },
+    {
+      "path": "contracts/v1/examples/13_food_question.json",
+      "sha256": "ef22223d134a36ddbe9033afc76115f648bbdfbb4dd2ce08e9e2ce1f18727183"
+    },
+    {
+      "path": "contracts/v1/examples/14_close_day_missing_steps.json",
+      "sha256": "253b243e70713b843d7be5fe84b78e1b49feb23b60210c459d38a496b7eda400"
+    },
+    {
+      "path": "contracts/v1/examples/15_late_food_unknown_nutrient.json",
+      "sha256": "0e744b07e2b82d1bc312233327f814ff70fe63bea2cd947416fe54e91711e7ad"
+    },
+    {
+      "path": "contracts/v1/examples/16_cancel_pending.json",
+      "sha256": "f66e17505fe2c0538cbd3e154964931de7994afc5b798456705abfb7fd280166"
+    },
+    {
+      "path": "contracts/v1/examples/17_bones_correction.json",
+      "sha256": "2ec860dd5f0021451cd45f951d06f6c1a33cb833d86dd0d421021eae83c2ab24"
+    },
+    {
+      "path": "contracts/v1/examples/18_weight_while_food_pending.json",
+      "sha256": "54c59f2643cf60a6dd524817e04beb9c7fe7d855fc2415240578be580dbaa3c4"
+    },
+    {
+      "path": "contracts/v1/examples/19_ambiguous_correction.json",
+      "sha256": "5399108271c50de640edb94281efa4179a93d1e1923e7c984b3f9c77901f8f85"
+    },
+    {
+      "path": "contracts/v1/examples/20_undo_food.json",
+      "sha256": "abe5e8f7341765e664e42d26e211e03085d557a97425fc40307c1d2062ac1405"
+    },
+    {
+      "path": "contracts/v1/examples/catalog.json",
+      "sha256": "879b9e3960640fe6fb7cb44d9c12394a7041bf29e5efd5189bde6cf060f552cf"
+    },
+    {
+      "path": "contracts/v1/outcome.schema.json",
+      "sha256": "9c8ff6c0e23819192d7677f2f30ca83c1b96caf2a6968907179698a9e26b1d8e"
+    },
+    {
+      "path": "contracts/v1/parser-output.schema.json",
+      "sha256": "2f97544963485d2574c33303976cae575fe13f48b39cd82126a198ffe1bf9856"
+    },
+    {
+      "path": "docs/architecture-plan.md",
+      "sha256": "dfb183b65d50c0acb8b7ad6aebe24363a44104ab7780fc86069d770c6dbdc31d"
+    },
+    {
+      "path": "docs/conversation-contract-v1.md",
+      "sha256": "50017aeb63521ca11559461ad15f9b1cc16e4c2726fb0b6c67317078d2403182"
+    },
+    {
+      "path": "docs/data-model-v1.md",
+      "sha256": "d26bcd4e88e41c603f0f2cd69443f2620a016909b1aea411b374cd72b901df1e"
+    },
+    {
+      "path": "docs/decisions/0001-continuous-food-saving.md",
+      "sha256": "06307354b30e5da375d0b6c5cec100ede2df2754dfc57d8b9d4c5db1ac2ba4ee"
+    },
+    {
+      "path": "docs/decisions/0002-command-execution.md",
+      "sha256": "bd9cd8197c745224d579d512a43b824f35cbbb264cadd17320095da044787237"
+    },
+    {
+      "path": "docs/decisions/0003-relational-storage.md",
+      "sha256": "da906d1bb3bf41653fac04f25baa9805e8fc2d083b20f5a8a082e14da902ca09"
+    },
+    {
+      "path": "docs/decisions/0004-revisions-recipes-observations.md",
+      "sha256": "382d09dad4d9ddc05a4e73d4a39165040760e41f02300f69c114f8d73fe9a5e9"
+    },
+    {
+      "path": "docs/decisions/0005-document-maintenance.md",
+      "sha256": "7757587346553df363e036b35db28ab323ae20171663b5ef23147e643015587d"
+    },
+    {
+      "path": "docs/decisions/0006-numeric-policy.md",
+      "sha256": "37dc9d6237a72bf397e66228eebf26312efcb9818c6a98f04e5a24e809dee6cb"
+    },
+    {
+      "path": "docs/decisions/0007-telegram-transport.md",
+      "sha256": "aba7d28c9a729b63b4e1bebd4116fde1b0fc2b5b21a99e62abb4ed452804a5af"
+    },
+    {
+      "path": "docs/decisions/0008-completed-slice-commits.md",
+      "sha256": "99f572fba623733d0e1e64bd94766efb38967bc27069446e0e92d3b116cd78d4"
+    },
+    {
+      "path": "docs/decisions/0009-nebius-cloud-provider.md",
+      "sha256": "51362acf1d178e2f7d3440b38c5e787dda60863b905b3ca10eadebb8e34201e2"
+    },
+    {
+      "path": "docs/decisions/0010-dairy-fat-clarification.md",
+      "sha256": "a3dddc0d860353c2660bdc6c3dbe1ed5747a34c924acaac1ce8f7a1cc80e4c0f"
+    },
+    {
+      "path": "docs/decisions/0011-conversation-worker.md",
+      "sha256": "bc1b7331797f857cfa7446c374c5deaf4e9fc4b6fe75c1f6dff919bc8e84d534"
+    },
+    {
+      "path": "docs/decisions/0012-nebius-adapter.md",
+      "sha256": "f017e01748ceb4213770f4a2bd00589586260793870182f263d671be9f86ef49"
+    },
+    {
+      "path": "docs/decisions/README.md",
+      "sha256": "ce985246d25cf17953b9c504b78312e3359b2b9aa2de9057d1afe689f801b1d4"
+    },
+    {
+      "path": "docs/decisions/TEMPLATE.md",
+      "sha256": "f18d6dd5b1737da0cc02b8c3bbd70e018b4a3bdeb0455dd61bc0013a76fe022b"
+    },
+    {
+      "path": "docs/development-process.md",
+      "sha256": "b55e3185d8b38ef047b7f1aad21d5ac506cebc5ed86490860c7f79117f4988de"
+    },
+    {
+      "path": "docs/qa/scenarios-v1.md",
+      "sha256": "a1299dd649c3af1788538d35fb97d5b2ecd92861b37792e08a5ea57f1b9448a0"
+    },
+    {
+      "path": "docs/qa/strategy.md",
+      "sha256": "d356bea2f0d247ce4f73d57a78cbf8147aa0ba6aa64c84e55e696b573c161d66"
+    },
+    {
+      "path": "docs/roadmap.md",
+      "sha256": "e77b09096be281dbfef42c02401f00c518ce5dcd8056ddc7a2528303915ac9db"
+    },
+    {
+      "path": "docs/typed-contracts-v1.md",
+      "sha256": "d6562840f7597cab5384c4c6fb11ddb5dd624bae940f0c50f429cc3756c5de30"
+    },
+    {
+      "path": "docs/work/001-persist-food-entry.md",
+      "sha256": "f1d6612eb27624f800eadf56b25a4d63206d0f0a8ac02b7257f77349c25c07e2"
+    },
+    {
+      "path": "docs/work/002-telegram-transport.md",
+      "sha256": "a9989a405447c584dbf06d41bc607ba77bf95b13b6fcd0f9cc5a37a3605631f1"
+    },
+    {
+      "path": "docs/work/003-conversation-worker.md",
+      "sha256": "4a7251a17e60509948356d5867b3feab5c7ab5d3b10cc8ee1dff44ca402050c9"
+    },
+    {
+      "path": "docs/work/004-nebius-adapter.md",
+      "sha256": "96a5d29d018dbcfb936df7a62504f89f3e90592c91f8bf65ee7f9c1bea39c58d"
+    },
+    {
+      "path": "docs/work/TEMPLATE.md",
+      "sha256": "6eb62290d2181d49bce64abe74d3e0b8e8aad6af76ac6d7ded8eecea0334818c"
+    },
+    {
+      "path": "fly.toml",
+      "sha256": "c6c114234da98ae427285406b0127bb60bcdac7c76cdb29f70837dd8be552f78"
+    },
+    {
+      "path": "migrations/env.py",
+      "sha256": "37e3548ca776fdf41e6245a774f42af3d5dd297109b8e0bd272e3fc54892926f"
+    },
+    {
+      "path": "migrations/script.py.mako",
+      "sha256": "116d035db5d6b4abe2f7e00e60d547bf8396983c741d09af902b184ccc6e0a35"
+    },
+    {
+      "path": "migrations/versions/0001_m1_food_persistence.py",
+      "sha256": "c37c41d7e34688fe26c84ab63bc6c58e0ff07a15faa55ddba964151393858a2e"
+    },
+    {
+      "path": "migrations/versions/0002_bot_delivery_identity.py",
+      "sha256": "9f19a134a40521356fe8babe8fbcc3dde5be99f5a390a5c56387ba7f7205cd76"
+    },
+    {
+      "path": "migrations/versions/0003_telegram_transport.py",
+      "sha256": "9de4746bf6899558a2ca196294dedf32740f379e86c563df04653fd8cdddcbd0"
+    },
+    {
+      "path": "migrations/versions/0004_conversation_worker.py",
+      "sha256": "5a8ed2864cc3fc3e30cea3db57389fae3126134e969e1f09b52a02b43d00528d"
+    },
+    {
+      "path": "nutrition_app/__init__.py",
+      "sha256": "f5597719adf8c3e046a55eb8222a79d1b7720bae5a92cc1278f879ee70637b28"
+    },
+    {
+      "path": "nutrition_app/__main__.py",
+      "sha256": "d584f80802756ef5b6eab7096be77d3fe2ac38d6994464eb99b0b2b2de187d0f"
+    },
+    {
+      "path": "nutrition_app/conversation.py",
+      "sha256": "166a8323b60a5c449325366f603eebc0b26a3a9d0ef8eca19c5b7f183f4b76a1"
+    },
+    {
+      "path": "nutrition_app/conversation_demo.py",
+      "sha256": "61b08783651a3a5000ddca046327853dcc95aa49d28ced55007480156ba316e1"
+    },
+    {
+      "path": "nutrition_app/db.py",
+      "sha256": "dbe9d915d7335dbb16899d6dac5d15250656009d49ebd553125435519f70a0ec"
+    },
+    {
+      "path": "nutrition_app/demo.py",
+      "sha256": "353d2fb43b3f18da1e0c739cec786ede8ef006bffa145e563f4e225b9c4526d0"
+    },
+    {
+      "path": "nutrition_app/errors.py",
+      "sha256": "a8a7f8135f5c432bff0b95a789456ba26023ebc86899be77551e1e1882c1bdd8"
+    },
+    {
+      "path": "nutrition_app/interpretation.py",
+      "sha256": "b6abfdb45cec8cc811440e7d0cc2d9119a9c5b821cb9268a03eb78e6bf282eee"
+    },
+    {
+      "path": "nutrition_app/nebius.py",
+      "sha256": "6b3f0b6985c43a2ed06b588a7019417a9422c2b789cb00e988b62ec16e6ca0ae"
+    },
+    {
+      "path": "nutrition_app/nebius_prompt.txt",
+      "sha256": "6dddaf259fe26dbff9be676c14ca8f49c4bc952797d10c870f62beff8ff18ae2"
+    },
+    {
+      "path": "nutrition_app/nutrition.py",
+      "sha256": "2812600e9e612a30e42e634e61b072420a13456ccbb4d1e856649cc56ed2265a"
+    },
+    {
+      "path": "nutrition_app/outbox.py",
+      "sha256": "4a91940a4b569a521c00dff7816ea20c671f9a5381a297cf3b63cde7a24250ee"
+    },
+    {
+      "path": "nutrition_app/rendering.py",
+      "sha256": "a4b134f331d8c97ef453673fc0ad05ab915218b3c3019dc8ebe4dcdca225b47b"
+    },
+    {
+      "path": "nutrition_app/schema.py",
+      "sha256": "b48a9b3ec35c53ab51557b9794f6cb7edfefabb0b04ce4aebacaae49a421f6c4"
+    },
+    {
+      "path": "nutrition_app/service.py",
+      "sha256": "8cb575825fe36435cc77083dc6a658f4455620945d4fa5ba34cf6d1fd45a2e2b"
+    },
+    {
+      "path": "nutrition_app/telegram.py",
+      "sha256": "29c16c37cc7e5eeb49c2102116985a32d995302cad768fa08e1461da91c28af6"
+    },
+    {
+      "path": "nutrition_contracts/__init__.py",
+      "sha256": "e4c4341b7aa6de99fbcd5000ffa9a8f44fd953092b5860b89584974debe0761e"
+    },
+    {
+      "path": "nutrition_contracts/commands.py",
+      "sha256": "53d0b3ac38443c195e27a4857894959d640c34dd18eb1948bb00401449f77c9a"
+    },
+    {
+      "path": "nutrition_contracts/common.py",
+      "sha256": "12e1382991089a76a322e20ed0c7e5266f74b2f624b1b5ff34928d23ea6651d0"
+    },
+    {
+      "path": "nutrition_contracts/export.py",
+      "sha256": "f22a6535c53f3ad236dd207d85b889c2fdd5be4be9f6f6c8d10b2e28dba63bc1"
+    },
+    {
+      "path": "nutrition_contracts/parser.py",
+      "sha256": "f3d20b3058a3c2429d9615ad74a607d38886abd2f2b9354c50f75b62782b1482"
+    },
+    {
+      "path": "nutrition_contracts/results.py",
+      "sha256": "38de34cdb08ac10639ec7fbcc8c17ad79452ad22a6387205dcbaea5d0d525a61"
+    },
+    {
+      "path": "requirements-contracts.txt",
+      "sha256": "06ec03c9fb2ada4f535300f0dda6e0d3aa913553754bcadc0e7ab904026c4e13"
+    },
+    {
+      "path": "requirements-runtime.txt",
+      "sha256": "f7ae13c381682ddf61dd87a90db1e55580245032fa5d8ca06661af11d70ef251"
+    },
+    {
+      "path": "tests/integration/test_conversation_worker.py",
+      "sha256": "b8e04db3149adcd72dd0b58deeac74b2ae25e93f32f6a653ac159b57f533b5bb"
+    },
+    {
+      "path": "tests/integration/test_food_service.py",
+      "sha256": "16484037fe528cc571b9e921385631bf01f3839cf6d903bb1bf6e19bf4f8a76e"
+    },
+    {
+      "path": "tests/integration/test_nebius_worker.py",
+      "sha256": "8aa97a27491c959682501d57c5ad204acfc7045e20d0873998a175645c3fb477"
+    },
+    {
+      "path": "tests/integration/test_telegram_transport.py",
+      "sha256": "e132fae327593dc1ced80f0fc525ae47e57245e3cb9688a6da258bbaf6214bf7"
+    },
+    {
+      "path": "tests/qa/test_w001_independent.py",
+      "sha256": "72dcd7343d2a374eeb1e9b4018a6ce6edf9bd17a6ec54d7d22ad94ca2ecc5808"
+    },
+    {
+      "path": "tests/qa/test_w002_independent.py",
+      "sha256": "fda84a3283837fce4f7e823c1130812b79ea5e1770caba6a9f045f4ec0d9bc80"
+    },
+    {
+      "path": "tests/qa/test_w003_decimal_evidence.py",
+      "sha256": "8c9db17f8ad6c4faa5ad9102d7a4ac1025153cfe25f7fcc26fff3cea01f7715c"
+    },
+    {
+      "path": "tests/qa/test_w003_independent.py",
+      "sha256": "a4d4fd8a56dd376b41a8a2ec9033399da8324541214b11a2b81fbd1101b3b919"
+    },
+    {
+      "path": "tests/qa/test_w003_quantity_bound.py",
+      "sha256": "46d96fa784fce9dc9c9cd534943c36a82971274a2a1c5789f752cd4d306542e2"
+    },
+    {
+      "path": "tests/test_contracts.py",
+      "sha256": "e07434ebc2607e89c61c9a39000138cbe25267e5cbb941358134781bc07a64c5"
+    },
+    {
+      "path": "tests/test_interpretation.py",
+      "sha256": "2917b290e282c44568ca438b88259c5c7922675521a7e9090ea443f66b840818"
+    },
+    {
+      "path": "tests/test_nebius.py",
+      "sha256": "47a285f171ebc1408de7820098f1a6d55f6d22bfd8a0d9c36ac032fdb694f069"
+    },
+    {
+      "path": "tests/test_nutrition.py",
+      "sha256": "065b0f5ffede9c82eb077e06bea2629b15cec055f0b931cc9a1f2ed195c8c18f"
+    },
+    {
+      "path": "tests/test_telegram.py",
+      "sha256": "3404c2624169e897476cb028b253dfb22e3a8327fedfbe1e69a58670ff915c06"
+    }
+  ],
+  "source_id_algorithm": "SHA256 UTF-8 json.dumps(files, sort_keys=True, separators=(comma,colon)); sorted by path; excludes base_commit",
+  "archive": "/Users/Zinaida.Smirnova/air/nutrition_assistant/artifacts/qa/w004-d31d4079dfe8.tar.gz",
+  "archive_sha256": "e2a4c3047e88267d1322b1693226de1c1e02dd35c4de2f5c8264a4d97841f124",
+  "review_directory": "/private/tmp/nutrition-w004-review2-5pwedggp"
+}

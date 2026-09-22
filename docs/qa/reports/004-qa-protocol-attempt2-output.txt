@@ -1,0 +1,15 @@
+Executor: independent QA
+Source: d31d4079dfe8ecf0cae2309ad734f1bcf5d347cc31b37294811d7fd1d1492087
+Command: ['/private/tmp/nutrition-w004-review2-5pwedggp/.venv/bin/python', '-m', 'unittest', 'qa_w004_independent.ProtocolQA', '-v']
+
+test_qa01_retry_after_http_whitespace_preserves_delay_and_limit (qa_w004_independent.ProtocolQA.test_qa01_retry_after_http_whitespace_preserves_delay_and_limit) ... ok
+test_qa02_catalog_instructions_are_data_and_overflow_makes_no_request (qa_w004_independent.ProtocolQA.test_qa02_catalog_instructions_are_data_and_overflow_makes_no_request) ... ok
+test_qa03_read_failure_closes_once_and_smoke_error_is_redacted (qa_w004_independent.ProtocolQA.test_qa03_read_failure_closes_once_and_smoke_error_is_redacted) ... ok
+test_qa04_smoke_rejects_wrong_quantity_without_writes (qa_w004_independent.ProtocolQA.test_qa04_smoke_rejects_wrong_quantity_without_writes) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.066s
+
+OK
+
+Exit status: 0

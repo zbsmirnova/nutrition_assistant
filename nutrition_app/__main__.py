@@ -16,6 +16,7 @@ from .db import engine_for, migrate
 from .conversation import ConversationWorker
 from .conversation_demo import run_conversation_demo
 from .interpretation import SyntheticParser
+from .nebius import NebiusConfig, NebiusParser, run_synthetic_smoke
 from .demo import run_demo
 from .errors import ApplicationError
 from .outbox import FakeSender, OutboxWorker
@@ -38,6 +39,10 @@ def main():
     status = sub.add_parser("conversation-status", help="Inspect processing status without printing message text")
     status.add_argument("--user", type=UUID, required=True)
     status.add_argument("--source", type=UUID)
+    live = sub.add_parser("conversation-nebius", help="Explicitly send one inbox source to Nebius and validate its proposal")
+    live.add_argument("--user", type=UUID, required=True)
+    live.add_argument("--source", type=UUID, required=True)
+    sub.add_parser("nebius-smoke", help="Send one fixed synthetic request to Nebius; no database reads or writes")
     sub.add_parser("db-info")
     execute = sub.add_parser("execute", help="Resume a prepared operation as a trusted local operator")
     execute.add_argument("--user", type=UUID, required=True)
@@ -58,8 +63,15 @@ def main():
     poll.add_argument("--timeout", type=int, default=25)
     sub.add_parser("telegram-send", help="Send one committed food response through the configured real bot")
     args = parser.parse_args()
-    engine = engine_for()
+    engine = None
     try:
+        if args.action == "nebius-smoke":
+            output = run_synthetic_smoke(NebiusParser(NebiusConfig.from_environment()))
+            print(json.dumps(output, ensure_ascii=False, indent=2))
+            return
+        # Check provider configuration before creating a database engine or job.
+        live_parser = NebiusParser(NebiusConfig.from_environment()) if args.action == "conversation-nebius" else None
+        engine = engine_for()
         if args.action == "migrate":
             migrate(engine)
             output = {"migrations": "head"}
@@ -83,6 +95,9 @@ def main():
             output.pop("outcome", None)  # Operational CLI output does not print personal food records.
         elif args.action == "conversation-status":
             output = ConversationWorker(engine).status(args.user, args.source)
+        elif args.action == "conversation-nebius":
+            output = ConversationWorker(engine).run_one(args.user, live_parser, origin=args.source)
+            output.pop("outcome", None)
         elif args.action == "db-info":
             with engine.connect() as connection:
                 output = {"postgresql": connection.exec_driver_sql("SHOW server_version").scalar_one(),
@@ -130,7 +145,8 @@ def main():
         print(json.dumps({"error": "database_unavailable", "message": "Database operation failed; retry after checking local database health"}))
         raise SystemExit(1) from None
     finally:
-        engine.dispose()
+        if engine is not None:
+            engine.dispose()
 
 
 if __name__ == "__main__":
