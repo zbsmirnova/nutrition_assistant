@@ -175,7 +175,8 @@ class NebiusProtocolTests(unittest.TestCase):
         short["actions"][0]["evidence"] = TEXT[0]
         with self.assertRaises(ParserRejected) as schema_error:
             client(response(short)).parse(request())
-        self.assertEqual(str(schema_error.exception), "Nebius proposal failed local schema validation")
+        self.assertEqual(str(schema_error.exception),
+                         "Nebius proposal failed local schema validation; fields=actions.0.add_food.evidence:string_too_short")
 
         foreign = fixture()["output"]
         foreign["actions"][0]["food"]["candidate_ref"] = "c99"

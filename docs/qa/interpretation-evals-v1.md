@@ -122,8 +122,9 @@ The user ran the same v4 prompt and `INTAKE-001` against three candidate IDs:
 | `Qwen/Qwen3-235B-A22B-Instruct-2507` | `ParserRejected: Nebius proposal failed local schema validation` | The larger Qwen model shows the same structured-proposal failure as Qwen 30B. |
 | `meta-llama/Llama-3.3-70B-Instruct` | HTTP `403` | The model is not permitted for this project; no quality result. |
 | `deepseek-ai/DeepSeek-V3-0324` | HTTP `404` | This model ID is unavailable; no quality result. |
+| `openai/gpt-oss-120b` | `ParserRejected: Nebius proposal failed local schema validation` | This general instruction model also failed the same local contract gate. |
 
-Parser fingerprints were `nebius:296f39d6b9666f616f007abe08a66c568998b138821b3ecb3a6dc4cbb5a6e099`, `nebius:9a521cb7901b724312334bb6bfa612709cb5fe1a695cf9d268fe08f9e9b22c33`, and `nebius:5f5309068e0146636e1997661a2669f474ed73c9e173625912959138d1aa9af2` respectively. No candidate passed schema validation, and no full batch was run. Query the provider model list before selecting the next accessible non-Qwen instruct model.
+Parser fingerprints were `nebius:296f39d6b9666f616f007abe08a66c568998b138821b3ecb3a6dc4cbb5a6e099`, `nebius:9a521cb7901b724312334bb6bfa612709cb5fe1a695cf9d268fe08f9e9b22c33`, `nebius:5f5309068e0146636e1997661a2669f474ed73c9e173625912959138d1aa9af2`, and `nebius:456fafe3ce87ea87e82dec261236e3178af8d4f5252975bb2b0767f1ba9ea969` respectively. No candidate passed schema validation, and no full batch was run. The adapter now has a redacted field-level schema diagnostic for the next single probe.
 
 ## Findings
 

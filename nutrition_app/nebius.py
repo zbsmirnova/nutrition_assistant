@@ -12,6 +12,8 @@ from pathlib import Path
 import re
 from uuid import UUID
 
+from pydantic import ValidationError
+
 from nutrition_contracts.parser import ParserOutput, validate_parser_context
 
 from .errors import ApplicationError
@@ -39,6 +41,20 @@ class NebiusQualityError(ParserRejected):
     """Sanitized provider-output quality reason; never includes model content."""
 
     code = "parser_rejected"
+
+
+def _schema_failure_message(error: Exception) -> str:
+    """Expose only bounded Pydantic locations/types, never provider values."""
+    details = []
+    if isinstance(error, ValidationError):
+        for item in error.errors(include_url=False):
+            location = ".".join(str(part) for part in item.get("loc", ()))
+            error_type = item.get("type")
+            if location and isinstance(error_type, str):
+                details.append(f"{location}:{error_type}")
+    details = sorted(set(details))[:8]
+    suffix = f"; fields={','.join(details)}" if details else ""
+    return "Nebius proposal failed local schema validation" + suffix
 
 
 @dataclass(frozen=True)
@@ -208,10 +224,10 @@ class NebiusParser:
             # Local schema/graph validation remains mandatory even with structured output.
             try:
                 output = ParserOutput.model_validate_json(content)
-            except Exception:
+            except Exception as error:
                 # Keep the provider payload and Pydantic details out of the public
                 # error, while making strict-schema incompatibility diagnosable.
-                raise ParserRejected("Nebius proposal failed local schema validation") from None
+                raise ParserRejected(_schema_failure_message(error)) from None
             candidate_kinds = {c["ref"]: "product" for c in request.candidates}
             candidate_kinds.update({c["ref"]: "recipe" for c in request.recipes})
             candidate_kinds.update({c["ref"]: {"pending", "recipe"} for c in request.pending_recipes})
