@@ -215,8 +215,8 @@ def run(parser_name: str, only: str | None, prompt_path: str | None = None,
         results.append(entry)
 
     return {"parser": parser.version, "prompt": prompt_path or "production (nebius_prompt.txt)",
-            "contract": ("diagnostic-no-model-evidence" if diagnostic_no_evidence
-                         else "production ParserOutput"),
+            "contract": ("historical-diagnostic-no-model-evidence" if diagnostic_no_evidence
+                         else "production-backend-derived-evidence"),
             "thresholds": corpus["draft_thresholds"], "results": results,
             "summary": summarize(results)}
 

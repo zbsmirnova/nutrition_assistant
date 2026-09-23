@@ -10,7 +10,6 @@ authorization path and must not be used by the application worker.
 
 from __future__ import annotations
 
-from copy import deepcopy
 import json
 
 from jsonschema import Draft202012Validator
@@ -22,6 +21,7 @@ from nutrition_app.nebius import (
     REQUEST_POLICY,
     TIMEOUT_SECONDS,
     NebiusParser,
+    provider_parser_schema,
 )
 from nutrition_app.service import digest
 from nutrition_contracts.parser import ParserOutput
@@ -29,16 +29,7 @@ from nutrition_contracts.parser import ParserOutput
 
 def diagnostic_schema() -> dict:
     """Return a copy of ParserOutput's schema with model evidence removed."""
-    schema = deepcopy(ParserOutput.model_json_schema())
-    for definition in schema.get("$defs", {}).values():
-        properties = definition.get("properties")
-        required = definition.get("required")
-        if isinstance(properties, dict) and "evidence" in properties:
-            properties.pop("evidence")
-        if isinstance(required, list) and "evidence" in required:
-            required.remove("evidence")
-    Draft202012Validator.check_schema(schema)
-    return schema
+    return provider_parser_schema()
 
 
 class DiagnosticNebiusParser(NebiusParser):

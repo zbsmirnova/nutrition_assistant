@@ -93,14 +93,15 @@ After configuring the two environment variables through your secret mechanism, a
 
 This sends one fixed synthetic dairy entry to Nebius, validates the returned action through the existing resolver, and prints validation flags plus a parser fingerprint. It never opens the database and does not print the source, response or key. No successful live smoke result is recorded yet; the configured model must support the actual schema.
 
-For the evidence compatibility experiment only, use the interpretation evaluator's diagnostic contract. It removes model-authored evidence and derives the original source text only inside the evaluator after the diagnostic response passes its separate schema. It never changes the production contract and must not be used with `conversation-nebius` or the bot:
+The production parser now omits model-authored evidence. It derives the original source text in the backend only after the provider proposal passes its strict schema and parser-context checks; the internal command contract still retains explicit evidence provenance. Use the production prompt and contract for both evaluation and `conversation-nebius`:
 
 ~~~sh
 NUTRITION_LLM_MODEL='MiniMaxAI/MiniMax-M3' SSL_CERT_FILE=/etc/ssl/cert.pem \
 .venv/bin/python -m evals.run_interpretation_eval --parser nebius \
-  --diagnostic-no-evidence --prompt evals/prompt_diagnostic_no_evidence.txt \
-  --case INTAKE-002
+  --prompt evals/prompt_candidate_v5.txt --case INTAKE-002
 ~~~
+
+The former `--diagnostic-no-evidence` path remains an evaluation comparison only; it is no longer needed for the production worker. D033 records the boundary and its rationale.
 
 ### macOS certificate setup
 
@@ -123,7 +124,7 @@ The read command deliberately displays no characters while you paste. Press Ente
 
 Dates follow a backend-owned rule: the model can quote date words from the message, but it cannot invent the target date. An undated food message uses its source timestamp converted to the user's time zone; explicit supported date phrases are resolved by the backend, and ambiguous phrases stay pending.
 
-For HTTP 422, investigate request validation rather than re-entering the key. The initial adapter sent an invalid direct-schema shape; the current adapter uses the named schema wrapper required by Nebius's published API and explicitly enables its optional strict mode. That correction is checked against the provider's OpenAPI definitions, but successful inference with the configured model remains unverified. Retry the smoke command in the same configured terminal. The new request format changes parser identity for unfinished worker jobs; already frozen commands retain their existing recovery path.
+For HTTP 422, investigate request validation rather than re-entering the key. The current adapter uses the named schema wrapper required by Nebius's published API and the production proposal schema without model-authored evidence. That request shape is checked against the provider's OpenAPI definitions, but successful inference with the configured model remains unverified. Retry the smoke command in the same configured terminal. The provider contract/prompt change changes parser identity for unfinished worker jobs; already frozen commands retain their existing recovery path.
 
 If the error says "Synthetic smoke response did not match the expected food action", the completion already passed schema/reference validation. The diagnostic includes validated action kinds, backend resolution/reason codes and safe unresolved-field names. Share that diagnostic; the check never prints raw model text or credentials. The smoke comparison treats equivalent decimal quantities such as 100 and 100.0 as equal. It still rejects different quantities, unresolved food and wrong actions.
 

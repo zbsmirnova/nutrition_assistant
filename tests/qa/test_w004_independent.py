@@ -13,10 +13,10 @@ from sqlalchemy.engine import make_url
 from nutrition_app import schema as db
 from nutrition_app.__main__ import main
 from nutrition_app.conversation import ConversationWorker
-from nutrition_app.db import database_url,engine_for,migrate,ROOT
+from nutrition_app.db import database_url,engine_for,migrate
 from nutrition_app.demo import message,seed_user
 from nutrition_app.interpretation import ParserRequest,ParserRejected,ParserUnavailable
-from nutrition_app.nebius import NebiusConfig,NebiusParser,MAX_CANDIDATES,run_synthetic_smoke
+from nutrition_app.nebius import NebiusConfig,NebiusParser,MAX_CANDIDATES,provider_parser_schema,run_synthetic_smoke
 from nutrition_app.service import FoodService
 
 TEXT='Съела 100 г творога 5% «Марка А»'
@@ -24,7 +24,7 @@ NAME='Творог 5% «Марка А»'
 SECRET='synthetic-secret-qa-never-print'
 
 def proposal(text=TEXT):
-    return {'schema_version':'1.0','actions':[{'kind':'add_food','action_id':'a1','evidence':text,
+    return {'schema_version':'1.0','actions':[{'kind':'add_food','action_id':'a1',
         'depends_on':[],'unresolved':[],
         'food':{'kind':'candidate','candidate_kind':'product','candidate_ref':'c1'},
         'quantity':{'amount':'100','unit':'g'},'weight_basis':'as_sold',
@@ -66,10 +66,7 @@ class ProtocolQA(unittest.TestCase):
         self.assertEqual(set(user['candidates'][0]),{'ref','name','nutrition_basis','weight_basis','food_kind','declared_fat_percent'})
         for forbidden in [SECRET,'PRIVATE-OWNER','PRIVATE-WEIGHT','PRIVATE-VERSION','987654']:
             self.assertNotIn(forbidden,json.dumps(body))
-        exported=json.loads((ROOT/'contracts/v1/parser-output.schema.json').read_text())
-        # Export adds document-identification metadata, not validation constraints.
-        for key in ('$schema','$id'):exported.pop(key,None)
-        self.assertEqual(body['response_format']['json_schema']['schema'],exported)
+        self.assertEqual(body['response_format']['json_schema']['schema'],provider_parser_schema())
         with self.assertRaises(ParserRejected):
             parser.parse(ParserRequest(req.source_text,req.local_date,req.time_zone,tuple(candidate for _ in range(MAX_CANDIDATES+1))))
         self.assertEqual(len(observed),1)

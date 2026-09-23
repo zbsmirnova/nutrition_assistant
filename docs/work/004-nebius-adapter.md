@@ -13,14 +13,14 @@ This slice verifies API transport, request construction, local response validati
 
 ## Requirements and decisions
 
-CALC-001, FOOD-001/002/005, DATA-002/003; D009 provider/secret contract, D010 dairy identity, D011 worker recovery. D012 records concrete provider transport and versioning. Q09 retains model/quality evaluation; Q10 retains real-data lifecycle choices. Neither blocks synthetic adapter implementation.
+CALC-001, FOOD-001/002/005, DATA-002/003; D009 provider/secret contract, D010 dairy identity, D011 worker recovery, D033 backend-derived evidence. D012 records concrete provider transport and versioning. Q09 retains model/quality evaluation; Q10 retains real-data lifecycle choices. Neither blocks synthetic adapter implementation.
 
 ## Acceptance criteria
 
 | ID | Observable result |
 | --- | --- |
 | W004-A01 | Configuration requires NEBIUS_API_KEY and an explicit NUTRITION_LLM_MODEL; missing/invalid values fail without echoing values or making requests. No new dependencies or migration are necessary. |
-| W004-A02 | Requests use the documented fixed HTTPS endpoint, bearer authentication, verified TLS, bounded timeouts and sizes, one non-streaming completion, and the existing generated ParserOutput schema. Redirects and provider/schema fallback are never followed. |
+| W004-A02 | Requests use the documented fixed HTTPS endpoint, bearer authentication, verified TLS, bounded timeouts and sizes, one non-streaming completion, and the strict provider proposal schema. The backend attaches source evidence before internal ParserOutput validation. Redirects and provider/schema fallback are never followed. |
 | W004-A03 | Provider context contains only source text/date/time zone and bounded public product fields/tokens. Application/Telegram IDs, unrelated observations, and full history are not sent. Source/catalog text is treated as data in a versioned system prompt. |
 | W004-A04 | Only a complete single assistant response with content can reach local schema/reference validation. Refusal, truncation, tool calls, malformed/oversized response and invalid JSON produce no food or false success. Diagnostics omit keys, payloads and provider exception details. |
 | W004-A05 | Transient transport/408/429/5xx failures use durable bounded worker retries; valid Retry-After delays are respected. Permanent HTTP failures and invalid completion envelopes stop visibly. No hidden retry loop, model switch, schema downgrade or JSON repair occurs. |
@@ -101,3 +101,11 @@ The smoke result also confirmed the intended boundary for date handling. The mod
 Because this changes interpretation semantics for an existing source and hint combination, the resolver version advances from `single-food-resolver-v3` to `single-food-resolver-v4`. The conversation worker fences unfinished old interpretation contexts; prepared or applied commands resume from their stored command without reparsing.
 
 Verification: 87 offline tests and 59 PostgreSQL integration tests pass. Independent QA passed three focused date/version probes, the 14-test interpretation suite and the 18-test Nebius suite. The [date-resolution QA report](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/005-backend-date-resolution/qa-date-resolution-report.md?type=file&root=%252F) records the reviewed source identity and retained evidence. No live provider request or migration was required.
+
+## Production evidence-boundary follow-up — 2026-09-23
+
+Status: implementing; D033 accepted the no-model-evidence boundary after the diagnostic experiment.
+
+The production Nebius provider schema now omits model-authored `evidence`. After strict provider-schema validation, the adapter derives each internal action's evidence from the original source message, then runs the existing ParserOutput, context, date, quantity, authorization, and resolver checks. The internal contract and persisted command evidence remain unchanged. [prompt_candidate_v5.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/evals/prompt_candidate_v5.txt?type=file&root=%252F) is the matching production evaluation prompt; v4 and the diagnostic path are historical comparisons.
+
+The focused provider tests and the complete offline suite pass: 110 tests. No live inference or independent QA was run for this follow-up yet. The remaining evidence is a user-run production evaluation with the new parser fingerprint and prompt, followed by a live Telegram pilot. The provider still does not invent dates, nutrition, portions, or unknown restaurant values.

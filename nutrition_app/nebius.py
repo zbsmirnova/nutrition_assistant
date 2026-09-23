@@ -1,6 +1,7 @@
 """Nebius Token Factory boundary; no provider response authorizes a mutation."""
 
 from dataclasses import dataclass, field
+from copy import deepcopy
 from datetime import datetime, timezone
 from decimal import Decimal
 from email.utils import parsedate_to_datetime
@@ -13,6 +14,7 @@ import re
 from uuid import UUID
 
 from pydantic import ValidationError
+from jsonschema import Draft202012Validator
 
 from nutrition_contracts.parser import ParserOutput, validate_parser_context
 
@@ -31,6 +33,25 @@ MAX_RETRY_AFTER = 86400
 REQUEST_POLICY = {"max_tokens": 4096, "temperature": 0, "n": 1, "stream": False}
 PROMPT = Path(__file__).with_name("nebius_prompt.txt").read_text(encoding="utf-8")
 SHORT_REPLY_ACTIONS = {"answer_clarification", "cancel_clarification"}
+
+
+def provider_parser_schema() -> dict:
+    """Return the provider contract without model-authored free-text evidence.
+
+    Evidence is an authorization and audit input, so the backend derives it from
+    the persisted source message after the structured proposal passes this
+    provider schema. The internal ParserOutput contract still requires evidence.
+    """
+    schema = deepcopy(ParserOutput.model_json_schema())
+    for definition in schema.get("$defs", {}).values():
+        properties = definition.get("properties")
+        required = definition.get("required")
+        if isinstance(properties, dict) and "evidence" in properties:
+            properties.pop("evidence")
+        if isinstance(required, list) and "evidence" in required:
+            required.remove("evidence")
+    Draft202012Validator.check_schema(schema)
+    return schema
 
 
 class NebiusConfigurationError(ApplicationError):
@@ -102,11 +123,12 @@ class NebiusParser:
         # An explicit prompt override supports offline prompt A/B evaluation; the
         # default keeps the production prompt and the parser fingerprint unchanged.
         self._prompt = PROMPT if prompt is None else prompt
-        self._schema = ParserOutput.model_json_schema()
+        self._schema = provider_parser_schema()
+        self._provider_validator = Draft202012Validator(self._schema)
         self._response_format = {"type": "json_schema", "json_schema": {
-            "name": "nutrition_parser_output", "schema": self._schema, "strict": True}}
+            "name": "nutrition_parser_proposal_no_model_evidence", "schema": self._schema, "strict": True}}
         self._request = request or self._https
-        self.version = "nebius:" + digest({"adapter": "nebius-chat-v3", "model": config.model,
+        self.version = "nebius:" + digest({"adapter": "nebius-chat-v4-backend-evidence", "model": config.model,
             "prompt": self._prompt, "schema": self._schema, "policy": REQUEST_POLICY,
             "host": HOST, "endpoint": ENDPOINT, "timeout": TIMEOUT_SECONDS,
             "max_bytes": MAX_BYTES, "response_format": self._response_format})
@@ -252,13 +274,17 @@ class NebiusParser:
         return output.model_dump_json()
 
     def _parse_content(self, content: str, request: ParserRequest) -> ParserOutput:
-        """Validate one provider completion against the production contract.
-
-        Evaluation-only adapters may override this hook with a separately
-        versioned diagnostic contract; the default path is the production
-        ParserOutput model and remains unchanged.
-        """
-        return ParserOutput.model_validate_json(content)
+        """Validate a proposal, then attach the persisted source as evidence."""
+        raw = json.loads(content)
+        self._provider_validator.validate(raw)
+        if not isinstance(raw, dict) or not isinstance(raw.get("actions"), list):
+            raise ValueError("provider output is not an action object")
+        for action in raw["actions"]:
+            if not isinstance(action, dict):
+                raise ValueError("provider action is not an object")
+            # The model chooses the action; the backend owns the source excerpt.
+            action["evidence"] = request.source_text
+        return ParserOutput.model_validate(raw)
 
 
 def run_synthetic_smoke(parser: NebiusParser):
