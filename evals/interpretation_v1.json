@@ -1,0 +1,216 @@
+{
+  "format_version": "1.0",
+  "title": "Russian interpretation-layer evaluation contexts and draft rubric",
+  "status": "DRAFT rubric authored from food_intake_calculation_v1.json; contexts and thresholds await product-owner approval. Scores the model's raw ParserOutput, not the bounded resolver.",
+  "scoring_notes": [
+    "This set validates hypothesis #1: can the live model turn casual Russian food messages into correct structured proposals.",
+    "Each case is scored only on signals objectively checkable from ParserOutput: consumption vs non-logging, number of add_food actions, presence/absence of clarifications (unresolved fields), extracted quantities, and candidate identity selection.",
+    "known_gaps record context/schema limitations that are NOT model failures (e.g. no profile slot for 'кофе как обычно'); the runner reports them separately and does not penalize the model for them.",
+    "clarification: 'required' means a question is the correct behavior; 'forbidden' means a clean message must save without asking; 'optional' means either is acceptable."
+  ],
+  "draft_thresholds": {
+    "case_pass_rate": "0.70",
+    "clarification_accuracy": "0.80",
+    "quantity_extraction": "0.90",
+    "note": "Draft only. False clarifications are the primary friction risk, so clarification_accuracy is weighted in the go/no-go read."
+  },
+  "cases": [
+    {
+      "id": "INTAKE-001",
+      "source_text": "Завтрак: яичница яйцо + белок 1:1, 115 гр, хлеб 52, тунцовая намазка 45, масло 7 гр, кофе как обычно",
+      "local_date": "2026-09-22",
+      "time_zone": "Europe/Berlin",
+      "candidates": [
+        {"ref": "c1", "name": "яйцо куриное", "nutrition_basis": "per_100_g", "weight_basis": "as_sold", "food_kind": "general", "declared_fat_percent": null},
+        {"ref": "c2", "name": "яичный белок", "nutrition_basis": "per_100_g", "weight_basis": "as_sold", "food_kind": "general", "declared_fat_percent": null},
+        {"ref": "c3", "name": "хлеб цельнозерновой", "nutrition_basis": "per_100_g", "weight_basis": "as_sold", "food_kind": "general", "declared_fat_percent": null},
+        {"ref": "c4", "name": "масло сливочное", "nutrition_basis": "per_100_g", "weight_basis": "as_sold", "food_kind": "dairy", "declared_fat_percent": "82.5"}
+      ],
+      "recipes": [
+        {"ref": "c5", "name": "тунцовая намазка"}
+      ],
+      "expect": {
+        "consumed": true,
+        "add_food_range": [4, 6],
+        "clarification": "optional",
+        "quantities_any": ["115", "52", "45", "7"],
+        "select_refs_any": ["c1", "c2", "c3", "c4", "c5"]
+      },
+      "known_gaps": [
+        "'кофе как обычно' is a per-user profile shortcut; the parser context has no profile slot, so the model cannot resolve it. A missing/unresolved coffee is expected, not a model failure.",
+        "1:1 egg/white split and category-0 egg weight are backend normalizations; the model is expected to report the source quantity 115 g."
+      ]
+    },
+    {
+      "id": "INTAKE-002",
+      "source_text": "Добавь шоколад 85% 10 гр",
+      "local_date": "2026-09-22",
+      "time_zone": "Europe/Berlin",
+      "candidates": [
+        {"ref": "c1", "name": "шоколад тёмный 85%", "nutrition_basis": "per_100_g", "weight_basis": "as_sold", "food_kind": "general", "declared_fat_percent": null}
+      ],
+      "expect": {
+        "consumed": true,
+        "add_food_range": [1, 1],
+        "clarification": "forbidden",
+        "quantities_any": ["10"],
+        "select_refs_any": ["c1"],
+        "max_add_food": 1
+      },
+      "known_gaps": []
+    },
+    {
+      "id": "INTAKE-003",
+      "source_text": "Обед в столовой: два куриных бедра без кожи, граммов 120\nОвощи тушеные баклажан, кабачок, фасоль, граммов 100\nСалат овощной без заправки 100 гр",
+      "local_date": "2026-09-22",
+      "time_zone": "Europe/Berlin",
+      "candidates": [
+        {"ref": "c1", "name": "куриное бедро без кожи (столовая)", "nutrition_basis": "per_100_g", "weight_basis": "as_sold", "food_kind": "general", "declared_fat_percent": null},
+        {"ref": "c2", "name": "овощи тушёные (столовая)", "nutrition_basis": "per_100_g", "weight_basis": "as_sold", "food_kind": "general", "declared_fat_percent": null},
+        {"ref": "c3", "name": "салат овощной без заправки", "nutrition_basis": "per_100_g", "weight_basis": "as_sold", "food_kind": "general", "declared_fat_percent": null}
+      ],
+      "expect": {
+        "consumed": true,
+        "add_food_range": [2, 3],
+        "clarification": "required",
+        "clarification_paths_any": ["food", "quantity", "weight_basis"],
+        "quantities_any": ["120", "100"],
+        "select_refs_any": ["c1", "c2", "c3"]
+      },
+      "known_gaps": [
+        "'граммов 120' is an approximate amount; whether the chicken 120 g is edible meat or includes bone is genuinely ambiguous, so a clarification is the correct behavior."
+      ]
+    },
+    {
+      "id": "INTAKE-004",
+      "source_text": "Персик 100 гр и одна ягодка физалиса",
+      "local_date": "2026-09-22",
+      "time_zone": "Europe/Berlin",
+      "candidates": [
+        {"ref": "c1", "name": "персик", "nutrition_basis": "per_100_g", "weight_basis": "as_sold", "food_kind": "general", "declared_fat_percent": null},
+        {"ref": "c2", "name": "физалис", "nutrition_basis": "per_100_g", "weight_basis": "as_sold", "food_kind": "general", "declared_fat_percent": null}
+      ],
+      "expect": {
+        "consumed": true,
+        "add_food_range": [2, 2],
+        "clarification": "optional",
+        "quantities_any": ["100"],
+        "select_refs_any": ["c1", "c2"]
+      },
+      "known_gaps": [
+        "'одна ягодка физалиса' has no gram amount; the backend applies a standard single-berry estimate. The model is expected to leave the physalis quantity unresolved or report the count, not invent grams."
+      ]
+    },
+    {
+      "id": "INTAKE-005",
+      "source_text": "Завтрак 2 яйца, хлеб цз 43, паштет 40, масло сливочное 3, кофе как обычно",
+      "local_date": "2026-09-22",
+      "time_zone": "Europe/Berlin",
+      "candidates": [
+        {"ref": "c1", "name": "яйцо куриное категория 0", "nutrition_basis": "per_100_g", "weight_basis": "as_sold", "food_kind": "general", "declared_fat_percent": null},
+        {"ref": "c2", "name": "хлеб цельнозерновой", "nutrition_basis": "per_100_g", "weight_basis": "as_sold", "food_kind": "general", "declared_fat_percent": null},
+        {"ref": "c3", "name": "масло сливочное", "nutrition_basis": "per_100_g", "weight_basis": "as_sold", "food_kind": "dairy", "declared_fat_percent": "82.5"}
+      ],
+      "recipes": [
+        {"ref": "c4", "name": "паштет куриный"},
+        {"ref": "c5", "name": "паштет печёночный"}
+      ],
+      "expect": {
+        "consumed": true,
+        "add_food_range": [3, 5],
+        "clarification": "required",
+        "clarification_paths_any": ["food"],
+        "quantities_any": ["43", "40", "3"],
+        "select_refs_any": ["c1", "c2", "c3"]
+      },
+      "known_gaps": [
+        "'паштет' matches two saved recipes, so a clarification is the correct behavior.",
+        "'кофе как обычно' is a profile shortcut with no context slot; unresolved coffee is expected.",
+        "'цз' -> 'цельнозерновой' and the category-0 egg rule are backend normalizations."
+      ]
+    },
+    {
+      "id": "INTAKE-006",
+      "source_text": "Брезель 30 грамм",
+      "local_date": "2026-09-22",
+      "time_zone": "Europe/Berlin",
+      "candidates": [
+        {"ref": "c1", "name": "брецель", "nutrition_basis": "per_100_g", "weight_basis": "as_sold", "food_kind": "general", "declared_fat_percent": null}
+      ],
+      "expect": {
+        "consumed": true,
+        "add_food_range": [1, 1],
+        "clarification": "forbidden",
+        "quantities_any": ["30"],
+        "select_refs_any": ["c1"],
+        "max_add_food": 1
+      },
+      "known_gaps": [
+        "The source spelling 'Брезель' differs from the catalog 'брецель'; matching it tests spelling tolerance."
+      ]
+    },
+    {
+      "id": "INTAKE-007",
+      "source_text": "Сыр 20 грамм, тот же что раньше",
+      "local_date": "2026-09-22",
+      "time_zone": "Europe/Berlin",
+      "candidates": [
+        {"ref": "c1", "name": "сыр (тот же, что в прошлый раз)", "nutrition_basis": "per_100_g", "weight_basis": "as_sold", "food_kind": "dairy", "declared_fat_percent": "27"}
+      ],
+      "expect": {
+        "consumed": true,
+        "add_food_range": [1, 1],
+        "clarification": "forbidden",
+        "quantities_any": ["20"],
+        "select_refs_any": ["c1"],
+        "max_add_food": 1
+      },
+      "known_gaps": [
+        "'тот же что раньше' is a history reference; the parser context has no history slot, so the last cheese is supplied here as a pre-resolved candidate. A real live run needs a history-reference context extension (a finding for #1)."
+      ]
+    },
+    {
+      "id": "INTAKE-008",
+      "source_text": "Картошка и батат запеченные 1:1, всего 120 грамм\nМасла к картошке было 3 грамма",
+      "local_date": "2026-09-22",
+      "time_zone": "Europe/Berlin",
+      "candidates": [
+        {"ref": "c1", "name": "картофель запечённый", "nutrition_basis": "per_100_g", "weight_basis": "as_sold", "food_kind": "general", "declared_fat_percent": null},
+        {"ref": "c2", "name": "батат запечённый", "nutrition_basis": "per_100_g", "weight_basis": "as_sold", "food_kind": "general", "declared_fat_percent": null},
+        {"ref": "c3", "name": "масло растительное", "nutrition_basis": "per_100_g", "weight_basis": "as_sold", "food_kind": "general", "declared_fat_percent": null}
+      ],
+      "expect": {
+        "consumed": true,
+        "add_food_range": [2, 3],
+        "clarification": "optional",
+        "quantities_any": ["120", "3"],
+        "select_refs_any": ["c1", "c2", "c3"],
+        "max_add_food": 3
+      },
+      "known_gaps": [
+        "The 1:1 split of the 120 g total into potato and sweet potato is a backend normalization; the model is expected to report the 120 g total and the explicit 3 g oil, and must not add any hidden cooking oil."
+      ]
+    },
+    {
+      "id": "INTAKE-009",
+      "source_text": "Две запеченные куриные ножки с кожей и костью, всего 150 грамм\nМасло к курице не добавляла",
+      "local_date": "2026-09-22",
+      "time_zone": "Europe/Berlin",
+      "candidates": [
+        {"ref": "c1", "name": "куриная ножка запечённая с кожей", "nutrition_basis": "per_100_g", "weight_basis": "as_sold", "food_kind": "general", "declared_fat_percent": null}
+      ],
+      "expect": {
+        "consumed": true,
+        "add_food_range": [1, 1],
+        "clarification": "required",
+        "clarification_paths_any": ["quantity", "weight_basis", "food"],
+        "quantities_any": ["150"],
+        "select_refs_any": ["c1"],
+        "max_add_food": 1
+      },
+      "known_gaps": [
+        "150 g is gross weight including skin and bone; edible weight needs a separately weighed bone mass, so a clarification is the correct behavior. The model must not add cooking oil given the explicit 'не добавляла'."
+      ]
+    }
+  ]
+}
