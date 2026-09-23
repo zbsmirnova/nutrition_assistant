@@ -1,8 +1,8 @@
 # Work brief 005 — Recipe calculation foundation
 
-Status: in progress.  
-Updated: 2026-09-23.  
-Depends on: M1 arithmetic and typed contracts.  
+Status: done for the calculation foundation; M3 remains in progress.
+Updated: 2026-09-23.
+Depends on: M1 arithmetic and typed contracts.
 Decision: D014.
 
 ## Goal

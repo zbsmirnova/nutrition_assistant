@@ -28,7 +28,7 @@ Milestone statuses: planned, in progress, complete, blocked. The first implement
 ## Implementation sequence now
 
 1. Configure and smoke-check the selected Nebius model through W004’s explicit synthetic command, then measure Russian interpretation quality. The user supplies NEBIUS_API_KEY as a secret; keep NUTRITION_LLM_MODEL configurable and select it through measured Russian-language evaluation. Q09’s remaining request/evaluation choices and Q10’s data-lifecycle choices stay in the question register. Offline adapter verification is complete. The user has configured a key and candidate model and reported a live completion that passed schema/reference checks; resolving the synthetic smoke expectation and measuring interpretation quality remain next. The W004 brief owns the exact setup evidence.
-2. Complete the recipe calculation foundation in W005, then add recipe persistence and consumption while preserving M2 clarification/resumption and corrections. W003’s bounded worker does not replace these accepted requirements.
+2. Add recipe persistence and consumption on top of the completed W005 calculation foundation while preserving M2 clarification/resumption and corrections. W003’s bounded worker does not replace these accepted requirements.
 
 Use [README.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/README.md?type=file&root=%252F) for unresolved questions and blockers. Use [strategy.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/strategy.md?type=file&root=%252F) for verification expectations.
 

@@ -100,7 +100,7 @@ Module responsibilities:
 | Reporting | Derived totals, coverage, weight trends, report snapshots and scheduled notifications. |
 | Infrastructure | Database access, durable jobs, provider adapters, telemetry and transport. |
 
-Python/PostgreSQL with SQLAlchemy Core, psycopg, and Alembic is the accepted and implemented M1 stack; D003 records its pinned versions. D007 selects the implemented private long-polling transport. D009 records the user's Nebius Token Factory cloud-provider choice and secret delivery through NEBIUS_API_KEY; the exact model remains configurable and awaits evaluation. The Nebius adapter is not implemented yet. FastAPI is useful if later selecting webhooks and HTTP operational endpoints; it is not a mandatory second business layer.
+Python/PostgreSQL with SQLAlchemy Core, psycopg, and Alembic is the accepted and implemented M1 stack; D003 records its pinned versions. D007 selects the implemented private long-polling transport. D009 records the user's Nebius Token Factory cloud-provider choice and secret delivery through NEBIUS_API_KEY; the exact model remains configurable and awaits evaluation. W004 implements the explicit Nebius adapter, synthetic smoke command, bounded failures, and worker integration; live model compatibility and Russian quality evaluation remain open. FastAPI is useful if later selecting webhooks and HTTP operational endpoints; it is not a mandatory second business layer.
 
 ## 5. Persistence, concurrency, and revisions
 
