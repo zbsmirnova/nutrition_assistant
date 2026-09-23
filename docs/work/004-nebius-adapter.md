@@ -50,6 +50,8 @@ The user ran six tracked nine-case batches. The first two used the earlier permi
 
 The follow-up single-action control used `MiniMaxAI/MiniMax-M3` on `INTAKE-002`. It failed solely with `actions.0.add_food.evidence:string_too_short`, proving that the defect does not require a multi-action Russian input. Further model comparison is paused pending an evidence-representation decision; the shared contract is not relaxed and no live model is selected.
 
+An eval-only diagnostic path is now prepared for that decision. It removes model-authored `evidence` from a separately fingerprinted provider schema, derives the original source text only after diagnostic validation, and reports the contract mode explicitly. It does not alter the production ParserOutput, generated schema, resolver, worker, or quality guard. The next live controls are `INTAKE-002` and `INTAKE-001`; no full batch or worker run should use this path.
+
 ## Setup follow-up — 2026-09-23
 
 The user reported `parser_unavailable` / `Nebius request unavailable` while setting up the synthetic smoke check with Qwen/Qwen3-30B-A3B-Instruct-2507 as a candidate. On revision 715b20d128abc7ef8e179e581bba1aebae07f973 (application runtime unchanged from W004's a2eb614), a developer probe using the project's Python 3.14.0 reproduced certificate verification failure (code 20, unable to get local issuer certificate); the default CA file was missing. A sandboxed probe first encountered DNS restrictions; the certificate failure and successful recheck were observed with network access approved.

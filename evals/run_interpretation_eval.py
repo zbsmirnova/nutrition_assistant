@@ -7,6 +7,8 @@ never resolves/persists anything; it measures interpretation quality only.
 Parsers:
   --parser nebius  (default) uses NEBIUS_API_KEY and NUTRITION_LLM_MODEL from the
                    environment. This performs one live model call per case.
+  --diagnostic-no-evidence uses an eval-only schema that removes model-authored
+                    evidence and derives it from source_text after validation.
   --parser stub    uses an offline canned parser to prove the instrument end-to-end
                    without any credentials. Stub outputs are deliberately imperfect
                    so the scorecard exercises both passes and failures.
@@ -36,10 +38,13 @@ CASES = Path(__file__).with_name("interpretation_v1.json")
 # --------------------------------------------------------------------------- parsers
 
 
-def build_nebius_parser(prompt_path: str | None = None):
+def build_nebius_parser(prompt_path: str | None = None, *, diagnostic_no_evidence: bool = False):
     from nutrition_app.nebius import NebiusConfig, NebiusParser
 
     prompt = Path(prompt_path).read_text(encoding="utf-8") if prompt_path else None
+    if diagnostic_no_evidence:
+        from evals.diagnostic_nebius import DiagnosticNebiusParser
+        return DiagnosticNebiusParser(NebiusConfig.from_environment(), prompt=prompt)
     return NebiusParser(NebiusConfig.from_environment(), prompt=prompt)
 
 
@@ -183,10 +188,12 @@ def score_case(case: dict, output: ParserOutput) -> dict:
 # --------------------------------------------------------------------------- driver
 
 
-def run(parser_name: str, only: str | None, prompt_path: str | None = None) -> dict:
+def run(parser_name: str, only: str | None, prompt_path: str | None = None,
+        *, diagnostic_no_evidence: bool = False) -> dict:
     corpus = json.loads(CASES.read_text(encoding="utf-8"))
     cases = [c for c in corpus["cases"] if only is None or c["id"] == only]
-    parser = StubParser(cases) if parser_name == "stub" else build_nebius_parser(prompt_path)
+    parser = (StubParser(cases) if parser_name == "stub"
+              else build_nebius_parser(prompt_path, diagnostic_no_evidence=diagnostic_no_evidence))
 
     results = []
     for case in cases:
@@ -208,6 +215,8 @@ def run(parser_name: str, only: str | None, prompt_path: str | None = None) -> d
         results.append(entry)
 
     return {"parser": parser.version, "prompt": prompt_path or "production (nebius_prompt.txt)",
+            "contract": ("diagnostic-no-model-evidence" if diagnostic_no_evidence
+                         else "production ParserOutput"),
             "thresholds": corpus["draft_thresholds"], "results": results,
             "summary": summarize(results)}
 
@@ -248,7 +257,8 @@ def summarize(results: list[dict]) -> dict:
 
 
 def format_report(report: dict) -> str:
-    lines = [f"Parser: {report['parser']}", f"Prompt: {report['prompt']}", ""]
+    lines = [f"Parser: {report['parser']}", f"Prompt: {report['prompt']}",
+             f"Contract: {report.get('contract', 'production ParserOutput')}", ""]
     lines.append(f"{'case':<12} {'pass':<5} {'#food':<6} {'clar?':<6} checks / notes")
     lines.append("-" * 78)
     for r in report["results"]:
@@ -291,6 +301,8 @@ def main(argv=None) -> int:
     ap.add_argument("--case", dest="only", default=None, help="Run one case id, e.g. INTAKE-003")
     ap.add_argument("--prompt", default=None,
                     help="Path to a candidate system prompt for A/B (nebius only); default uses production")
+    ap.add_argument("--diagnostic-no-evidence", action="store_true",
+                    help="Use the eval-only contract that removes model-authored evidence")
     ap.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
     ap.add_argument("--render-json", metavar="PATH",
                     help="Render a previously saved JSON report; makes no parser calls")
@@ -304,7 +316,10 @@ def main(argv=None) -> int:
         print(format_report(report))
         return 0
 
-    report = run(args.parser, args.only, args.prompt)
+    if args.diagnostic_no_evidence and args.parser != "nebius":
+        ap.error("--diagnostic-no-evidence requires --parser nebius")
+    report = run(args.parser, args.only, args.prompt,
+                 diagnostic_no_evidence=args.diagnostic_no_evidence)
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=2))
     else:

@@ -223,7 +223,7 @@ class NebiusParser:
                 raise ValueError
             # Local schema/graph validation remains mandatory even with structured output.
             try:
-                output = ParserOutput.model_validate_json(content)
+                output = self._parse_content(content, request)
             except Exception as error:
                 # Keep the provider payload and Pydantic details out of the public
                 # error, while making strict-schema incompatibility diagnosable.
@@ -250,6 +250,15 @@ class NebiusParser:
         except Exception:
             raise ParserRejected("Invalid, incomplete or refused Nebius interpretation") from None
         return output.model_dump_json()
+
+    def _parse_content(self, content: str, request: ParserRequest) -> ParserOutput:
+        """Validate one provider completion against the production contract.
+
+        Evaluation-only adapters may override this hook with a separately
+        versioned diagnostic contract; the default path is the production
+        ParserOutput model and remains unchanged.
+        """
+        return ParserOutput.model_validate_json(content)
 
 
 def run_synthetic_smoke(parser: NebiusParser):

@@ -93,6 +93,15 @@ After configuring the two environment variables through your secret mechanism, a
 
 This sends one fixed synthetic dairy entry to Nebius, validates the returned action through the existing resolver, and prints validation flags plus a parser fingerprint. It never opens the database and does not print the source, response or key. No successful live smoke result is recorded yet; the configured model must support the actual schema.
 
+For the evidence compatibility experiment only, use the interpretation evaluator's diagnostic contract. It removes model-authored evidence and derives the original source text only inside the evaluator after the diagnostic response passes its separate schema. It never changes the production contract and must not be used with `conversation-nebius` or the bot:
+
+~~~sh
+NUTRITION_LLM_MODEL='MiniMaxAI/MiniMax-M3' SSL_CERT_FILE=/etc/ssl/cert.pem \
+.venv/bin/python -m evals.run_interpretation_eval --parser nebius \
+  --diagnostic-no-evidence --prompt evals/prompt_diagnostic_no_evidence.txt \
+  --case INTAKE-002
+~~~
+
 ### macOS certificate setup
 
 If nebius-smoke returns `parser_unavailable` with `Nebius request unavailable`, the HTTPS request raised an exception. This message alone does not distinguish a certificate failure from a timeout or another connection problem. On this development Mac, Python 3.14's default CA file was missing, and a separate request reproduced `SSLCertVerificationError: unable to get local issuer certificate`. Using the existing macOS CA bundle fixed that connection while retaining certificate verification:

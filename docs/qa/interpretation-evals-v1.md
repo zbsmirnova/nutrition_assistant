@@ -1,6 +1,6 @@
 # Russian interpretation evaluation v1
 
-Status: instrument complete and self-tested offline; six live batches plus v3 and v4 single-case attempts were recorded 2026-09-23 as exploratory developer evidence (not independent QA). The evaluator was hardened at `5ecc774` before the latest four batches. Candidate prompts v3 and v4 and a provider runtime quality guard are prepared; the next scored live A/B run is pending. Thresholds approved by the product owner.
+Status: instrument complete and self-tested offline; six live batches plus v3 and v4 single-case attempts were recorded 2026-09-23 as exploratory developer evidence (not independent QA). The evaluator was hardened at `5ecc774` before the latest four batches. Candidate prompts v3 and v4 and a provider runtime quality guard are prepared. An eval-only no-model-evidence contract is now prepared for two diagnostic controls; the production contract remains unchanged. Thresholds approved by the product owner.
 Owner: product owner approves rubric/thresholds; lead assistant/QA maintains the instrument and records runs.
 
 ## What this validates
@@ -10,7 +10,7 @@ Hypothesis #1: can the live model turn casual Russian food messages into correct
 ## Instrument
 
 - [interpretation_v1.json](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/evals/interpretation_v1.json?type=file&root=%252F) — the nine real Russian cases from [food_intake_calculation_v1.json](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/evals/food_intake_calculation_v1.json?type=file&root=%252F), each with the parser context (candidates/recipes) and a draft rubric of signals objectively checkable from `ParserOutput`.
-- [run_interpretation_eval.py](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/evals/run_interpretation_eval.py?type=file&root=%252F) — batch runner. `--parser stub` self-tests offline; `--parser nebius` performs one live call per case; `--prompt PATH` A/B-tests a candidate system prompt; `--json` emits per-case raw `ParserOutput` for diagnosis; `--render-json PATH` renders a saved report without making parser calls.
+- [run_interpretation_eval.py](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/evals/run_interpretation_eval.py?type=file&root=%252F) — batch runner. `--parser stub` self-tests offline; `--parser nebius` performs one live call per case; `--prompt PATH` A/B-tests a candidate system prompt; `--diagnostic-no-evidence` selects the eval-only contract that removes model-authored evidence; `--json` emits per-case raw `ParserOutput` for diagnosis; `--render-json PATH` renders a saved report without making parser calls.
 
 Scored dimensions: consumption intent, add_food count, quantity extraction, candidate selection, `max_add_food` (no invented items), and clarification behavior reported as **recall** (of cases that should ask, how many did) and **specificity** (of clean cases, how many stayed silent). The blended clarification metric is retained but is misleading on its own.
 
@@ -137,6 +137,10 @@ The subsequent four probes also produced no schema-valid proposal. Their parser 
 ## Single-action control — 2026-09-23
 
 The user reran `MiniMaxAI/MiniMax-M3` with the v4 prompt on `INTAKE-002`, which contains one food action only. The parser fingerprint was `nebius:c6703633f383566b041379ef9d68dfaf6c29f8adf666c1ddc415a28386c75a9e`. The call reached the adapter and failed local validation solely at `actions.0.add_food.evidence:string_too_short`; all scored metrics were therefore `n/a`. This reproduces the evidence failure without multi-action complexity. No model has passed the current live proposal contract, so further model comparison should wait until the evidence representation is reviewed.
+
+## Diagnostic no-model-evidence variant — prepared 2026-09-23
+
+[prompt_diagnostic_no_evidence.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/evals/prompt_diagnostic_no_evidence.txt?type=file&root=%252F) and [diagnostic_nebius.py](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/evals/diagnostic_nebius.py?type=file&root=%252F) define an evaluation-only provider schema with model-authored `evidence` removed. After the diagnostic response passes its own schema, the evaluator attaches the original `source_text` solely as a fixture so candidate selection and quantity extraction can be measured. This derived evidence is not an authorization path and the production `ParserOutput`, generated schema, resolver, worker, and runtime quality guard are unchanged. Run only `INTAKE-002` and `INTAKE-001` first; do not use this contract for the bot or worker.
 
 ## Findings
 
