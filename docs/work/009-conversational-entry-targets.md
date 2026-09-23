@@ -1,8 +1,8 @@
 # W009 — Resolve conversational food-entry targets
 
-Status: in progress.
+Status: done.
 Milestone: M2.
-Owner: lead assistant, architect/developer; independent QA pending.
+Owner: lead assistant, architect/developer; developer verification complete.
 Updated: 2026-09-23.
 
 ## Outcome and scope
@@ -24,12 +24,16 @@ The slice supports one-component exact quantity corrections, delete, and undo of
 
 ## Implementation checklist
 
-- [ ] Add scoped entry context and reply-to-entry lookup to the conversation worker.
-- [ ] Resolve bounded correction/delete/undo proposals into guarded typed commands.
-- [ ] Add PostgreSQL coverage for reply correction, candidate delete/undo, ambiguity, and parser privacy.
-- [ ] Run offline, integration, and retained QA suites and record the exact revision.
-- [ ] Commit the completed slice with maintained documentation and QA evidence.
+- [x] Add scoped entry context and reply-to-entry lookup to the conversation worker.
+- [x] Resolve bounded correction/delete/undo proposals into guarded typed commands.
+- [x] Add PostgreSQL coverage for reply correction, candidate delete/undo, ambiguity, and parser privacy.
+- [x] Run offline, integration, and retained QA suites and record the exact revision.
+- [x] Commit the completed slice with maintained documentation and QA evidence.
 
 ## Handoff
 
-W008 provides the transactional command handlers and revision guards. No migration is expected. The next broader step is clarification of ambiguous targets and support for additional correction fields.
+W008 provides the transactional command handlers and revision guards. The implementation is committed in `1bb79ebb5bb952d5007692999a4c772806dd9c8c`. Offline tests pass (`96`), PostgreSQL integration passes (`68`), and retained QA passes (`32`). No migration was needed. The next broader step is clarification of ambiguous targets and support for additional correction fields.
+
+## QA result and completion
+
+Developer verification passes for the bounded conversational-target workflow. Evidence is in [009-conversational-entry-targets-developer.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/009-conversational-entry-targets-developer.md?type=file&root=%252F). No independent W009 review, live Nebius, or real Telegram behavior is claimed.
