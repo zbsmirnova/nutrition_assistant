@@ -41,7 +41,7 @@ docker compose -f compose.dev.yml stop db
 
 ## Telegram transport development
 
-Apply migration head 0008 before using current commands. No new runtime dependencies are needed. The API adapter uses normal HTTPS certificate verification; if your environment uses a custom CA, configure its trusted CA through Python's standard SSL_CERT_FILE setting.
+Apply the current migration head before using these commands (`migrate` handles this; the current head includes daily observations). No new runtime dependencies are needed. The API adapter uses normal HTTPS certificate verification; if your environment uses a custom CA, configure its trusted CA through Python's standard SSL_CERT_FILE setting.
 
 The local transport harness is verified with synthetic data. The selected model provider is Nebius Token Factory; real-message retention and other data-lifecycle details remain open. These commands are documented for explicit operator use; they are not run by the test suite. Configure NUTRITION_TELEGRAM_TOKEN and NUTRITION_TELEGRAM_BOT_ID in your local environment; do not place a token in a command argument, chat message, or repository file.
 
