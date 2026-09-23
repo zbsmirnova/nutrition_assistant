@@ -6,7 +6,7 @@ Date: 2026-09-23
 Reviewer and role: lead assistant, developer verification
 Work brief: [014-recipe-clarification.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/014-recipe-clarification.md?type=file&root=%252F)
 Review type: developer verification
-Implementation revision: recorded after the implementation commit.
+Implementation revision: [b711f23d4845d931014c24f43d3202d417f36f55](air-commit://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant?commit=b711f23d4845d931014c24f43d3202d417f36f55&root=%252F).
 
 ## Checks and evidence
 
