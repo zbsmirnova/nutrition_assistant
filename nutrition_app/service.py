@@ -15,7 +15,7 @@ from sqlalchemy.engine import Connection, Engine
 from nutrition_contracts.commands import (
     AddConsumedFood, CalculatedRecipeNutrition, CommandEnvelope, CorrectFoodEntry, DefineRecipe,
     DeleteFoodEntry, ProductComponent, RecipeDefinition, ReviseRecipe, RestoreFoodEntry,
-    ResolvedIngredientSource, UnknownIngredientSource,
+    RecipeComponent, ResolvedIngredientSource, UnknownIngredientSource,
 )
 from nutrition_contracts.common import Contract, Count, NutritionSnapshot, PositiveCount, Text
 from nutrition_contracts.results import Applied, DailySummary, FoodEntrySummary, MutationReceipt, OutcomeEnvelope, RecipeProfile
@@ -120,15 +120,15 @@ class FoodService:
         if evidence[0] != command.source.origin_update_id or len(set(evidence)) != len(evidence):
             raise ApplicationError("Evidence must begin with the original source and contain no duplicates")
         if isinstance(command.command, AddConsumedFood):
-            if any(not isinstance(c, ProductComponent) for c in command.command.food.components):
-                raise Unsupported("This slice supports pinned product components only")
+            if any(not isinstance(c, (ProductComponent, RecipeComponent)) for c in command.command.food.components):
+                raise Unsupported("This slice supports pinned product and recipe components only")
             if command.source.pending_action_id is None and evidence != [command.source.origin_update_id]:
                 raise Unsupported("Additional evidence requires a pending clarification")
             if command.source.pending_action_id is not None and len(evidence) < 2:
                 raise Unsupported("A clarification command requires answer evidence")
         elif isinstance(command.command, CorrectFoodEntry) and any(
-                not isinstance(c, ProductComponent) for c in command.command.replacement.components):
-            raise Unsupported("This slice supports pinned product components only")
+                not isinstance(c, (ProductComponent, RecipeComponent)) for c in command.command.replacement.components):
+            raise Unsupported("This slice supports pinned product and recipe components only")
         elif isinstance(command.command, (DefineRecipe, ReviseRecipe)):
             if command.source.pending_action_id is not None or evidence != [command.source.origin_update_id]:
                 raise Unsupported("Recipe persistence does not depend on pending clarification in this slice")
@@ -229,6 +229,19 @@ class FoodService:
 
     @staticmethod
     def _component(connection, actor, component):
+        if isinstance(component, RecipeComponent):
+            version = connection.execute(sa.select(db.recipe_versions).where(
+                db.recipe_versions.c.user_id == actor,
+                db.recipe_versions.c.id == component.recipe_version_id,
+            )).mappings().one_or_none()
+            if version is None:
+                raise NotFound("Recipe version not found")
+            amount = Decimal(component.eaten_grams)
+            snapshot = scale(from_columns(version), amount)
+            return dict(description=component.description, component_kind="recipe",
+                product_version_id=None, recipe_version_id=version["id"], data_source_id=None,
+                quantity_kind="mass", weight_basis=None, calculation_version=RECIPE_CALCULATION_VERSION,
+                edible_g=amount, gross_g=None, inedible_g=None, volume_ml=None, **to_columns(snapshot)), snapshot
         version = connection.execute(sa.select(db.product_versions).where(
             db.product_versions.c.user_id == actor, db.product_versions.c.id == component.product_version_id,
         )).mappings().one_or_none()
@@ -241,7 +254,8 @@ class FoodService:
             raise ApplicationError("Product and quantity bases do not match; an explicit conversion is required")
         amount = Decimal(quantity.edible_g if quantity.kind == "mass" else quantity.ml)
         snapshot = scale(from_columns(version), amount)
-        values = dict(description=component.description, product_version_id=version["id"],
+        values = dict(description=component.description, component_kind="product", product_version_id=version["id"],
+            recipe_version_id=None,
             data_source_id=version["data_source_id"], quantity_kind=quantity.kind,
             weight_basis=quantity.weight_basis, calculation_version=CALCULATION_VERSION,
             edible_g=None, gross_g=None, inedible_g=None, volume_ml=None, **to_columns(snapshot))

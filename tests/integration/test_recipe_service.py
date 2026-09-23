@@ -11,8 +11,8 @@ from nutrition_app.demo import message
 from nutrition_app.errors import Conflict
 from nutrition_app.service import FoodService, operation_id_for
 from nutrition_contracts.commands import (
-    CalculatedRecipeNutrition, CommandEnvelope, CommandSource, DefineRecipe, ReviseRecipe,
-    RecipeDefinition, RecipeIngredient, ResolvedIngredientSource, UnknownIngredientSource,
+    AddConsumedFood, CalculatedRecipeNutrition, CommandEnvelope, CommandSource, DefineRecipe, ReviseRecipe,
+    FoodState, RecipeComponent, RecipeDefinition, RecipeIngredient, ResolvedIngredientSource, UnknownIngredientSource,
     ProvidedRecipeNutrition,
 )
 from nutrition_contracts.common import Mass, NutrientValue, NutritionSnapshot, SourceQuantity
@@ -102,6 +102,39 @@ class RecipePersistenceTests(unittest.TestCase):
             self.service.apply(self.seed.user_id, self._envelope(
                 stale_source, ReviseRecipe(kind="revise_recipe", recipe_id=first.recipe_id,
                     expected_version_id=first.version_id, replacement=replacement), context_revision=2))
+
+    def test_consumption_pins_recipe_version_and_survives_recipe_revision(self):
+        definition_source = self._source(1)
+        first = self.service.apply(self.seed.user_id, self._envelope(
+            definition_source, DefineRecipe(kind="define_recipe", recipe=self._provided()))).result.recipe
+        eaten_source = self._source(2, text="Съела 250 г моего супа")
+        eaten = AddConsumedFood(kind="add_consumed_food", food=FoodState(
+            effective_date=date(2026, 9, 22), time_zone="Europe/Berlin", meal="lunch",
+            description="мой суп", components=[RecipeComponent(kind="recipe", description="мой суп",
+                recipe_version_id=first.version_id, eaten_grams="250")]))
+        first_meal = self.service.apply(self.seed.user_id, self._envelope(
+            eaten_source, eaten, context_revision=1)).result
+        self.assertEqual(first_meal.food_entries[0].nutrition.kcal.value, "175")
+        revised_source = self._source(3, text="Обнови калорийность супа")
+        replacement = self._provided()
+        replacement.nutrition.per_100_g.kcal = NutrientValue(value="100", lower=None, upper=None)
+        revised = self.service.apply(self.seed.user_id, self._envelope(
+            revised_source, ReviseRecipe(kind="revise_recipe", recipe_id=first.recipe_id,
+                expected_version_id=first.version_id, replacement=replacement), context_revision=2)).result.recipe
+        current_meal_source = self._source(4, text="Съела 250 г моего супа снова")
+        current_meal = self.service.apply(self.seed.user_id, self._envelope(
+            current_meal_source, AddConsumedFood(kind="add_consumed_food", food=FoodState(
+                effective_date=date(2026, 9, 22), time_zone="Europe/Berlin", meal="dinner",
+                description="мой суп", components=[RecipeComponent(kind="recipe", description="мой суп",
+                    recipe_version_id=revised.version_id, eaten_grams="250")])), context_revision=3)).result
+        self.assertEqual(current_meal.food_entries[0].nutrition.kcal.value, "250")
+        self.assertEqual(self.service.get_entry(self.seed.user_id, first_meal.food_entries[0].entry_id).nutrition.kcal.value, "175")
+        with self.engine.connect() as connection:
+            row = connection.execute(sa.select(db.food_components).where(
+                db.food_components.c.user_id == self.seed.user_id,
+                db.food_components.c.recipe_version_id == first.version_id)).mappings().one()
+        self.assertIsNone(row["product_version_id"])
+        self.assertEqual(row["component_kind"], "recipe")
 
 
 if __name__ == "__main__":

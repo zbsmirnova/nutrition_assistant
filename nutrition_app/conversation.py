@@ -91,7 +91,9 @@ class ConversationWorker:
             db.food_days.c.local_date.label("effective_date"),
             db.food_components.c.position.label("component_position"),
             db.food_components.c.description.label("component_description"),
+            db.food_components.c.component_kind,
             db.food_components.c.product_version_id,
+            db.food_components.c.recipe_version_id,
             db.food_components.c.quantity_kind,
             db.food_components.c.edible_g,
             db.food_components.c.gross_g,
@@ -128,8 +130,12 @@ class ConversationWorker:
                 else:
                     quantity = {"kind": "volume", "ml": str(row["volume_ml"]),
                                 "weight_basis": row["weight_basis"]}
-                record["components"].append({"kind": "product", "description": row["component_description"],
-                    "product_version_id": str(row["product_version_id"]), "quantity": quantity})
+                if row["component_kind"] == "recipe":
+                    record["components"].append({"kind": "recipe", "description": row["component_description"],
+                        "recipe_version_id": str(row["recipe_version_id"]), "eaten_grams": str(row["edible_g"])})
+                else:
+                    record["components"].append({"kind": "product", "description": row["component_description"],
+                        "product_version_id": str(row["product_version_id"]), "quantity": quantity})
         for record in entry_map.values():
             previous = connection.execute(sa.select(db.food_entry_revisions.c.id).where(
                 db.food_entry_revisions.c.user_id == user["id"],

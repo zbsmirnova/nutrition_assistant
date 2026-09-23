@@ -143,11 +143,11 @@ A future name-alias table may map a confirmed phrase to a versioned product or r
 | `recipe_versions` | `recipe_id`, `version_no`, `name`, `cooking_instructions NULL`, `nutrition_kind` (`provided` or `calculate`), `data_source_id NULL`, per-100-g nutrition values, `finished_yield_g NULL`, `yield_basis NULL`, `estimate_approval_update_id NULL`, `calculation_policy_version NULL` | Unique `(user_id, recipe_id, version_no)`. Nutrition basis is fixed to per 100 g. A calculated profile requires a positive finished-weight basis and yield basis. That weight describes calculation provenance, never a default portion. No prepared-batch identity or serving-count fields. |
 | `recipe_ingredients` | `recipe_version_id`, `position`, `name_as_entered`, `original_quantity jsonb`, `weight_basis NULL`, `source jsonb` | Unique position within a version. W011 preserves the typed original quantity and source-resolution snapshot. A resolved source pins a product version and normalized quantity; an unknown source remains explicit and is never treated as zero. |
 
-Accepted storage policy after the conversation clarification: save recipe name, original ingredient amounts, cooking instructions when supplied, kcal/protein/fat/carbohydrate values per 100 g, provenance, and revision metadata. The exact provenance columns above are design proposals. Food entries store consumed grams and the resulting nutrient snapshot. For each known nutrient, `consumed_value = value_per_100_g * eaten_grams / 100`.
+Accepted storage policy after the conversation clarification: save recipe name, original ingredient amounts, cooking instructions when supplied, kcal/protein/fat/carbohydrate values per 100 g, provenance, and revision metadata. W011 implements the listed recipe tables; W012 adds recipe components to food-entry snapshots. Food entries store consumed grams, the pinned recipe version, and the resulting nutrient snapshot. For each known nutrient, `consumed_value = value_per_100_g * eaten_grams / 100`.
 
 Example: saved soup contains 70 kcal, 4 g protein, 2 g fat, and 9 g carbohydrates per 100 g. Eating 250 g creates one food entry with 175 kcal, 10 g protein, 5 g fat, and 22.5 g carbohydrates. The recipe remains a per-100-g profile with no portion size. Supplied label calories are not recomputed from macro energy factors.
 
-Creating or changing a recipe does not create consumed food. New entries select the current recipe version; old entries retain their original version and values. Correcting nutrition for an already logged meal must explicitly include that food entry in the operation.
+Creating or changing a recipe does not create consumed food. New entries select and pin the current recipe version; old entries retain their original version and values. Correcting nutrition for an already logged meal must explicitly include that food entry in the operation.
 
 Accepted recipe workflow: accept arbitrary ingredient amounts, ask for needed quantities/sources or finished edible weight, and calculate kcal/macros per 100 g deterministically. For each nutrient, sum the ingredient contributions and divide by the finished edible weight, then multiply by 100. Original ingredient quantities and optional instructions remain available for cooking the recipe again. Directly supplied per-100-g values remain a supported input; do not require invented ingredients for such a profile.
 
@@ -211,7 +211,7 @@ Initial indexes, in addition to unique constraints:
 - Outbox: `(status, next_attempt_at, created_at)` for dispatch; check-in and notification-run references.
 - Reports: `(user_id, period_start, period_end, generated_at)`.
 
-M1 index and deferred-constraint definitions are frozen in its migrations and exercised on local PostgreSQL. W011 now adds the recipe identity/version/ingredient tables and indexes. Pending actions, observations, and reports remain later work.
+M1 index and deferred-constraint definitions are frozen in its migrations and exercised on local PostgreSQL. W011 adds the recipe identity/version/ingredient tables and indexes; W012 migration 0007 adds explicit product/recipe food-component sources. Pending actions, observations, and reports remain later work.
 
 ## 11. Walkthroughs to validate in implementation
 
