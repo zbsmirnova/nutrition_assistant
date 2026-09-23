@@ -206,17 +206,30 @@ class NebiusParser:
             if not isinstance(content, str) or not content.strip():
                 raise ValueError
             # Local schema/graph validation remains mandatory even with structured output.
-            output = ParserOutput.model_validate_json(content)
+            try:
+                output = ParserOutput.model_validate_json(content)
+            except Exception:
+                # Keep the provider payload and Pydantic details out of the public
+                # error, while making strict-schema incompatibility diagnosable.
+                raise ParserRejected("Nebius proposal failed local schema validation") from None
             candidate_kinds = {c["ref"]: "product" for c in request.candidates}
             candidate_kinds.update({c["ref"]: "recipe" for c in request.recipes})
             candidate_kinds.update({c["ref"]: {"pending", "recipe"} for c in request.pending_recipes})
             candidate_kinds.update({c["ref"]: "entry" for c in request.entries})
             candidate_kinds.update({c["ref"]: {"pending", "product"} for c in request.pending_candidates})
             candidate_kinds.update({c["ref"]: {"pending", "entry"} for c in request.pending_entries})
-            validate_parser_context(output, candidate_kinds, request.pending_questions,
-                                    source_text=request.source_text, has_reply=request.has_reply)
-            self._validate_quality(output, request)
-        except NebiusQualityError:
+            try:
+                validate_parser_context(output, candidate_kinds, request.pending_questions,
+                                        source_text=request.source_text, has_reply=request.has_reply)
+            except Exception:
+                raise ParserRejected("Nebius proposal failed parser-context validation") from None
+            try:
+                self._validate_quality(output, request)
+            except NebiusQualityError:
+                raise
+            except Exception:
+                raise ParserRejected("Nebius proposal failed proposal-quality validation") from None
+        except (NebiusQualityError, ParserRejected):
             raise
         except Exception:
             raise ParserRejected("Invalid, incomplete or refused Nebius interpretation") from None

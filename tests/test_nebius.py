@@ -164,11 +164,24 @@ class NebiusProtocolTests(unittest.TestCase):
 
     def test_model_quality_rejects_short_evidence_and_invented_date_hint(self):
         bad = fixture()["output"]
-        bad["actions"][0]["evidence"] = TEXT[0]
+        bad["actions"][0]["evidence"] = TEXT[:3]
         bad["actions"][0]["date_hint"] = {"text": "2"}
         with self.assertRaises(ParserRejected) as caught:
             client(response(bad)).parse(request())
-        self.assertEqual(str(caught.exception), "Invalid, incomplete or refused Nebius interpretation")
+        self.assertEqual(str(caught.exception), "date_hint_not_source_evidence")
+
+    def test_schema_and_context_failures_are_sanitized_by_validation_stage(self):
+        short = fixture()["output"]
+        short["actions"][0]["evidence"] = TEXT[0]
+        with self.assertRaises(ParserRejected) as schema_error:
+            client(response(short)).parse(request())
+        self.assertEqual(str(schema_error.exception), "Nebius proposal failed local schema validation")
+
+        foreign = fixture()["output"]
+        foreign["actions"][0]["food"]["candidate_ref"] = "c99"
+        with self.assertRaises(ParserRejected) as context_error:
+            client(response(foreign)).parse(request())
+        self.assertEqual(str(context_error.exception), "Nebius proposal failed parser-context validation")
 
     def test_model_quality_accepts_an_explicit_date_hint(self):
         text = "Вчера " + TEXT

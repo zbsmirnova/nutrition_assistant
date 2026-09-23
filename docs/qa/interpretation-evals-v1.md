@@ -1,6 +1,6 @@
 # Russian interpretation evaluation v1
 
-Status: instrument complete and self-tested offline; six live batches recorded 2026-09-23 as exploratory developer evidence (not independent QA). The evaluator was hardened at `5ecc774` before the latest four batches. Candidate prompt v3 and a provider runtime quality guard are prepared; the next live A/B run is pending. Thresholds approved by the product owner.
+Status: instrument complete and self-tested offline; six live batches and one v3 single-case attempt were recorded 2026-09-23 as exploratory developer evidence (not independent QA). The evaluator was hardened at `5ecc774` before the latest four batches. Candidate prompt v3 and a provider runtime quality guard are prepared; the next scored live A/B run is pending. Thresholds approved by the product owner.
 Owner: product owner approves rubric/thresholds; lead assistant/QA maintains the instrument and records runs.
 
 ## What this validates
@@ -101,7 +101,11 @@ Candidate v2 improves the intended uncertainty behavior and quantity handling co
 
 [prompt_candidate_v3.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/evals/prompt_candidate_v3.txt?type=file&root=%252F) adds explicit instructions that source-backed evidence must be a contiguous excerpt of at least three characters, `date_hint.text` must be `null` without a literal date phrase, and a resolved product/recipe must use the exact supplied c-token. Short clarification replies such as `5%` remain allowed as evidence.
 
-The generated parser schema now requires at least three characters for source-backed action evidence while keeping short clarification/cancellation evidence valid. The Nebius adapter retains a runtime guard for defense in depth and rejects non-source date hints before resolution. It exposes only bounded rejection reasons where schema validation does not already stop the response; model text and payloads remain redacted. Candidate references remain scoped by the existing context validator; unresolved name fallback remains available for cases where no supplied candidate establishes identity. Focused and full offline checks pass on the implementation revision. No live v3 evaluation has run against this regenerated schema yet.
+The generated parser schema now requires at least three characters for source-backed action evidence while keeping short clarification/cancellation evidence valid. The Nebius adapter retains a runtime guard for defense in depth and rejects non-source date hints before resolution. It exposes only bounded rejection reasons where schema validation does not already stop the response; model text and payloads remain redacted. Candidate references remain scoped by the existing context validator; unresolved name fallback remains available for cases where no supplied candidate establishes identity. Focused and full offline checks pass on the implementation revision.
+
+## Candidate prompt v3 — single-case rejection — 2026-09-23
+
+The user ran `INTAKE-001` with parser fingerprint `nebius:59378dac5158660ec5a32b4ec30a17b294fc8edcedd60cdb1b48a32d22e81153`. The call returned `ParserRejected: Invalid, incomplete or refused Nebius interpretation`, so no proposal was scored. That run occurred before the adapter's bounded validation-stage diagnostics were committed; the rejection stage was therefore unconfirmed. Rerun the same single case after the diagnostic change, then proceed to the full batch only if the response passes local schema and context validation.
 
 ## Findings
 
