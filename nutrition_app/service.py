@@ -36,9 +36,11 @@ class IncomingMessage(Contract):
     forwarded: bool = False
 
 
-def operation_id_for(update_id: UUID) -> UUID:
-    """M1 freezes exactly one command per accepted message (operation position 0)."""
-    return uuid5(OPERATION_NAMESPACE, f"{update_id}:0")
+def operation_id_for(update_id: UUID, position: int = 0) -> UUID:
+    """Derive a stable command identity from an inbox update and action position."""
+    if type(position) is not int or not 0 <= position < 32:
+        raise ApplicationError("Operation position must be between 0 and 31")
+    return uuid5(OPERATION_NAMESPACE, f"{update_id}:{position}")
 
 
 def digest(payload: dict) -> str:
@@ -105,7 +107,7 @@ class FoodService:
         return update_id
 
     @staticmethod
-    def _validate_supported(command: CommandEnvelope) -> None:
+    def _validate_supported(command: CommandEnvelope, position: int = 0) -> None:
         if not isinstance(command.command, AddConsumedFood):
             raise Unsupported("This slice supports resolved add-food commands only")
         if any(not isinstance(c, ProductComponent) for c in command.command.food.components):
@@ -117,20 +119,20 @@ class FoodService:
             raise Unsupported("Additional evidence requires a pending clarification")
         if command.source.pending_action_id is not None and len(evidence) < 2:
             raise Unsupported("A clarification command requires answer evidence")
-        if command.operation_id != operation_id_for(command.source.origin_update_id):
+        if command.operation_id != operation_id_for(command.source.origin_update_id, position):
             raise ApplicationError("Operation identity must match its original message and position")
 
-    def prepare(self, actor: UUID, command: CommandEnvelope) -> UUID:
+    def prepare(self, actor: UUID, command: CommandEnvelope, *, position: int = 0) -> UUID:
         with self.engine.begin() as connection:
             self._user(connection, actor)
-            return self._prepare(connection, actor, command)
+            return self._prepare(connection, actor, command, position=position)
 
-    def _prepare(self, connection: Connection, actor: UUID, command: CommandEnvelope) -> UUID:
+    def _prepare(self, connection: Connection, actor: UUID, command: CommandEnvelope, *, position: int = 0) -> UUID:
         """Freeze under an existing short user-locked transaction (also used by W003)."""
         command = CommandEnvelope.model_validate_json(command.model_dump_json())
         if command.user_id != actor:
             raise Unauthorized("Command identity does not match the authenticated user")
-        self._validate_supported(command)
+        self._validate_supported(command, position)
         payload = command.model_dump(mode="json")
         request_hash = digest(payload)
         source = connection.execute(sa.select(db.inbox_updates.c.id).where(
@@ -162,7 +164,7 @@ class FoodService:
             return existing["id"]
         connection.execute(db.prepared_operations.insert().values(
             id=command.operation_id, user_id=actor, origin_update_id=command.source.origin_update_id,
-            position=0, request_hash=request_hash, command=payload,
+            position=position, request_hash=request_hash, command=payload,
         ))
         return command.operation_id
 
@@ -187,7 +189,7 @@ class FoodService:
             command = CommandEnvelope.model_validate_json(json.dumps(prepared["command"]))
             if command.user_id != actor or command.operation_id != operation_id or digest(prepared["command"]) != prepared["request_hash"]:
                 raise Conflict("Prepared operation is inconsistent")
-            self._validate_supported(command)
+            self._validate_supported(command, prepared["position"])
             # M1's explicit additive commands commute: revalidate pinned sources under
             # this user lock. Do not reinterpret date or switch to a newer product.
             result = self._add(connection, actor, command)

@@ -1,7 +1,7 @@
 """Durable single-message work. Network/model calls never hold a transaction."""
 
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import date, timedelta
 import json
 from uuid import UUID, uuid4
 from zoneinfo import ZoneInfo
@@ -15,7 +15,8 @@ from nutrition_contracts.parser import ParserOutput
 from . import schema as db
 from .errors import ApplicationError, NotFound
 from .interpretation import (CONTEXT_VERSION, MAX_CANDIDATES, RESOLVER_VERSION,
-                             Parser, ParserRejected, ParserUnavailable, Resolution, parser_request, resolve)
+                             Parser, ParserRejected, ParserUnavailable, Resolution, parser_request,
+                             resolve, resolve_actions)
 from .service import FoodService, operation_id_for
 
 
@@ -101,6 +102,7 @@ class ConversationWorker:
                     "origin_update_id": str(pending["origin_update_id"]),
                     "proposal": pending["proposal"],
                     "context": original_context,
+                    "position": original_context.get("pending_position", 0),
                 }
         return context
 
@@ -146,7 +148,8 @@ class ConversationWorker:
             if context is None:
                 context = self._context(connection, user, source, parser_version)
             execution_origin = UUID(context["pending"]["origin_update_id"]) if context.get("pending") else origin
-            execution_operation_id = operation_id_for(execution_origin)
+            execution_position = context["pending"].get("position", 0) if context.get("pending") else 0
+            execution_operation_id = operation_id_for(execution_origin, execution_position)
             if self._applied(connection, actor, execution_operation_id):
                 self._set(connection, actor, origin, "applied", "stored_result_recovered")
                 if context.get("pending"):
@@ -193,9 +196,20 @@ class ConversationWorker:
             if self._live_claim(connection, claim) is None:
                 return False
             if resolution.command is not None:
-                self.service._prepare(connection, claim.actor, resolution.command)
+                position = resolution.command_position
+                if position is None:
+                    position = claim.context.get("operation_position", 0)
+                    if claim.context.get("pending"):
+                        position = claim.context["pending"].get("position", 0)
+                self.service._prepare(connection, claim.actor, resolution.command, position=position)
+            if resolution.pending_questions:
+                claim.context["pending_questions"] = resolution.pending_questions
+                claim.context["pending_position"] = resolution.pending_position or 0
+                claim.context["pending_food_date"] = (None if resolution.pending_food_date is None
+                                                        else resolution.pending_food_date.isoformat())
             values = {"proposal": proposal,
-                      "pending_questions": resolution.pending_questions}
+                      "pending_questions": resolution.pending_questions,
+                      "context": claim.context}
             # _set normally clears the date; use a separate value assignment below.
             self._set(connection, claim.actor, claim.origin, resolution.status, resolution.reason, **values)
             if resolution.pending_food_date is not None:
@@ -260,7 +274,24 @@ class ConversationWorker:
                     if not isinstance(raw, str) or len(raw.encode("utf-8")) > 256 * 1024:
                         raise ValueError("Invalid proposal size or type")
                     output = ParserOutput.model_validate_json(raw)
-                    resolution = resolve(actor, claim.origin, context, output)
+                    if len(output.actions) == 1:
+                        resolution = resolve(actor, claim.origin, context, output)
+                    else:
+                        resolved = resolve_actions(actor, claim.origin, context, output)
+                        ready = [(index, item) for index, item in enumerate(resolved)
+                                 if item.command is not None and item.status == "ready"]
+                        waiting = [(index, item) for index, item in enumerate(resolved)
+                                   if item.status == "unresolved" and item.pending_questions]
+                        if len(ready) == 1 and len(waiting) == 1 and len(resolved) == 2:
+                            ready_index, ready_resolution = ready[0]
+                            pending_index, pending_resolution = waiting[0]
+                            resolution = Resolution(
+                                "ready", "partial_command_prepared", command=ready_resolution.command,
+                                pending_food_date=pending_resolution.pending_food_date,
+                                pending_questions=pending_resolution.pending_questions,
+                                pending_position=pending_index, command_position=ready_index)
+                        else:
+                            resolution = Resolution("unsupported", "multiple_actions")
                     proposal = output.model_dump(mode="json")
                 except (ValidationError, ValueError, TypeError, OverflowError):
                     resolution = Resolution("rejected", "invalid_parser_proposal")
@@ -281,8 +312,16 @@ class ConversationWorker:
             return {"status": status, "origin_update_id": str(claim.origin)}
         with self.engine.begin() as connection:
             self.service._user(connection, actor)
-            self._set(connection, actor, claim.origin, "applied", "command_applied")
-            self._clear_pending(connection, claim)
+            if claim.context.get("pending_questions") and claim.context.get("pending") is None:
+                pending_date = claim.context.get("pending_food_date")
+                self._set(connection, actor, claim.origin, "unresolved", "partial_applied",
+                          pending_questions=claim.context["pending_questions"])
+                if pending_date is not None:
+                    connection.execute(db.conversation_jobs.update().where(self._where(actor, claim.origin))
+                                       .values(pending_food_date=date.fromisoformat(pending_date)))
+            else:
+                self._set(connection, actor, claim.origin, "applied", "command_applied")
+                self._clear_pending(connection, claim)
         return {"status": "applied", "origin_update_id": str(claim.origin), "outcome": outcome.model_dump(mode="json")}
 
     def status(self, actor: UUID, origin: UUID | None = None):

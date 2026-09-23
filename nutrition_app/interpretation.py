@@ -101,6 +101,8 @@ class Resolution:
     command: CommandEnvelope | None = None
     pending_food_date: date | None = None
     pending_questions: dict[str, dict[str, str]] | None = None
+    pending_position: int | None = None
+    command_position: int | None = None
 
 
 def normalized(text: str) -> str:
@@ -196,20 +198,26 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
             return Resolution("unresolved", "clarification_context_missing")
         if action.pending.candidate_ref not in context.get("pending_questions", {}):
             return Resolution("unresolved", "clarification_context_missing")
-        original = ParserOutput.model_validate(pending["proposal"])
-        if len(original.actions) != 1 or not isinstance(original.actions[0], AddFood):
+        original_output = ParserOutput.model_validate(pending["proposal"])
+        pending_position = pending.get("position", 0)
+        if not 0 <= pending_position < len(original_output.actions):
             return Resolution("unsupported", "pending_action_not_implemented")
+        original_action = original_output.actions[pending_position]
+        if not isinstance(original_action, AddFood):
+            return Resolution("unsupported", "pending_action_not_implemented")
+        original = ParserOutput(schema_version=original_output.schema_version, actions=[original_action])
         # The answer is evidence for the original action. Backend resolution
         # re-runs against the original message plus the answer, preserving the
         # original local date and operation identity.
         answer_text = context["source_text"]
         merged = dict(pending["context"])
-        merged["source_text"] = pending["context"]["source_text"] + "\n" + answer_text
+        merged["source_text"] = original_action.evidence + "\n" + answer_text
         merged["has_reply"] = False
         merged["forwarded"] = False
         merged["pending_questions"] = {}
         merged["pending_candidates"] = []
         merged["pending_identity_confirmed"] = True
+        merged["operation_position"] = pending_position
         merged["evidence_update_ids"] = [UUID(pending["origin_update_id"]), origin]
         merged["pending_action_id"] = UUID(pending["job_id"])
         nutrition_answers = [answer.value for answer in action.answers if isinstance(answer.value, NutritionAnswer)]
@@ -306,7 +314,8 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
                            {"kind": "volume", "ml": amount, "weight_basis": product["weight_basis"]})
     evidence_ids = context.get("evidence_update_ids", [origin])
     pending_action_id = context.get("pending_action_id")
-    payload = {"schema_version": "1.0", "user_id": str(actor), "operation_id": str(operation_id_for(origin)),
+    payload = {"schema_version": "1.0", "user_id": str(actor),
+               "operation_id": str(operation_id_for(origin, context.get("operation_position", 0))),
                "context_revision": context["context_revision"],
                "source": {"origin_update_id": str(origin), "evidence_update_ids": [str(item) for item in evidence_ids],
                           "pending_action_id": None if pending_action_id is None else str(pending_action_id)},
@@ -314,4 +323,22 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
                    "effective_date": target_date.isoformat(), "time_zone": context["time_zone"], "meal": action.meal,
                    "description": product["name"], "components": [{"kind": "product", "description": product["name"],
                        "product_version_id": product["version_id"], "quantity": normalized_quantity}]}}}
-    return Resolution("ready", "command_prepared", CommandEnvelope.model_validate_json(json.dumps(payload)))
+    return Resolution("ready", "command_prepared", CommandEnvelope.model_validate_json(json.dumps(payload)),
+                      command_position=context.get("operation_position", 0))
+
+
+def resolve_actions(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> list[Resolution]:
+    """Resolve independent actions against their own evidence excerpts.
+
+    The first partial-saving slice deliberately accepts at most one ready and
+    one unresolved add-food action. Keeping this helper separate preserves the
+    single-action resolver as the trusted backend primitive.
+    """
+    results = []
+    for position, action in enumerate(output.actions):
+        action_context = dict(context)
+        action_context["source_text"] = action.evidence
+        action_context["operation_position"] = position
+        single = ParserOutput(schema_version=output.schema_version, actions=[action])
+        results.append(resolve(actor, origin, action_context, single))
+    return results
