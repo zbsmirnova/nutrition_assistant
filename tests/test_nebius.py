@@ -338,6 +338,36 @@ class NebiusProtocolTests(unittest.TestCase):
             self.assertEqual(json.loads(output.getvalue()), {"status": "applied"})
             network.assert_not_called();engine.return_value.dispose.assert_called_once()
 
+    def test_telegram_process_runs_one_safe_poll_parse_and_delivery(self):
+        from uuid import UUID
+        actor = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+        with patch.dict(os.environ, {"NEBIUS_API_KEY": "test-secret", "NUTRITION_LLM_MODEL": "example/model",
+                                     "NUTRITION_TELEGRAM_TOKEN": "telegram-secret",
+                                     "NUTRITION_TELEGRAM_BOT_ID": "42"}), \
+                patch("sys.argv", ["nutrition_app", "telegram-process", "--user", actor, "--timeout", "0"]), \
+                patch("nutrition_app.__main__.engine_for") as engine, \
+                patch("nutrition_app.__main__.TelegramClient") as api, \
+                patch("nutrition_app.__main__.TelegramPoller") as poller, \
+                patch("nutrition_app.__main__.ConversationWorker") as worker, \
+                patch("nutrition_app.__main__.OutboxWorker") as outbox, \
+                patch("sys.stdout", new_callable=io.StringIO) as output:
+            poller.return_value.poll_once.return_value = {"received": 1, "accepted": 1, "ignored": 0,
+                                                            "next_update_id": 4}
+            worker.return_value.run_one.return_value = {"status": "applied", "origin_update_id": "source",
+                                                         "outcome": {"private": TEXT}, "clarification": "private"}
+            outbox.return_value.dispatch_one.return_value = "sent"
+            main()
+            api.return_value.verify.assert_called_once_with(polling=True)
+            poller.return_value.poll_once.assert_called_once_with(timeout=0)
+            args, kwargs = worker.return_value.run_one.call_args
+            self.assertEqual(args[0], UUID(actor)); self.assertIsInstance(args[1], NebiusParser)
+            self.assertEqual(kwargs, {})
+            self.assertEqual(json.loads(output.getvalue()), {"adapter": "telegram",
+                "poll": {"received": 1, "accepted": 1, "ignored": 0, "next_update_id": 4},
+                "process": {"status": "applied", "origin_update_id": "source"}, "delivery": "sent"})
+            self.assertNotIn(TEXT, output.getvalue());self.assertNotIn("telegram-secret", output.getvalue())
+            engine.return_value.dispose.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()

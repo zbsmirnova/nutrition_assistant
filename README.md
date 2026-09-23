@@ -53,9 +53,12 @@ Create an owner with user-create, or use an existing internal user ID. Link that
 .venv/bin/python -m nutrition_app telegram-link --user INTERNAL_USER_UUID --bot-id BOT_ID --telegram-user-id TELEGRAM_USER_ID --chat-id PRIVATE_CHAT_ID
 .venv/bin/python -m nutrition_app telegram-poll --timeout 25
 .venv/bin/python -m nutrition_app telegram-send
+.venv/bin/python -m nutrition_app telegram-process --user INTERNAL_USER_UUID --timeout 25
 ~~~
 
 Each poll command receives one batch into the durable inbox; it does not run a parser or create food entries. Each send command attempts one committed food response for the configured bot. Repeated invocations resume from persisted state. The separate conversation worker below connects synthetic interpretation to validated commands. Existing fake dispatch remains available for synthetic demos.
+
+For the fastest personal pilot, `telegram-process` composes those steps once: it polls one bounded batch, processes the oldest eligible message for the supplied owner through the configured Nebius parser, and sends one queued response. Repeat it for the next message. Its output reports only poll, processing, and delivery status; it does not print message text or food totals. It is an operator command, not a daemon or scheduler. See [W020](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/020-telegram-processing-loop.md?type=file&root=%252F).
 
 The adapter refuses an active webhook without changing it. Unknown accounts, groups, bot senders, edited messages, and non-text updates create no food. Reply references and forwarding indicators are preserved for later interpretation. Failed and uncertain sends remain in the outbox for explicit investigation; uncertain sends are not automatically repeated. A 429 response defers retry according to retry_after, with at most three proven-unsent attempts.
 

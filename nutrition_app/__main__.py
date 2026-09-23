@@ -62,6 +62,9 @@ def main():
     poll = sub.add_parser("telegram-poll", help="Receive one batch of private text into the inbox; does not parse food")
     poll.add_argument("--timeout", type=int, default=25)
     sub.add_parser("telegram-send", help="Send one committed food response through the configured real bot")
+    process = sub.add_parser("telegram-process", help="Poll, process one owner's next message, and send one reply")
+    process.add_argument("--user", type=UUID, required=True)
+    process.add_argument("--timeout", type=int, default=25)
     args = parser.parse_args()
     engine = None
     try:
@@ -70,7 +73,8 @@ def main():
             print(json.dumps(output, ensure_ascii=False, indent=2))
             return
         # Check provider configuration before creating a database engine or job.
-        live_parser = NebiusParser(NebiusConfig.from_environment()) if args.action == "conversation-nebius" else None
+        live_parser = (NebiusParser(NebiusConfig.from_environment())
+                       if args.action in {"conversation-nebius", "telegram-process"} else None)
         engine = engine_for()
         if args.action == "migrate":
             migrate(engine)
@@ -120,17 +124,27 @@ def main():
         elif args.action == "telegram-link":
             account = link_account(engine, args.user, args.bot_id, args.telegram_user_id, args.chat_id)
             output = {"account_id": str(account)}
-        elif args.action in {"telegram-poll", "telegram-send"}:
+        elif args.action in {"telegram-poll", "telegram-send", "telegram-process"}:
             try:
                 bot_id = int(os.environ.get("NUTRITION_TELEGRAM_BOT_ID", ""))
             except ValueError:
                 raise TelegramError("Set NUTRITION_TELEGRAM_BOT_ID locally") from None
             api = TelegramClient(os.environ.get("NUTRITION_TELEGRAM_TOKEN", ""), bot_id)
-            api.verify(polling=args.action == "telegram-poll")
+            api.verify(polling=args.action in {"telegram-poll", "telegram-process"})
             if args.action == "telegram-poll":
                 output = TelegramPoller(engine, api).poll_once(timeout=args.timeout)
-            else:
+            elif args.action == "telegram-send":
                 output = {"adapter": "telegram", "status": OutboxWorker(engine, bot_id=bot_id)
+                          .dispatch_one(TelegramSender(api))}
+            else:
+                polled = TelegramPoller(engine, api).poll_once(timeout=args.timeout)
+                processed = ConversationWorker(engine).run_one(args.user, live_parser)
+                # Keep the operator output useful without echoing source text,
+                # clarification wording, or the private outcome payload.
+                process_keys = {"status", "reason", "origin_update_id"}
+                safe_processed = {key: value for key, value in processed.items() if key in process_keys}
+                output = {"adapter": "telegram", "poll": polled, "process": safe_processed,
+                          "delivery": OutboxWorker(engine, bot_id=bot_id)
                           .dispatch_one(TelegramSender(api))}
         else:
             sender = FakeSender()
