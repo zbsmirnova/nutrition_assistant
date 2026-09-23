@@ -35,6 +35,12 @@ class NebiusConfigurationError(ApplicationError):
     code = "nebius_configuration"
 
 
+class NebiusQualityError(ParserRejected):
+    """Sanitized provider-output quality reason; never includes model content."""
+
+    code = "parser_rejected"
+
+
 @dataclass(frozen=True)
 class NebiusConfig:
     api_key: str = field(repr=False)
@@ -143,7 +149,7 @@ class NebiusParser:
             # Clarification replies may be short (for example, ``5%``). Domain
             # actions need enough literal evidence to identify what was acted on.
             if action.kind not in SHORT_REPLY_ACTIONS and len(action.evidence.strip()) < 3:
-                raise ValueError("source-backed evidence is too short")
+                raise NebiusQualityError("evidence_too_short")
 
         def visit(value: object) -> None:
             if isinstance(value, dict):
@@ -151,7 +157,7 @@ class NebiusParser:
                 if isinstance(date_hint, dict):
                     text = date_hint.get("text")
                     if text is not None and not explicit_date_hint_matches(request.source_text, text):
-                        raise ValueError("date hint is not explicit source evidence")
+                        raise NebiusQualityError("date_hint_not_source_evidence")
                 for child in value.values():
                     visit(child)
             elif isinstance(value, list):
@@ -210,6 +216,8 @@ class NebiusParser:
             validate_parser_context(output, candidate_kinds, request.pending_questions,
                                     source_text=request.source_text, has_reply=request.has_reply)
             self._validate_quality(output, request)
+        except NebiusQualityError:
+            raise
         except Exception:
             raise ParserRejected("Invalid, incomplete or refused Nebius interpretation") from None
         return output.model_dump_json()

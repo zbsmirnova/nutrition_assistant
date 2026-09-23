@@ -166,8 +166,9 @@ class NebiusProtocolTests(unittest.TestCase):
         bad = fixture()["output"]
         bad["actions"][0]["evidence"] = TEXT[0]
         bad["actions"][0]["date_hint"] = {"text": "2"}
-        with self.assertRaises(ParserRejected):
+        with self.assertRaises(ParserRejected) as caught:
             client(response(bad)).parse(request())
+        self.assertEqual(str(caught.exception), "evidence_too_short")
 
     def test_model_quality_accepts_an_explicit_date_hint(self):
         text = "Вчера " + TEXT
