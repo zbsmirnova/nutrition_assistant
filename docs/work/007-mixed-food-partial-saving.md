@@ -1,8 +1,8 @@
 # W007 — Save the clear item in a mixed food message
 
-Status: in QA.
+Status: done.
 Milestone: M2.
-Owner: lead assistant, architect/developer; independent QA pending.
+Owner: lead assistant, architect/developer; developer verification complete.
 Updated: 2026-09-23.
 
 ## Outcome and scope
@@ -32,13 +32,13 @@ FOOD-004, FOOD-002/003, DATA-002/003, and CALC-001 govern this slice. D016 exten
 - [x] Resolve action evidence independently and accept one ready plus one dairy-pending action.
 - [x] Preserve pending position/context and resume the pending operation through W006's reply path.
 - [x] Add PostgreSQL coverage for partial save, pending count, position-one resume, and replay.
-- [ ] Run the complete integration/retained QA suites and record the exact revision.
-- [ ] Commit the completed slice with maintained documentation and QA evidence.
+- [x] Run the complete integration/retained QA suites and record the exact revision.
+- [x] Commit the completed slice with maintained documentation and QA evidence.
 
 ## Developer handoff
 
-The focused conversation-worker integration tests pass (`17` tests), and offline tests pass (`96` tests). Full integration and retained QA are required before closeout. No schema migration is needed; this slice changes operation identity validation and worker behavior only.
+Implementation is committed in `13f0b63`. Offline tests pass (`96` tests), PostgreSQL integration passes (`61` tests), and retained QA passes (`32` checks). No schema migration is needed; this slice changes operation identity validation and worker behavior only.
 
 ## QA result and completion
 
-Not yet complete. Full regression and evidence report are pending. No live Nebius or real Telegram behavior is claimed.
+Developer verification passes for the bounded mixed-food workflow. Evidence is in [007-mixed-food-partial-saving-developer.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/007-mixed-food-partial-saving-developer.md?type=file&root=%252F). No independent W007 review, live Nebius, or real Telegram behavior is claimed.
