@@ -209,6 +209,26 @@
       "title": "AnswerClarification",
       "type": "object"
     },
+    "ApprovedEstimateAnswer": {
+      "additionalProperties": false,
+      "description": "An explicit user-approved estimate for a previously pending amount.",
+      "properties": {
+        "kind": {
+          "const": "approved_estimate",
+          "title": "Kind",
+          "type": "string"
+        },
+        "quantity": {
+          "$ref": "#/$defs/QuantityMention"
+        }
+      },
+      "required": [
+        "kind",
+        "quantity"
+      ],
+      "title": "ApprovedEstimateAnswer",
+      "type": "object"
+    },
     "CalculatedRecipe": {
       "additionalProperties": false,
       "properties": {
@@ -487,6 +507,7 @@
         "value": {
           "discriminator": {
             "mapping": {
+              "approved_estimate": "#/$defs/ApprovedEstimateAnswer",
               "confirmation": "#/$defs/ConfirmationAnswer",
               "date": "#/$defs/DateAnswer",
               "nutrition": "#/$defs/NutritionAnswer",
@@ -499,6 +520,9 @@
           "oneOf": [
             {
               "$ref": "#/$defs/QuantityAnswer"
+            },
+            {
+              "$ref": "#/$defs/ApprovedEstimateAnswer"
             },
             {
               "$ref": "#/$defs/CandidateAnswer"

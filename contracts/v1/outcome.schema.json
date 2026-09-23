@@ -377,6 +377,11 @@
           ],
           "title": "Change",
           "type": "string"
+        },
+        "estimated": {
+          "default": false,
+          "title": "Estimated",
+          "type": "boolean"
         }
       },
       "required": [

@@ -207,6 +207,18 @@ class ContractTests(unittest.TestCase):
         calculation["estimate_approval_update_id"] = data["source"]["evidence_update_ids"][-1]
         wire(CommandEnvelope, data)  # The backend must additionally verify actual consent in that message.
 
+    def test_estimated_food_quantity_requires_approval_in_source_chain(self):
+        data = example("01_add_food")["commands"][0]
+        component = data["command"]["food"]["components"][0]
+        component["quantity_provenance"] = "user_approved_estimate"
+        with self.assertRaises(ValidationError):
+            wire(CommandEnvelope, data)
+        component["approval_update_id"] = "00000000-0000-4000-8000-999999999999"
+        with self.assertRaises(ValidationError):
+            wire(CommandEnvelope, data)
+        component["approval_update_id"] = data["source"]["evidence_update_ids"][-1]
+        wire(CommandEnvelope, data)
+
     def test_ingredient_sum_yield_needs_no_cooked_weight_approval(self):
         data = example("09_recipe_calculation_answer")["commands"][0]
         calculation = data["command"]["recipe"]["nutrition"]

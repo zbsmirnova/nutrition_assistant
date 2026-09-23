@@ -222,6 +222,34 @@ class ConversationWorkerTests(unittest.TestCase):
             self.assertEqual(str(connection.execute(sa.select(db.food_components.c.edible_g).where(
                 db.food_components.c.user_id == self.actor)).scalar_one()), "250.000000")
 
+    def test_approved_estimate_persists_provenance_and_is_visible(self):
+        text = "Съела около 100 г творога 5% «Марка А»"
+        original = self.source(1, text=text)
+        output = fixture(text, amount="100")["output"]
+        initial = self.worker.run_one(self.actor, ControlledParser(output), origin=original)
+        self.assertEqual((initial["status"], initial["reason"]), ("unresolved", "quantity_not_exact"))
+        self.assertIn("подтвердите оценку", initial["clarification"])
+        with self.engine.begin() as connection:
+            message_id = connection.execute(sa.select(db.inbox_updates.c.telegram_message_id).where(
+                db.inbox_updates.c.id == original)).scalar_one()
+        reply = self.source(2, text="примерно 120 г, считай так", reply_to_message_id=message_id)
+        answer = {"schema_version": "1.0", "actions": [{
+            "kind": "answer_clarification", "action_id": "a1", "evidence": "примерно 120 г, считай так",
+            "depends_on": [], "unresolved": [],
+            "pending": {"kind": "candidate", "candidate_ref": "c1", "candidate_kind": "pending"},
+            "answers": [{"question_ref": "q1", "value": {"kind": "approved_estimate",
+                "quantity": {"amount": "120", "unit": "g"}}}],
+        }]}
+        result = self.worker.run_one(self.actor, ControlledParser(answer), origin=reply)
+        self.assertEqual(result["status"], "applied")
+        self.assertTrue(result["outcome"]["result"]["food_entries"][0]["estimated"])
+        with self.engine.connect() as connection:
+            row = connection.execute(sa.select(db.food_components).where(
+                db.food_components.c.user_id == self.actor)).mappings().one()
+        self.assertEqual(row["quantity_provenance"], "user_approved_estimate")
+        self.assertEqual(row["approval_update_id"], reply)
+        self.assertEqual(str(row["edible_g"]), "120.000000")
+
     def test_clear_message_saves_expected_nutrition_and_replays_once(self):
         origin = self.source()
         parser = ControlledParser()

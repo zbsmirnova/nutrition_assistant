@@ -18,6 +18,14 @@ class ProductComponent(Contract):
     description: Name
     product_version_id: UUID
     quantity: NormalizedQuantity
+    quantity_provenance: Literal["measured", "user_approved_estimate"] = "measured"
+    approval_update_id: UUID | None = None
+
+    @model_validator(mode="after")
+    def estimate_requires_approval(self) -> Self:
+        if (self.quantity_provenance == "user_approved_estimate") != (self.approval_update_id is not None):
+            raise ValueError("estimated quantity requires an approval update; measured quantity does not")
+        return self
 
 
 class RecipeComponent(Contract):
@@ -25,6 +33,14 @@ class RecipeComponent(Contract):
     description: Name
     recipe_version_id: UUID
     eaten_grams: PositiveDecimal
+    quantity_provenance: Literal["measured", "user_approved_estimate"] = "measured"
+    approval_update_id: UUID | None = None
+
+    @model_validator(mode="after")
+    def estimate_requires_approval(self) -> Self:
+        if (self.quantity_provenance == "user_approved_estimate") != (self.approval_update_id is not None):
+            raise ValueError("estimated quantity requires an approval update; measured quantity does not")
+        return self
 
 
 class EstimatedComponent(Contract):

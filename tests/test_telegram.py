@@ -110,6 +110,12 @@ class TelegramProtocolTests(unittest.TestCase):
 
 
 class RussianReplyTests(unittest.TestCase):
+    def test_estimated_quantity_is_visible_in_acknowledgment(self):
+        payload = outcome()
+        payload["result"]["food_entries"][0]["estimated"] = True
+        text = render_food_result(payload)
+        self.assertIn("по вашему предположению", text)
+
     def test_unknown_partial_and_zero_are_not_conflated(self):
         payload = outcome()
         entry = payload["result"]["food_entries"][0]

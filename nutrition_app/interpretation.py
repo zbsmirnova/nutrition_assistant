@@ -13,7 +13,7 @@ from typing import Protocol
 from uuid import UUID
 
 from nutrition_contracts.commands import CommandEnvelope
-from nutrition_contracts.parser import (AddFood, AnswerClarification, CandidateAnswer, CorrectFood,
+from nutrition_contracts.parser import (AddFood, AnswerClarification, ApprovedEstimateAnswer, CandidateAnswer, CorrectFood,
                                          DeleteFood, MoveDate, NonLogging, NutritionAnswer, ParserOutput,
                                          QuantityAnswer, TextAnswer,
                                          SetMeal, SetQuantity, UndoFood, validate_parser_context)
@@ -203,6 +203,8 @@ NON_CONSUMPTION = re.compile(r"\b(?:планир\w*|собираюсь|буду|
                              r"калорий|рецепт\w*|сохран\w*|исправ\w*|вместо|"
                              r"или|либо|or|plan\w*|tomorrow|recipe|instead|not)\b|[?]", re.I)
 APPROXIMATE = re.compile(r"\b(?:примерно|около|приблизительно|где-то|roughly|about|approximately)\b|[~≈]", re.I)
+APPROVAL_MARKER = re.compile(r"\b(?:считай|пусть\s+будет|можно\s+считать|подтверждаю|примерно|около|"
+                              r"приблизительно|где-то|assume|count\s+as|approximately|about|roughly)\b|[~≈]", re.I)
 # A reversed colloquial construction such as "граммов 120" does not provide
 # a stable quantity span for the parser contract. Keep it pending rather than
 # treating a nearby number as an exact portion.
@@ -411,6 +413,11 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
         original_action = original_output.actions[pending_position]
         if not isinstance(original_action, (AddFood, CorrectFood, DeleteFood, UndoFood)):
             return Resolution("unsupported", "pending_action_not_implemented")
+        selections = []
+        text_answers = []
+        quantity_answers = []
+        estimate_answers = []
+        nutrition_answers = []
         if isinstance(original_action, (CorrectFood, DeleteFood, UndoFood)):
             selections = [answer.value.selection for answer in action.answers
                           if isinstance(answer.value, CandidateAnswer)]
@@ -430,6 +437,8 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
             text_answers = [answer.value.text for answer in action.answers if isinstance(answer.value, TextAnswer)]
             quantity_answers = [answer.value.quantity for answer in action.answers
                                 if isinstance(answer.value, QuantityAnswer)]
+            estimate_answers = [answer.value.quantity for answer in action.answers
+                                if isinstance(answer.value, ApprovedEstimateAnswer)]
             nutrition_answers = [answer.value for answer in action.answers
                                  if isinstance(answer.value, NutritionAnswer)]
             if selections:
@@ -457,6 +466,17 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
                 original_action = type(original_action).model_validate({
                     **original_action.model_dump(mode="json"),
                     "quantity": quantity_answers[0].model_dump(mode="json")})
+            elif estimate_answers:
+                if len(estimate_answers) != 1:
+                    return Resolution("unresolved", "clarification_answer_incomplete",
+                                      pending_questions=context["pending_questions"])
+                if not APPROVAL_MARKER.search(answer_text := context["source_text"]):
+                    return Resolution("unresolved", "estimate_approval_missing",
+                                      pending_food_date=date.fromisoformat(pending["context"]["local_date"]),
+                                      pending_questions=context["pending_questions"])
+                original_action = type(original_action).model_validate({
+                    **original_action.model_dump(mode="json"),
+                    "quantity": estimate_answers[0].model_dump(mode="json")})
             elif nutrition_answers:
                 pass
             else:
@@ -479,10 +499,13 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
         merged["operation_position"] = pending_position
         merged["evidence_update_ids"] = [UUID(pending["origin_update_id"]), origin]
         merged["pending_action_id"] = UUID(pending["job_id"])
-        merged["quantity_clarification_answered"] = bool(quantity_answers)
-        if quantity_answers:
+        merged["quantity_clarification_answered"] = bool(quantity_answers or estimate_answers)
+        merged["quantity_provenance"] = "user_approved_estimate" if estimate_answers else "measured"
+        if quantity_answers or estimate_answers:
             merged["clarification_text"] = answer_text
-        if isinstance(original_action, AddFood) and not (selections or text_answers or quantity_answers):
+            if estimate_answers:
+                merged["approval_update_id"] = origin
+        if isinstance(original_action, AddFood) and not (selections or text_answers or quantity_answers or estimate_answers):
             if not nutrition_answers or nutrition_answers[0].supplied_nutrition.fat_g is None:
                 return Resolution("unresolved", "clarification_answer_incomplete",
                                   pending_food_date=date.fromisoformat(pending["context"]["local_date"]),
@@ -500,8 +523,8 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
             question_kind = {
                 "dairy_fat_missing": "nutrition",
                 "quantity_unresolved": "quantity",
-                "quantity_not_exact": "quantity",
-                "weight_basis_unresolved": "quantity",
+                "quantity_not_exact": ["quantity", "approved_estimate"],
+                "weight_basis_unresolved": ["quantity", "approved_estimate"],
             }.get(reason)
             if question_kind is not None:
                 questions = {pending_ref: {"q1": question_kind}}
@@ -543,6 +566,8 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
             return defer("recipe_unresolved")
         pending_ref = recipe["ref"]
         quantity = action.quantity
+        provenance = context.get("quantity_provenance", "measured")
+        approval_update_id = context.get("approval_update_id")
         measurement_text = quantity_measurement_text(context)
         matches = list(QUANTITY.finditer(measurement_text))
         if quantity.amount is None or quantity.unit != "g" or len(matches) != 1:
@@ -564,8 +589,10 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
                               "pending_action_id": None if pending_action_id is None else str(pending_action_id)},
                    "command": {"kind": "add_consumed_food", "food": {
                        "effective_date": target_date.isoformat(), "time_zone": context["time_zone"], "meal": action.meal,
-                       "description": recipe["name"], "components": [{"kind": "recipe", "description": recipe["name"],
-                           "recipe_version_id": recipe_record["version_id"], "eaten_grams": quantity.amount}]}}}
+                           "description": recipe["name"], "components": [{"kind": "recipe", "description": recipe["name"],
+                           "recipe_version_id": recipe_record["version_id"], "eaten_grams": quantity.amount,
+                           "quantity_provenance": provenance,
+                           "approval_update_id": None if approval_update_id is None else str(approval_update_id)}]}}}
         return Resolution("ready", "recipe_command_prepared", CommandEnvelope.model_validate_json(json.dumps(payload)),
                           command_position=context.get("operation_position", 0))
     pending_ref = matching_products[0]["ref"]
@@ -602,6 +629,8 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
             (COOKED_WORD.search(folded) and product["weight_basis"] != "cooked")):
         return defer("weight_basis_evidence_conflict")
     quantity = action.quantity
+    provenance = context.get("quantity_provenance", "measured")
+    approval_update_id = context.get("approval_update_id")
     measurement_text = quantity_measurement_text(context)
     matches = list(QUANTITY.finditer(measurement_text))
     if quantity.amount is None or quantity.unit is None or len(matches) != 1:
@@ -638,7 +667,9 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
                "command": {"kind": "add_consumed_food", "food": {
                    "effective_date": target_date.isoformat(), "time_zone": context["time_zone"], "meal": action.meal,
                    "description": product["name"], "components": [{"kind": "product", "description": product["name"],
-                       "product_version_id": product["version_id"], "quantity": normalized_quantity}]}}}
+                       "product_version_id": product["version_id"], "quantity": normalized_quantity,
+                       "quantity_provenance": provenance,
+                       "approval_update_id": None if approval_update_id is None else str(approval_update_id)}]}}}
     return Resolution("ready", "command_prepared", CommandEnvelope.model_validate_json(json.dumps(payload)),
                       command_position=context.get("operation_position", 0))
 

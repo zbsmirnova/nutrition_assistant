@@ -122,6 +122,13 @@ class FoodService:
         if isinstance(command.command, AddConsumedFood):
             if any(not isinstance(c, (ProductComponent, RecipeComponent)) for c in command.command.food.components):
                 raise Unsupported("This slice supports pinned product and recipe components only")
+            for component in command.command.food.components:
+                if (component.quantity_provenance == "user_approved_estimate"
+                        and (command.source.pending_action_id is None
+                             or component.approval_update_id is None
+                             or component.approval_update_id == command.source.origin_update_id
+                             or component.approval_update_id not in evidence)):
+                    raise Unsupported("An estimated quantity requires a separate evidenced clarification approval")
             if command.source.pending_action_id is None and evidence != [command.source.origin_update_id]:
                 raise Unsupported("Additional evidence requires a pending clarification")
             if command.source.pending_action_id is not None and len(evidence) < 2:
@@ -241,7 +248,10 @@ class FoodService:
             return dict(description=component.description, component_kind="recipe",
                 product_version_id=None, recipe_version_id=version["id"], data_source_id=None,
                 quantity_kind="mass", weight_basis=None, calculation_version=RECIPE_CALCULATION_VERSION,
-                edible_g=amount, gross_g=None, inedible_g=None, volume_ml=None, **to_columns(snapshot)), snapshot
+                edible_g=amount, gross_g=None, inedible_g=None, volume_ml=None,
+                quantity_provenance=component.quantity_provenance,
+                approval_update_id=component.approval_update_id,
+                **to_columns(snapshot)), snapshot
         version = connection.execute(sa.select(db.product_versions).where(
             db.product_versions.c.user_id == actor, db.product_versions.c.id == component.product_version_id,
         )).mappings().one_or_none()
@@ -258,6 +268,8 @@ class FoodService:
             recipe_version_id=None,
             data_source_id=version["data_source_id"], quantity_kind=quantity.kind,
             weight_basis=quantity.weight_basis, calculation_version=CALCULATION_VERSION,
+            quantity_provenance=component.quantity_provenance,
+            approval_update_id=component.approval_update_id,
             edible_g=None, gross_g=None, inedible_g=None, volume_ml=None, **to_columns(snapshot))
         if quantity.kind == "mass":
             values.update(edible_g=amount,
@@ -291,7 +303,8 @@ class FoodService:
         connection.execute(db.food_days.update().where(db.food_days.c.id == day_id, db.food_days.c.user_id == actor)
                            .values(revision=db.food_days.c.revision + 1, explicit_zero_food=False))
         entry = FoodEntrySummary(entry_id=entry_id, revision_id=revision_id, effective_date=food.effective_date,
-            description=food.description, nutrition=entry_nutrition([s for _, s in components]), change="added")
+            description=food.description, nutrition=entry_nutrition([s for _, s in components]), change="added",
+            estimated=any(values["quantity_provenance"] == "user_approved_estimate" for values, _ in components))
         return OutcomeEnvelope(result=Applied(schema_version="1.0", operation_id=command.operation_id,
             outcome="applied", mutations=[MutationReceipt(entity_kind="food_entry", entity_id=entry_id,
                 revision_id=revision_id, effective_date=food.effective_date)], food_entries=[entry], observations=[],
@@ -357,9 +370,10 @@ class FoodService:
         return rows
 
     def _changed_entry_result(self, connection, actor, command, *, entry_id, revision_id,
-                              effective_date, description, change, nutrition, day_dates):
+                              effective_date, description, change, nutrition, day_dates, estimated=False):
         entry = FoodEntrySummary(entry_id=entry_id, revision_id=revision_id,
-            effective_date=effective_date, description=description, nutrition=nutrition, change=change)
+            effective_date=effective_date, description=description, nutrition=nutrition, change=change,
+            estimated=estimated)
         return OutcomeEnvelope(result=Applied(schema_version="1.0", operation_id=command.operation_id,
             outcome="applied", mutations=[MutationReceipt(entity_kind="food_entry", entity_id=entry_id,
                 revision_id=revision_id, effective_date=effective_date)], food_entries=[entry], observations=[],
@@ -399,7 +413,8 @@ class FoodService:
         return self._changed_entry_result(connection, actor, envelope, entry_id=command.entry_id,
             revision_id=revision_id, effective_date=food.effective_date, description=food.description,
             change="corrected", nutrition=entry_nutrition(snapshots),
-            day_dates=[current["effective_date"], food.effective_date])
+            day_dates=[current["effective_date"], food.effective_date],
+            estimated=any(values["quantity_provenance"] == "user_approved_estimate" for values, _ in components))
 
     def _delete(self, connection, actor, envelope):
         command: DeleteFoodEntry = envelope.command
@@ -453,7 +468,8 @@ class FoodService:
         return self._changed_entry_result(connection, actor, envelope, entry_id=command.entry_id,
             revision_id=revision_id, effective_date=source["effective_date"],
             description=source["description"], change="restored", nutrition=nutrition,
-            day_dates=[current["effective_date"], source["effective_date"]])
+            day_dates=[current["effective_date"], source["effective_date"]],
+            estimated=any(row["quantity_provenance"] == "user_approved_estimate" for row in rows))
 
     @staticmethod
     def _empty_nutrition():
@@ -652,9 +668,10 @@ class FoodService:
             if current["state"] == "deleted":
                 return FoodEntrySummary(entry_id=entry_id, revision_id=current["revision_id"],
                     effective_date=current["effective_date"], description=current["description"],
-                    nutrition=None, change="deleted")
+                    nutrition=None, change="deleted", estimated=False)
             rows = connection.execute(self._current_components(actor).where(
                 db.food_entries.c.id == entry_id)).mappings().all()
             return FoodEntrySummary(entry_id=entry_id, revision_id=rows[0]["revision_id"],
                 effective_date=rows[0]["local_date"], description=rows[0]["entry_description"],
-                nutrition=entry_nutrition([from_columns(row) for row in rows]), change="added")
+                nutrition=entry_nutrition([from_columns(row) for row in rows]), change="added",
+                estimated=any(row["quantity_provenance"] == "user_approved_estimate" for row in rows))

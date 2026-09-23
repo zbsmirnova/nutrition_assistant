@@ -41,7 +41,7 @@ docker compose -f compose.dev.yml stop db
 
 ## Telegram transport development
 
-Apply migration head 0007 before using current commands. No new runtime dependencies are needed. The API adapter uses normal HTTPS certificate verification; if your environment uses a custom CA, configure its trusted CA through Python's standard SSL_CERT_FILE setting.
+Apply migration head 0008 before using current commands. No new runtime dependencies are needed. The API adapter uses normal HTTPS certificate verification; if your environment uses a custom CA, configure its trusted CA through Python's standard SSL_CERT_FILE setting.
 
 The local transport harness is verified with synthetic data. The selected model provider is Nebius Token Factory; real-message retention and other data-lifecycle details remain open. These commands are documented for explicit operator use; they are not run by the test suite. Configure NUTRITION_TELEGRAM_TOKEN and NUTRITION_TELEGRAM_BOT_ID in your local environment; do not place a token in a command argument, chat message, or repository file.
 
@@ -149,7 +149,7 @@ Transient failures retry through durable job state, with three total claims and 
 git diff --check
 ~~~
 
-The first command currently runs 106 offline checks, including the deterministic exact-weight clarification guard. The integration command runs 80 tests against local PostgreSQL, including clarification resumption, mixed partial saving, pinned recipe consumption, and recipe clarification; the separate QA command runs 32 retained checks from M1, W002, W003, and W004. Developer verification and independent review are distinguished in the work briefs and QA reports. Each database test creates and removes its own randomly named schema. These commands do not reset development data or call Telegram/Nebius. An unavailable database fails the run; there is no silent skip or SQLite substitute.
+The first command currently runs 110 offline checks, including exact-weight clarification and approved-estimate provenance. The integration command runs 81 tests against local PostgreSQL, including clarification resumption, mixed partial saving, pinned recipe consumption, recipe clarification, and approved-estimate persistence; the separate QA command runs 32 retained checks from M1, W002, W003, and W004. Developer verification and independent review are distinguished in the work briefs and QA reports. Each database test creates and removes its own randomly named schema. These commands do not reset development data or call Telegram/Nebius. An unavailable database fails the run; there is no silent skip or SQLite substitute.
 
 Runtime dependencies are pinned in [requirements-runtime.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/requirements-runtime.txt?type=file&root=%252F), including [requirements-contracts.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/requirements-contracts.txt?type=file&root=%252F). For contract-only work, install the latter and run unittest discovery with the pattern test_contracts.py. No provider credentials are needed.
 

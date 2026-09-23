@@ -199,6 +199,13 @@ class QuantityAnswer(Contract):
     quantity: QuantityMention
 
 
+class ApprovedEstimateAnswer(Contract):
+    """An explicit user-approved estimate for a previously pending amount."""
+
+    kind: Literal["approved_estimate"]
+    quantity: QuantityMention
+
+
 class CandidateAnswer(Contract):
     kind: Literal["selection"]
     selection: CandidateReference
@@ -225,7 +232,7 @@ class ConfirmationAnswer(Contract):
 
 
 AnswerValue = Annotated[
-    QuantityAnswer | CandidateAnswer | DateAnswer | NutritionAnswer | TextAnswer | ConfirmationAnswer,
+    QuantityAnswer | ApprovedEstimateAnswer | CandidateAnswer | DateAnswer | NutritionAnswer | TextAnswer | ConfirmationAnswer,
     Field(discriminator="kind"),
 ]
 

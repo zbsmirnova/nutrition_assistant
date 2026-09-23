@@ -65,7 +65,9 @@
                 "gross_g": null,
                 "inedible_g": null,
                 "weight_basis": "as_sold"
-              }
+              },
+              "quantity_provenance": "measured",
+              "approval_update_id": null
             }
           ]
         },
@@ -115,7 +117,8 @@
                 "upper": null
               }
             },
-            "change": "corrected"
+            "change": "corrected",
+            "estimated": false
           }
         ],
         "observations": [],

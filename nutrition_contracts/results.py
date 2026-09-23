@@ -87,6 +87,7 @@ class FoodEntrySummary(Contract):
     description: Text
     nutrition: NutritionSnapshot | None
     change: Literal["added", "corrected", "deleted", "restored"]
+    estimated: bool = False
 
     @model_validator(mode="after")
     def deleted_entry_has_no_nutrition(self) -> Self:

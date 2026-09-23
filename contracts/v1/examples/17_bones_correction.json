@@ -65,7 +65,9 @@
                 "gross_g": "200",
                 "inedible_g": "33",
                 "weight_basis": "raw"
-              }
+              },
+              "quantity_provenance": "measured",
+              "approval_update_id": null
             }
           ]
         },
@@ -115,7 +117,8 @@
                 "upper": null
               }
             },
-            "change": "corrected"
+            "change": "corrected",
+            "estimated": false
           }
         ],
         "observations": [],

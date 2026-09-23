@@ -47,7 +47,8 @@ def render_food_result(payload: dict) -> str:
     name = " ".join(entry.description.split())[:160]
     if len(" ".join(entry.description.split())) > 160:
         name += "…"
-    text = (f"Записано: {name}\n{profile(entry.nutrition, nutrient)}\n\n"
+    estimate_note = "\nКоличество отмечено по вашему предположению." if entry.estimated else ""
+    text = (f"Записано: {name}{estimate_note}\n{profile(entry.nutrition, nutrient)}\n\n"
             f"Итого за {day.effective_date.strftime('%d.%m.%Y')} на момент записи:\n"
             f"{profile(day.nutrition, total)}")
     if day.pending_food_actions:

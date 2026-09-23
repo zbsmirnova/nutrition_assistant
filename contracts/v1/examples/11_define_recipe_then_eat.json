@@ -128,7 +128,9 @@
               "kind": "recipe",
               "description": "мой суп",
               "recipe_version_id": "00000000-0000-4000-8000-000000008003",
-              "eaten_grams": "250"
+              "eaten_grams": "250",
+              "quantity_provenance": "measured",
+              "approval_update_id": null
             }
           ]
         }
@@ -224,7 +226,8 @@
                 "upper": null
               }
             },
-            "change": "added"
+            "change": "added",
+            "estimated": false
           }
         ],
         "observations": [],

@@ -88,7 +88,8 @@
                 "upper": null
               }
             },
-            "change": "restored"
+            "change": "restored",
+            "estimated": false
           }
         ],
         "observations": [],

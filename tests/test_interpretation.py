@@ -109,7 +109,54 @@ class InterpretationTests(unittest.TestCase):
         source["candidates"][0].update(name="Курица", food_kind="general", declared_fat_percent=None)
         result = resolve(ACTOR, ORIGIN, source, proposal(text, quantity={"amount": "150", "unit": "g"}))
         self.assertEqual((result.status, result.reason), ("unresolved", "weight_basis_unresolved"))
-        self.assertEqual(result.pending_questions, {"c1": {"q1": "quantity"}})
+        self.assertEqual(result.pending_questions, {"c1": {"q1": ["quantity", "approved_estimate"]}})
+
+    def test_explicit_estimate_answer_marks_quantity_and_approval_evidence(self):
+        text = "Съела около 150 г Курицы"
+        source = context(text)
+        source["candidates"][0].update(name="Курица", food_kind="general", declared_fat_percent=None)
+        original = proposal(text, quantity={"amount": "150", "unit": "g"})
+        answer_origin = UUID("dddddddd-dddd-4ddd-8ddd-dddddddddddd")
+        answer_context = context("примерно 120 г, считай так")
+        answer_context.update({"has_reply": True, "pending_questions": {"c1": {"q1": ["quantity", "approved_estimate"]}},
+            "pending_candidates": [dict(answer_context["candidates"][0])],
+            "pending": {"job_id": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+                         "origin_update_id": str(ORIGIN), "proposal": original.model_dump(mode="json"),
+                         "context": source}})
+        answer = ParserOutput.model_validate({"schema_version": "1.0", "actions": [{
+            "kind": "answer_clarification", "action_id": "a1", "evidence": "примерно 120 г, считай так",
+            "depends_on": [], "unresolved": [],
+            "pending": {"kind": "candidate", "candidate_ref": "c1", "candidate_kind": "pending"},
+            "answers": [{"question_ref": "q1", "value": {"kind": "approved_estimate",
+                "quantity": {"amount": "120", "unit": "g"}}}],
+        }]})
+        result = resolve(ACTOR, answer_origin, answer_context, answer)
+        self.assertEqual(result.status, "ready")
+        component = result.command.command.food.components[0]
+        self.assertEqual(component.quantity_provenance, "user_approved_estimate")
+        self.assertEqual(component.approval_update_id, answer_origin)
+        self.assertEqual(result.command.source.evidence_update_ids, [ORIGIN, answer_origin])
+
+    def test_estimate_answer_without_explicit_approval_stays_unresolved(self):
+        text = "Съела около 150 г Курицы"
+        source = context(text)
+        source["candidates"][0].update(name="Курица", food_kind="general", declared_fat_percent=None)
+        original = proposal(text, quantity={"amount": "150", "unit": "g"})
+        answer_context = context("120 г")
+        answer_context.update({"has_reply": True, "pending_questions": {"c1": {"q1": ["quantity", "approved_estimate"]}},
+            "pending_candidates": [dict(answer_context["candidates"][0])],
+            "pending": {"job_id": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+                         "origin_update_id": str(ORIGIN), "proposal": original.model_dump(mode="json"),
+                         "context": source}})
+        answer = ParserOutput.model_validate({"schema_version": "1.0", "actions": [{
+            "kind": "answer_clarification", "action_id": "a1", "evidence": "120 г",
+            "depends_on": [], "unresolved": [],
+            "pending": {"kind": "candidate", "candidate_ref": "c1", "candidate_kind": "pending"},
+            "answers": [{"question_ref": "q1", "value": {"kind": "approved_estimate",
+                "quantity": {"amount": "120", "unit": "g"}}}],
+        }]})
+        result = resolve(ACTOR, UUID("dddddddd-dddd-4ddd-8ddd-dddddddddddd"), answer_context, answer)
+        self.assertEqual((result.status, result.reason), ("unresolved", "estimate_approval_missing"))
 
     def test_exact_quantity_reply_can_resume_original_approximation(self):
         text = "Съела около 150 г Курицы"
