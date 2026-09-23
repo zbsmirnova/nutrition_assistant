@@ -133,7 +133,7 @@ The table determines the basis: product values are per 100 g/ml, recipe values a
 
 Source selection follows the brief's precedence, checking that product and basis actually match. A directly supplied matching label replaces a generic estimate through an explicit new version. Changing `products.current_version_id` affects new selections only; historical components continue to point at the version used for them.
 
-A future name-alias table may map a confirmed phrase to a versioned product or recipe. An alias must not introduce a hidden stored recipe portion or a second nutrition store; consumed grams still belong to the food entry.
+A future name-alias table may map a confirmed phrase to a versioned product or recipe. Recipe recall normalizes ordinary inflection and word order, but remains user-scoped and auto-selects only a unique match; ambiguous or missing matches require clarification. An alias must not introduce a hidden stored recipe portion or a second nutrition store; consumed grams still belong to the food entry.
 
 ## 7. Recipes: per-100-g nutrition and consumed food
 

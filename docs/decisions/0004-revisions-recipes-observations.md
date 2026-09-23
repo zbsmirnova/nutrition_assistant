@@ -12,6 +12,7 @@ Acceptance evidence: the discussion explicitly accepted food revision history, p
 - Save independent clear items in a mixed message; keep unresolved items pending and outside totals. A later answer applies only the unresolved operation.
 - Store recipe kcal and macronutrients per 100 g. Preserve original ingredient amounts/units and supplied cooking instructions for repeat cooking, as clarified later in the discussion.
 - Accept arbitrary recipe ingredient amounts and ask for material missing calculation inputs. No default portion, serving count, or separate cooked-batch entity is needed. Eaten grams belong on consumed-food entries.
+- Recall recipes within the authenticated user's recipes by normalized ordinary wording, including word-order variants. Select only a unique match; missing or ambiguous recall requires a clarification and never falls back to a generic product.
 - Keep one current body weight and one current steps total per user/local date, with history for replacements.
 - Normal food replies show the saved/corrected entry and updated daily nutrition totals with honest coverage.
 
