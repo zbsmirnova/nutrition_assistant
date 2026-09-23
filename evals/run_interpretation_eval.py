@@ -107,8 +107,26 @@ def _decimal_equal(a, b) -> bool:
         return False
 
 
+def _evidence_ok(action, source_cf: str) -> bool:
+    """Evidence must be a real, non-trivial excerpt of the source (not a 1-char span)."""
+    ev = getattr(action, "evidence", None)
+    return isinstance(ev, str) and len(ev.strip()) >= 3 and ev.strip().casefold() in source_cf
+
+
+def _date_hint_ok(action, expect: dict, source_cf: str) -> bool:
+    """date_hint.text must be null unless the case declares real date evidence, and must
+    be quoted from the source. Catches invented hints like "2" that no rule should emit."""
+    dh = getattr(action, "date_hint", None)
+    if dh is None or getattr(dh, "text", None) is None:
+        return True
+    if expect.get("date_hint") != "present":
+        return False
+    return dh.text.strip().casefold() in source_cf
+
+
 def score_case(case: dict, output: ParserOutput) -> dict:
     expect = case["expect"]
+    source_cf = case["source_text"].casefold()
     actions = output.actions
     add_food = [a for a in actions if a.kind == "add_food"]
     amounts = [a.quantity.amount for a in add_food if a.quantity and a.quantity.amount is not None]
@@ -119,6 +137,11 @@ def score_case(case: dict, output: ParserOutput) -> dict:
 
     checks: dict[str, bool] = {}
     checks["consumed"] = (len(add_food) > 0) == bool(expect["consumed"])
+
+    # Per-action quality gates: an action with a 1-char evidence span or an invented
+    # date hint is broken even when the JSON validates and the counts look right.
+    checks["evidence_valid"] = all(_evidence_ok(a, source_cf) for a in actions)
+    checks["date_hint_valid"] = all(_date_hint_ok(a, expect, source_cf) for a in actions)
 
     lo, hi = expect["add_food_range"]
     checks["add_food_count"] = lo <= len(add_food) <= hi
@@ -136,7 +159,10 @@ def score_case(case: dict, output: ParserOutput) -> dict:
             any(_decimal_equal(want, got) for got in amounts) for want in expect["quantities_any"])
 
     if expect.get("select_refs_any"):
-        checks["candidate_selection"] = bool(selected & set(expect["select_refs_any"]))
+        allowed = set(expect["select_refs_any"])
+        # Must select at least one expected candidate AND select nothing outside the
+        # allowed set (the old check ignored wrong/extra candidate picks).
+        checks["candidate_selection"] = bool(selected) and selected <= allowed
 
     if "max_add_food" in expect:
         checks["max_add_food"] = len(add_food) <= expect["max_add_food"]
@@ -206,6 +232,8 @@ def summarize(results: list[dict]) -> dict:
         "case_pass_rate": f"{passed / n:.2f}" if n else "n/a",
         "consumed": rate("consumed"),
         "add_food_count": rate("add_food_count"),
+        "evidence_valid": rate("evidence_valid"),
+        "date_hint_valid": rate("date_hint_valid"),
         # Blended clarification metric hides the failure mode; recall/specificity separate it.
         "clarification_accuracy": rate("clarification"),
         "clarification_recall": clar_rate("required", True),
@@ -235,6 +263,8 @@ def format_report(report: dict) -> str:
               f"  case pass rate        {s['case_pass_rate']}",
               f"  consumed intent       {s['consumed']}",
               f"  add_food count        {s['add_food_count']}",
+              f"  evidence spans valid  {s['evidence_valid']}",
+              f"  date_hint valid       {s['date_hint_valid']}",
               f"  clarification recall  {s['clarification_recall']}   (required cases that asked)",
               f"  clarification specif. {s['clarification_specificity']}   (clean cases kept silent)",
               f"  quantity extraction   {s['quantity_extraction']}",
