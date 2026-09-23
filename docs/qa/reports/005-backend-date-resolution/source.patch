@@ -1,0 +1,170 @@
+diff --git a/README.md b/README.md
+index f4f99cf..7fc7a1b 100644
+--- a/README.md
++++ b/README.md
+@@ -112,6 +112,8 @@ For HTTP 401, resolve authentication first: copy the complete secret value from
+
+ The read command deliberately displays no characters while you paste. Press Enter after pasting the secret; text following `?` in the command is just the prompt, not the key's value.
+
++Dates follow a backend-owned rule: the model can quote date words from the message, but it cannot invent the target date. An undated food message uses its source timestamp converted to the user's time zone; explicit supported date phrases are resolved by the backend, and ambiguous phrases stay pending.
++
+ For HTTP 422, investigate request validation rather than re-entering the key. The initial adapter sent an invalid direct-schema shape; the current adapter uses the named schema wrapper required by Nebius's published API and explicitly enables its optional strict mode. That correction is checked against the provider's OpenAPI definitions, but successful inference with the configured model remains unverified. Retry the smoke command in the same configured terminal. The new request format changes parser identity for unfinished worker jobs; already frozen commands retain their existing recovery path.
+
+ If the error says "Synthetic smoke response did not match the expected food action", the completion already passed schema/reference validation. The diagnostic includes validated action kinds, backend resolution/reason codes and safe unresolved-field names. Share that diagnostic; the check never prints raw model text or credentials. The smoke comparison treats equivalent decimal quantities such as 100 and 100.0 as equal. It still rejects different quantities, unresolved food and wrong actions.
+@@ -138,7 +140,7 @@ Transient failures retry through durable job state, with three total claims and
+ git diff --check
+ ~~~
+
+-The first command runs 85 checks: 32 contract, 9 arithmetic, 11 Telegram protocol/rendering, 13 controlled resolver, 18 Nebius protocol/CLI, and 2 intake-evaluation fixture checks. The integration command runs 59 tests against local PostgreSQL, including 15 worker and 6 Nebius-worker checks; the separate QA command runs 32 retained checks from M1, W002, W003, and W004. Developer verification and independent review are distinguished in the work briefs and QA reports. Each database test creates and removes its own randomly named schema. These commands do not reset development data or call Telegram/Nebius. An unavailable database fails the run; there is no silent skip or SQLite substitute.
++The first command runs 87 checks: 32 contract, 9 arithmetic, 11 Telegram protocol/rendering, 14 controlled resolver, 18 Nebius protocol/CLI, and 3 intake-evaluation fixture checks. The integration command runs 59 tests against local PostgreSQL, including 15 worker and 6 Nebius-worker checks; the separate QA command runs 32 retained checks from M1, W002, W003, and W004. Developer verification and independent review are distinguished in the work briefs and QA reports. Each database test creates and removes its own randomly named schema. These commands do not reset development data or call Telegram/Nebius. An unavailable database fails the run; there is no silent skip or SQLite substitute.
+
+ Runtime dependencies are pinned in [requirements-runtime.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/requirements-runtime.txt?type=file&root=%252F), including [requirements-contracts.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/requirements-contracts.txt?type=file&root=%252F). For contract-only work, install the latter and run unittest discovery with the pattern test_contracts.py. No provider credentials are needed.
+
+diff --git a/docs/decisions/README.md b/docs/decisions/README.md
+index b641193..fde82c5 100644
+--- a/docs/decisions/README.md
++++ b/docs/decisions/README.md
+@@ -1,6 +1,6 @@
+ # Decisions and open questions
+
+-Updated: 2026-09-22. Maintainer: lead assistant.
++Updated: 2026-09-23. Maintainer: lead assistant.
+ This index is the decision log and the single register of unresolved choices. The constitution and specifications describe current requirements; records preserve the reasoning and authority behind consequential choices.
+
+ ## Decision log
+@@ -19,6 +19,7 @@ This index is the decision log and the single register of unresolved choices. Th
+ | D010 | Product | Accepted | 2026-09-22 | [0010-dairy-fat-clarification.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0010-dairy-fat-clarification.md?type=file&root=%252F) — clarify missing material dairy fat percentage; reuse known product details and keep unresolved food outside totals. |
+ | D011 | Technical | Accepted for W003 | 2026-09-22 | [0011-conversation-worker.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0011-conversation-worker.md?type=file&root=%252F) — durable job claims, frozen scoped interpretation/commands, bounded resolution, and dairy identity metadata. |
+ | D012 | Technical | Accepted for W004 | 2026-09-22 | [0012-nebius-adapter.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0012-nebius-adapter.md?type=file&root=%252F) — explicit Nebius requests, generated schema, parser fingerprints, sanitized failures and durable rate-limit delays. |
++| D013 | Technical | Accepted for M2 | 2026-09-23 | [0013-backend-date-resolution.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0013-backend-date-resolution.md?type=file&root=%252F) — backend-owned date resolution from source evidence, local date and time zone. |
+
+ Recorded dates are dates these records were written. Earlier conversation decisions do not have independently verified timestamps; their acceptance evidence is described in each record.
+
+diff --git a/docs/typed-contracts-v1.md b/docs/typed-contracts-v1.md
+index 9cba723..f344d08 100644
+--- a/docs/typed-contracts-v1.md
++++ b/docs/typed-contracts-v1.md
+@@ -33,7 +33,7 @@ flowchart LR
+ - Decimal quantities and nutrient values are strings, e.g. `"76.1"`, `"250"`, `"0.000001"`. At most 12 integer digits and 6 fractional digits match the accepted M1 database precision in D006. Floats, exponent notation, comma decimals, whitespace, negative quantities, and non-finite values are rejected. The parser converts Russian lexical `76,1` to the canonical string `"76.1"` without arithmetic.
+ - Steps and counters are strict JSON integers; booleans are not counts. Zero steps is valid; zero eaten mass or a zero step increment is not.
+ - Unknown nutrition is `null`. A zero is a known value. Nutrient ranges have paired lower/upper bounds and a central value inside them. Supplied calories are not reconstructed from macros.
+-- Dates in commands are ISO calendar dates; time zones are IANA names. The parser retains source date words in `date_hint.text`, or null when none were supplied. The backend resolves them against the original source-message time, not execution time.
++- Dates in commands are ISO calendar dates; time zones are IANA names. The parser may retain exact source date words in `date_hint.text`, or null when none were supplied. The backend resolves them against the original source-message time, not execution time. If the source contains no date evidence, the backend uses the source message's local date and ignores any model-supplied date hint; a model cannot invent a target date.
+ - Parser references are opaque context tokens such as `c1`, never database IDs. Action IDs such as `a1` are local to one interpretation. Neither token is globally unique or an idempotency key.
+ - Optional extracted values use explicit null when missing. Missing parser values can be valid proposals; they are not permission to execute a command with unresolved quantities or targets.
+
+diff --git a/docs/work/004-nebius-adapter.md b/docs/work/004-nebius-adapter.md
+index 500dc19..3eb2eaa 100644
+--- a/docs/work/004-nebius-adapter.md
++++ b/docs/work/004-nebius-adapter.md
+@@ -79,3 +79,11 @@ Developer reproduction found a separate definite false rejection: the resolver a
+ Acceptance: equivalent decimal representations of 100 g pass; genuinely different quantities and unresolved/non-logging/unsupported outputs still fail; the CLI reports actionable reasons without secret or free-text disclosure and without database access or extra provider calls; appropriate offline regressions and independent review pass. A user-terminal rerun is still required to learn whether this numeric comparison caused the reported live failure.
+
+ Verification: the new decimal regression first failed on the old helper for three equivalent decimal strings, then all 85 offline tests passed after correction. Five retained W004 checks passed with approved database access; the first sandbox-blocked run is retained as an infrastructure failure, not a pass. Independent QA passed three probes and all 18 Nebius protocol/CLI tests, confirming the before/after defect, rejection guards, unchanged request/fingerprint and bounded redaction with 300 arbitrary unresolved paths. [qa-smoke-expectation-report.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/004-smoke-expectation/qa-smoke-expectation-report.md?type=file&root=%252F) identifies the exact source and separates execution attribution. [source.patch](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/004-smoke-expectation/source.patch?type=file&root=%252F) applies to base 2ebabbb805f095a05f8112865168decf18123dfc; the directory retains the original failures and passing output. Only this brief's closeout and evidence packaging changed after review.
++
++## Date authority follow-up — 2026-09-23
++
++The smoke result also confirmed the intended boundary for date handling. The model may extract an explicit date phrase, but the backend resolves the effective date from source evidence, the original message date and the user's time zone. An undated source therefore uses its local source date even if the model returns an unsupported date hint. D013 records the decision; the focused resolver regression covers this case. Unsupported or conflicting date phrases remain unresolved.
++
++Because this changes interpretation semantics for an existing source and hint combination, the resolver version advances from `single-food-resolver-v3` to `single-food-resolver-v4`. The conversation worker fences unfinished old interpretation contexts; prepared or applied commands resume from their stored command without reparsing.
++
++Verification: 87 offline tests and 59 PostgreSQL integration tests pass. Independent QA passed three focused date/version probes, the 14-test interpretation suite and the 18-test Nebius suite. The [date-resolution QA report](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/005-backend-date-resolution/qa-date-resolution-report.md?type=file&root=%252F) records the reviewed source identity and retained evidence. No live provider request or migration was required.
+diff --git a/nutrition_app/interpretation.py b/nutrition_app/interpretation.py
+index 20a9ead..5924e33 100644
+--- a/nutrition_app/interpretation.py
++++ b/nutrition_app/interpretation.py
+@@ -20,7 +20,7 @@ from .service import digest, operation_id_for
+
+
+ CONTEXT_VERSION = "single-food-context-v1"
+-RESOLVER_VERSION = "single-food-resolver-v3"
++RESOLVER_VERSION = "single-food-resolver-v4"
+ MAX_CANDIDATES = 64
+
+
+@@ -110,12 +110,17 @@ def effective_date(context: dict, hint: str | None) -> date | None:
+     numeric_spans = [(m.start(), m.end()) for pattern in (QUANTITY, PERCENT) for m in pattern.finditer(source)]
+     markers = [m.group() for m in DATE_WORDS.finditer(source)
+                if not any(start <= m.start() and m.end() <= end for start, end in numeric_spans)]
++    original = date.fromisoformat(context["local_date"])
++    # The source-message date is authoritative when the message contains no
++    # date evidence. A model hint cannot invent a date that the user did not
++    # write; this also makes the default independent of model formatting.
++    if not markers:
++        return original
+     if hint is None:
+-        return None if markers else date.fromisoformat(context["local_date"])
++        return None
+     token = normalized(hint)
+     if token not in source or len(markers) != 1 or markers[0] != token:
+         return None
+-    original = date.fromisoformat(context["local_date"])
+     if token in {"сегодня", "today"}:
+         return original
+     if token in {"вчера", "yesterday"}:
+diff --git a/tests/test_interpretation.py b/tests/test_interpretation.py
+index ac159d6..21981fb 100644
+--- a/tests/test_interpretation.py
++++ b/tests/test_interpretation.py
+@@ -106,6 +106,13 @@ class InterpretationTests(unittest.TestCase):
+                 else:
+                     self.assertEqual(result.status, "unresolved")
+
++    def test_backend_uses_source_local_date_when_model_invents_date_hint(self):
++        for hint in ("сегодня", "вчера", "2026-09-20", "model-invented-date"):
++            with self.subTest(hint=hint):
++                result = resolve(ACTOR, ORIGIN, context(TEXT), proposal(TEXT, date_hint={"text": hint}))
++                self.assertEqual(result.status, "ready")
++                self.assertEqual(result.command.command.food.effective_date.isoformat(), "2026-09-22")
++
+     def test_plans_questions_and_corrections_are_not_forced_into_additions(self):
+         for text in ("Планирую 100 г творога 5%", "Сколько калорий в 100 г творога 5%?",
+                      "Не ела 100 г творога 5%", "Исправь на 100 г творога 5%"):
+diff --git a/tests/test_nebius.py b/tests/test_nebius.py
+index 4b0083c..9389844 100644
+--- a/tests/test_nebius.py
++++ b/tests/test_nebius.py
+@@ -214,7 +214,6 @@ class NebiusProtocolTests(unittest.TestCase):
+             cases.append((fixture(amount=amount)["output"], "quantity_evidence_conflict", "none"))
+         for field, value, reason in (
+                 ("weight_basis", None, "weight_basis_unresolved"),
+-                ("date_hint", {"text": "sensitive-date"}, "date_unresolved"),
+                 ("food", {"kind": "name", "name": "sensitive-name"}, "product_unresolved"),
+                 ("quantity", {"amount": None, "unit": "g"}, "quantity_unresolved"),
+                 ("unresolved", [{"path": "sensitive-path", "reason": "missing"},
+diff --git a/docs/decisions/0013-backend-date-resolution.md b/docs/decisions/0013-backend-date-resolution.md
+new file mode 100644
+index 0000000..9934c62
+--- /dev/null
++++ b/docs/decisions/0013-backend-date-resolution.md
+@@ -0,0 +1,30 @@
++# D013 — Backend-owned date resolution
++
++Kind: technical.
++Status: accepted for M2 under delegated implementation authority.
++Recorded: 2026-09-23.
++Decision owner: lead architect/developer.
++Authority: architecture discussion following the Nebius smoke result; consistent with CALC-001 and the typed contract.
++
++## Decision
++
++The model extracts date evidence when the user explicitly writes a date phrase. The backend owns the effective date. It uses the source message's local date when the source contains no date evidence, resolves supported explicit and relative phrases using the original message date and user time zone, and defers unsupported or ambiguous date evidence.
++
++The model may not move a food entry to a different date by returning a date that is absent from the source. This protects the record from model defaults such as adding `сегодня` to an undated message. The backend's date library and source timestamp are authoritative; execution time and model-generated calendar dates are not.
++
++Because this changes the interpretation of an existing source and hint combination, the resolver version advances from `single-food-resolver-v3` to `single-food-resolver-v4`. Unfinished interpretation contexts carrying the previous version are fenced by the conversation worker and must be interpreted again. Prepared or applied commands retain their stored command and remain recoverable without another model call.
++
++Examples:
++
++- `Съела 100 г творога` uses the source message's local date.
++- `Вчера съела 100 г творога` extracts `вчера`; the backend resolves the previous local date.
++- `Съела 100 г творога 20 сентября` extracts the exact phrase; the backend parses it according to supported date rules.
++- An unsupported or conflicting phrase remains unresolved and does not enter totals.
++
++## Consequences
++
++The portable parser contract retains `date_hint` for evidence and clarification, but date arithmetic and authority stay outside the model. A model hint on an undated source is ignored rather than allowed to cause an artificial date or a needless clarification. This remains separate from the model's general intent and food-identity responsibilities.
++
++The backend resolver has focused tests for absent, explicit, relative, conflicting and model-invented date hints. No migration or provider-specific request change is needed.
++
++Related: [typed-contracts-v1.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/typed-contracts-v1.md?type=file&root=%252F), [conversation-contract-v1.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/conversation-contract-v1.md?type=file&root=%252F), D011 and D012.

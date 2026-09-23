@@ -41,5 +41,3 @@ From that directory, use the snapshot interpreter with PYTHONDONTWRITEBYTECODE=1
 No live provider request, real secret, database operation or user proposal was available to this review. The before/after probe proves a definite numeric-representation bug in the smoke harness; it does not establish that this was the user's actual failure. The user's prior message supports only that envelope/schema/reference validation reached the expectation check. A terminal rerun is still needed to observe the specific mismatch or successful smoke result. No model-quality, cost/latency or production-readiness claim is made.
 
 The lead may close out the follow-up and retain this exact source identity with later documentation/evidence packaging attributed separately.
-
-Retention note by lead: artifact links now target committed copies; the original report is retained verbatim beside this copy. Later work-brief edits close the bounded change and link its evidence. Reviewed runtime, tests and other source files remain byte-identical.

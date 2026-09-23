@@ -1,0 +1,26 @@
+Executor: independent QA
+Worktree HEAD: 23691a12c1b81ff7af6a96d4dfb5d34d9fb55054
+Reviewed file-set ID: c4754e6cd74f0783376982fc5244647e98642f0de793bfb7de6f89f77c156482
+Command: ['/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/bin/python', '-m', 'unittest', 'discover', '-s', 'tests', '-p', 'test_interpretation.py', '-v']
+
+test_adapter_context_omits_private_ids_and_cannot_mutate_snapshot (test_interpretation.InterpretationTests.test_adapter_context_omits_private_ids_and_cannot_mutate_snapshot) ... ok
+test_backend_uses_source_local_date_when_model_invents_date_hint (test_interpretation.InterpretationTests.test_backend_uses_source_local_date_when_model_invents_date_hint) ... ok
+test_dates_use_source_date_and_require_lexical_consistency (test_interpretation.InterpretationTests.test_dates_use_source_date_and_require_lexical_consistency) ... ok
+test_duplicate_names_and_unknown_tokens_do_not_resolve (test_interpretation.InterpretationTests.test_duplicate_names_and_unknown_tokens_do_not_resolve) ... ok
+test_exact_distinctive_product_name_does_not_need_redundant_percentage (test_interpretation.InterpretationTests.test_exact_distinctive_product_name_does_not_need_redundant_percentage) ... ok
+test_explicit_fat_conflict_and_multiple_percentages_never_select_candidate (test_interpretation.InterpretationTests.test_explicit_fat_conflict_and_multiple_percentages_never_select_candidate) ... ok
+test_known_dairy_builds_backend_owned_command_without_nutrition_values (test_interpretation.InterpretationTests.test_known_dairy_builds_backend_owned_command_without_nutrition_values) ... ok
+test_lexical_decimal_quantity_and_volume_basis (test_interpretation.InterpretationTests.test_lexical_decimal_quantity_and_volume_basis) ... ok
+test_nonlogging_and_multi_action_have_explicit_dispositions (test_interpretation.InterpretationTests.test_nonlogging_and_multi_action_have_explicit_dispositions) ... ok
+test_percent_never_supplies_grams_and_unsupported_conversions_wait (test_interpretation.InterpretationTests.test_percent_never_supplies_grams_and_unsupported_conversions_wait) ... ok
+test_plans_questions_and_corrections_are_not_forced_into_additions (test_interpretation.InterpretationTests.test_plans_questions_and_corrections_are_not_forced_into_additions) ... ok
+test_quantity_bounds_ranges_and_estimates_are_not_exact_portions (test_interpretation.InterpretationTests.test_quantity_bounds_ranges_and_estimates_are_not_exact_portions) ... ok
+test_single_catalog_candidate_cannot_supply_missing_dairy_percentage (test_interpretation.InterpretationTests.test_single_catalog_candidate_cannot_supply_missing_dairy_percentage) ... ok
+test_unknown_catalog_classification_or_fat_is_not_invented (test_interpretation.InterpretationTests.test_unknown_catalog_classification_or_fat_is_not_invented) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.006s
+
+OK
+
+Exit status: 0

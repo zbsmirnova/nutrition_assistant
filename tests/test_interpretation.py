@@ -106,6 +106,13 @@ class InterpretationTests(unittest.TestCase):
                 else:
                     self.assertEqual(result.status, "unresolved")
 
+    def test_backend_uses_source_local_date_when_model_invents_date_hint(self):
+        for hint in ("сегодня", "вчера", "2026-09-20", "model-invented-date"):
+            with self.subTest(hint=hint):
+                result = resolve(ACTOR, ORIGIN, context(TEXT), proposal(TEXT, date_hint={"text": hint}))
+                self.assertEqual(result.status, "ready")
+                self.assertEqual(result.command.command.food.effective_date.isoformat(), "2026-09-22")
+
     def test_plans_questions_and_corrections_are_not_forced_into_additions(self):
         for text in ("Планирую 100 г творога 5%", "Сколько калорий в 100 г творога 5%?",
                      "Не ела 100 г творога 5%", "Исправь на 100 г творога 5%"):

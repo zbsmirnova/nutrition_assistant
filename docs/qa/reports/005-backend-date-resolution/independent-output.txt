@@ -1,0 +1,15 @@
+Executor: independent QA
+Worktree HEAD: 23691a12c1b81ff7af6a96d4dfb5d34d9fb55054
+Reviewed file-set ID: c4754e6cd74f0783376982fc5244647e98642f0de793bfb7de6f89f77c156482
+Command: ['/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/bin/python', '-m', 'unittest', 'qa_date_resolution', '-v']
+
+test_qa01_undated_source_always_uses_captured_local_date (qa_date_resolution.DateQA.test_qa01_undated_source_always_uses_captured_local_date) ... ok
+test_qa02_explicit_relative_invalid_missing_and_conflicting_markers_preserved (qa_date_resolution.DateQA.test_qa02_explicit_relative_invalid_missing_and_conflicting_markers_preserved) ... ok
+test_qa03_changed_resolution_semantics_have_a_new_frozen_identity (qa_date_resolution.DateQA.test_qa03_changed_resolution_semantics_have_a_new_frozen_identity) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.004s
+
+OK
+
+Exit status: 0

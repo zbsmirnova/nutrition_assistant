@@ -1,0 +1,45 @@
+{
+  "base": "23691a12c1b81ff7af6a96d4dfb5d34d9fb55054",
+  "review_workspace": "/Users/Zinaida.Smirnova/air/nutrition_assistant",
+  "original_review_base": "25786bac5ad0126c4124edbf3ab1b9d711a4f637",
+  "patch_sha256": "48f2c8be6289612e90df3d8efd458836bb88f27259ed99319ac5defc5496a3d0",
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "4cd3d3baf0f37ad4d76f065828d93ce120018afebdd12571c0ea309c1c4fac61"
+    },
+    {
+      "path": "docs/decisions/0013-backend-date-resolution.md",
+      "sha256": "1884c8bf2c9422ee0118ab6a062e9673d42db4cbad626fbf38fe0bdb0509f0bc"
+    },
+    {
+      "path": "docs/decisions/README.md",
+      "sha256": "5141c13e56ca313cb88f6730858685f2e1d1d7ea6bd3b14252d3060c4bc87d11"
+    },
+    {
+      "path": "docs/qa/reports/004-smoke-expectation/qa-smoke-expectation-report.md",
+      "sha256": "78f64a1dbf25da5bd8c91d9088e26c568feaa5becc5f1f782918cc08a2482c64"
+    },
+    {
+      "path": "docs/typed-contracts-v1.md",
+      "sha256": "e07b01f18653044802a324e3c7f8a5fcd492d0b282aa3279584dd9a396bd14c5"
+    },
+    {
+      "path": "docs/work/004-nebius-adapter.md",
+      "sha256": "32f4978bbf72d1a5d2d9453fe796db17ea1f6da981e6858cdecf17b33a738d50"
+    },
+    {
+      "path": "nutrition_app/interpretation.py",
+      "sha256": "e2f39efda9ff1162749cb9be5317d5f146e4950abd00f1226b51fcb5e6d7089c"
+    },
+    {
+      "path": "tests/test_interpretation.py",
+      "sha256": "afd439aaf7f58962dc70cf1f70c929bcf24c875e281a0afdbe7ac870db55fded"
+    },
+    {
+      "path": "tests/test_nebius.py",
+      "sha256": "bcea83477003c1452ca8e8ccac3b3176f5833ca80bd815f45fcf380ae88d68f9"
+    }
+  ],
+  "source_id": "c4754e6cd74f0783376982fc5244647e98642f0de793bfb7de6f89f77c156482"
+}

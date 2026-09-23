@@ -20,7 +20,7 @@ from .service import digest, operation_id_for
 
 
 CONTEXT_VERSION = "single-food-context-v1"
-RESOLVER_VERSION = "single-food-resolver-v3"
+RESOLVER_VERSION = "single-food-resolver-v4"
 MAX_CANDIDATES = 64
 
 
@@ -110,12 +110,17 @@ def effective_date(context: dict, hint: str | None) -> date | None:
     numeric_spans = [(m.start(), m.end()) for pattern in (QUANTITY, PERCENT) for m in pattern.finditer(source)]
     markers = [m.group() for m in DATE_WORDS.finditer(source)
                if not any(start <= m.start() and m.end() <= end for start, end in numeric_spans)]
+    original = date.fromisoformat(context["local_date"])
+    # The source-message date is authoritative when the message contains no
+    # date evidence. A model hint cannot invent a date that the user did not
+    # write; this also makes the default independent of model formatting.
+    if not markers:
+        return original
     if hint is None:
-        return None if markers else date.fromisoformat(context["local_date"])
+        return None
     token = normalized(hint)
     if token not in source or len(markers) != 1 or markers[0] != token:
         return None
-    original = date.fromisoformat(context["local_date"])
     if token in {"сегодня", "today"}:
         return original
     if token in {"вчера", "yesterday"}:

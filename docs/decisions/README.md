@@ -1,6 +1,6 @@
 # Decisions and open questions
 
-Updated: 2026-09-22. Maintainer: lead assistant.
+Updated: 2026-09-23. Maintainer: lead assistant.
 This index is the decision log and the single register of unresolved choices. The constitution and specifications describe current requirements; records preserve the reasoning and authority behind consequential choices.
 
 ## Decision log
@@ -19,6 +19,7 @@ This index is the decision log and the single register of unresolved choices. Th
 | D010 | Product | Accepted | 2026-09-22 | [0010-dairy-fat-clarification.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0010-dairy-fat-clarification.md?type=file&root=%252F) — clarify missing material dairy fat percentage; reuse known product details and keep unresolved food outside totals. |
 | D011 | Technical | Accepted for W003 | 2026-09-22 | [0011-conversation-worker.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0011-conversation-worker.md?type=file&root=%252F) — durable job claims, frozen scoped interpretation/commands, bounded resolution, and dairy identity metadata. |
 | D012 | Technical | Accepted for W004 | 2026-09-22 | [0012-nebius-adapter.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0012-nebius-adapter.md?type=file&root=%252F) — explicit Nebius requests, generated schema, parser fingerprints, sanitized failures and durable rate-limit delays. |
+| D013 | Technical | Accepted for M2 | 2026-09-23 | [0013-backend-date-resolution.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0013-backend-date-resolution.md?type=file&root=%252F) — backend-owned date resolution from source evidence, local date and time zone. |
 
 Recorded dates are dates these records were written. Earlier conversation decisions do not have independently verified timestamps; their acceptance evidence is described in each record.
 

@@ -214,7 +214,6 @@ class NebiusProtocolTests(unittest.TestCase):
             cases.append((fixture(amount=amount)["output"], "quantity_evidence_conflict", "none"))
         for field, value, reason in (
                 ("weight_basis", None, "weight_basis_unresolved"),
-                ("date_hint", {"text": "sensitive-date"}, "date_unresolved"),
                 ("food", {"kind": "name", "name": "sensitive-name"}, "product_unresolved"),
                 ("quantity", {"amount": None, "unit": "g"}, "quantity_unresolved"),
                 ("unresolved", [{"path": "sensitive-path", "reason": "missing"},
