@@ -1,6 +1,6 @@
 # V1 conversation contract
 
-Status: step 2 interaction decisions are reflected in strict Pydantic contracts, generated JSON Schema, and 20 authored examples. Accepted rules below come from the product conversation; remaining implementation defaults are explicitly proposed. Examples use Russian because that is the brief's chat language. M1 implements resolved product-food persistence; W002 implements private Telegram ingress/delivery. W003 adds a bounded standalone-food resolver driven by controlled parser responses, including deferral of unresolved dairy identity. W004 adds the explicit Nebius adapter, tested with injected responses. Live model compatibility and interactive clarifications/corrections remain unverified/unimplemented respectively; work briefs own verification status.
+Status: step 2 interaction decisions are reflected in strict Pydantic contracts, generated JSON Schema, and 20 authored examples. Accepted rules below come from the product conversation; remaining implementation defaults are explicitly proposed. Examples use Russian because that is the brief's chat language. M1 implements resolved product-food persistence; W002 implements private Telegram ingress/delivery. W003 adds a bounded standalone-food resolver driven by controlled parser responses, including deferral of unresolved dairy identity. W004 adds the explicit Nebius adapter, tested with injected responses. W006 implements one reply-linked dairy-fat clarification/resumption path with synthetic and pending PostgreSQL coverage; mixed clarifications, corrections, and live model compatibility remain unverified. Work briefs own exact status.
 
 ## 1. Requirements and status
 
@@ -80,14 +80,14 @@ Fat percentage is a product-selection detail, not a complete nutrition profile. 
 >
 > Bot: Добавлено: суп, 250 г — 175 ккал; Б 10 г, Ж 5 г, У 22,5 г.
 
-Rules proposed for the clarification workflow:
+Rules for the clarification workflow (the single reply-linked dairy-fat path is implemented by W006; the remaining cases are still proposed or future work):
 
 1. Save the original input and pending action, with the intended date and already resolved facts. Do not add the unresolved food to totals.
 2. A bare number can answer a question that explicitly requested grams when exactly one matching question is active. Otherwise ask which question it answers. Do not guess from the numerical magnitude.
 3. Prefer Telegram reply-to linkage; otherwise use an explicit food/date reference and an unambiguous active question. A reply to a message containing multiple candidates may still require disambiguation.
 4. New explicit actions remain new actions. “Вес 76,1” while soup is pending records weight; it does not become 76.1 g of soup.
 5. Keep the original food date if an answer arrives after midnight. An explicitly changed date must be interpreted and acknowledged rather than ignored.
-6. Ask for all currently known blocking details in one concise question when useful. Do not demand information already provided, and do not require every catalog nutrient to be known before logging a clearly identified food with honest nutrient gaps.
+6. Ask for all currently known blocking details in one concise question when useful. W006 persists one dairy-fat question and accepts a typed nutrition answer through a reply to the original message. Do not demand information already provided, and do not require every catalog nutrient to be known before logging a clearly identified food with honest nutrient gaps.
 7. If the user does not know the amount, offer an estimate for explicit approval or let them cancel the pending entry. Lack of a reply never counts as approval.
 8. “Отмени запись супа” cancels an uncommitted soup action when that is the clear target. It does not delete unrelated already saved food. A cancellation is acknowledged and never silently marks the food as eaten.
 9. A pending correction does not remove the currently committed entry from totals. Explain that its old value remains until corrected; only an unresolved new entry contributes nothing.

@@ -99,6 +99,39 @@ class ConversationWorkerTests(unittest.TestCase):
         self.assertEqual(saved["outcome"]["result"]["daily_summaries"][0]["pending_food_actions"], 1)
         self.assertEqual(self.service.get_day(self.actor, date(2026, 9, 22)).entry_count, 1)
 
+    def test_dairy_fat_reply_resumes_original_operation_once(self):
+        original = self.source(text="Съела 100 г творога")
+        initial = self.worker.run_one(self.actor, ControlledParser(fixture("Съела 100 г творога")["output"]),
+                                      origin=original)
+        self.assertEqual((initial["status"], initial["reason"]), ("unresolved", "dairy_fat_missing"))
+        with self.engine.begin() as connection:
+            pending = connection.execute(sa.select(db.conversation_jobs).where(
+                db.conversation_jobs.c.user_id == self.actor,
+                db.conversation_jobs.c.origin_update_id == original)).mappings().one()
+            self.assertEqual(pending["pending_questions"], {"c1": {"q1": "nutrition"}})
+            original_message_id = connection.execute(sa.select(db.inbox_updates.c.telegram_message_id).where(
+                db.inbox_updates.c.id == original)).scalar_one()
+        reply = self.source(2, text="5%", reply_to_message_id=original_message_id)
+        answer = {"schema_version": "1.0", "actions": [{
+            "kind": "answer_clarification", "action_id": "a1", "evidence": "5%",
+            "depends_on": [], "unresolved": [],
+            "pending": {"kind": "candidate", "candidate_ref": "c1", "candidate_kind": "pending"},
+            "answers": [{"question_ref": "q1", "value": {"kind": "nutrition",
+                "supplied_nutrition": {"kcal": None, "protein_g": None, "fat_g": "5", "carbs_g": None}}}],
+        }]}
+        parser = ControlledParser(answer)
+        result = self.worker.run_one(self.actor, parser, origin=reply)
+        self.assertEqual(result["status"], "applied")
+        self.assertEqual(parser.requests[0].pending_questions, {"c1": {"q1": "nutrition"}})
+        self.assertEqual(parser.requests[0].pending_candidates[0]["ref"], "c1")
+        self.assertEqual(self.count(db.food_entries), 1)
+        self.assertEqual(self.worker.run_one(self.actor, parser, origin=reply)["status"], "applied")
+        with self.engine.begin() as connection:
+            states = connection.execute(sa.select(db.conversation_jobs.c.status, db.conversation_jobs.c.reason).where(
+                db.conversation_jobs.c.user_id == self.actor).order_by(db.conversation_jobs.c.created_at)).all()
+        self.assertEqual(states, [("applied", "clarification_resolved"), ("applied", "command_applied")])
+        self.assertEqual(self.count(db.food_entries), 1)
+
     def test_forward_and_reply_inputs_wait_without_calling_parser(self):
         parser = ControlledParser()
         for number, change in enumerate([{"forwarded": True}, {"reply_to_message_id": 88}], 1):

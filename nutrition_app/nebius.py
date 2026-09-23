@@ -92,6 +92,10 @@ class NebiusParser:
         context = {"source_text": request.source_text, "local_date": request.local_date,
                    "time_zone": request.time_zone,
                    "candidates": [{key: candidate[key] for key in keys} for candidate in request.candidates]}
+        if request.pending_questions:
+            context["pending_candidates"] = [{key: candidate[key] for key in keys}
+                                               for candidate in request.pending_candidates]
+            context["pending_questions"] = request.pending_questions
         payload = {"model": self._config.model, **REQUEST_POLICY,
             "messages": [{"role": "system", "content": PROMPT + "\nJSON Schema:\n" + json.dumps(self._schema)},
                          {"role": "user", "content": json.dumps(context, ensure_ascii=False)}],
@@ -156,8 +160,10 @@ class NebiusParser:
                 raise ValueError
             # Local schema/graph validation remains mandatory even with structured output.
             output = ParserOutput.model_validate_json(content)
-            validate_parser_context(output, {c["ref"]: "product" for c in request.candidates}, {},
-                                    source_text=request.source_text, has_reply=False)
+            candidate_kinds = {c["ref"]: "product" for c in request.candidates}
+            candidate_kinds.update({c["ref"]: "pending" for c in request.pending_candidates})
+            validate_parser_context(output, candidate_kinds, request.pending_questions,
+                                    source_text=request.source_text, has_reply=request.has_reply)
         except Exception:
             raise ParserRejected("Invalid, incomplete or refused Nebius interpretation") from None
         return output.model_dump_json()

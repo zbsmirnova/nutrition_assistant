@@ -47,6 +47,30 @@ class InterpretationTests(unittest.TestCase):
         self.assertEqual((result.status, result.reason), ("unresolved", "dairy_fat_missing"))
         self.assertEqual(result.pending_food_date.isoformat(), "2026-09-22")
 
+    def test_dairy_fat_answer_reuses_original_date_and_operation_evidence(self):
+        text = "Съела 100 г творога"
+        original = proposal(text)
+        pending_context = context(text)
+        answer_context = context("5%")
+        answer_context.update({"has_reply": True, "pending_questions": {"c1": {"q1": "nutrition"}},
+            "pending_candidates": [dict(answer_context["candidates"][0])],
+            "pending": {"job_id": "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+                         "origin_update_id": str(ORIGIN), "proposal": original.model_dump(mode="json"),
+                         "context": pending_context}})
+        answer = ParserOutput.model_validate({"schema_version": "1.0", "actions": [{
+            "kind": "answer_clarification", "action_id": "a1", "evidence": "5%",
+            "depends_on": [], "unresolved": [],
+            "pending": {"kind": "candidate", "candidate_ref": "c1", "candidate_kind": "pending"},
+            "answers": [{"question_ref": "q1", "value": {"kind": "nutrition",
+                "supplied_nutrition": {"kcal": None, "protein_g": None, "fat_g": "5", "carbs_g": None}}}],
+        }]})
+        result = resolve(ACTOR, UUID("cccccccc-cccc-4ccc-8ccc-cccccccccccc"), answer_context, answer)
+        self.assertEqual(result.status, "ready")
+        self.assertEqual(result.command.source.origin_update_id, ORIGIN)
+        self.assertEqual(result.command.source.evidence_update_ids,
+                         [ORIGIN, UUID("cccccccc-cccc-4ccc-8ccc-cccccccccccc")])
+        self.assertEqual(result.command.command.food.effective_date.isoformat(), "2026-09-22")
+
     def test_explicit_fat_conflict_and_multiple_percentages_never_select_candidate(self):
         for text in ("Съела 100 г творога 9%", "Съела 100 г творога 5% или 9%", "Съела 100 г творога -5%"):
             with self.subTest(text=text):

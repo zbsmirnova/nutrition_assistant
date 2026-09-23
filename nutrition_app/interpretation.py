@@ -13,14 +13,15 @@ from typing import Protocol
 from uuid import UUID
 
 from nutrition_contracts.commands import CommandEnvelope
-from nutrition_contracts.parser import AddFood, NonLogging, ParserOutput, validate_parser_context
+from nutrition_contracts.parser import (AddFood, AnswerClarification, NonLogging, ParserOutput,
+                                         NutritionAnswer, validate_parser_context)
 
 from .errors import ApplicationError
 from .service import digest, operation_id_for
 
 
-CONTEXT_VERSION = "single-food-context-v1"
-RESOLVER_VERSION = "single-food-resolver-v4"
+CONTEXT_VERSION = "single-food-context-v2"
+RESOLVER_VERSION = "single-food-resolver-v5"
 MAX_CANDIDATES = 64
 
 
@@ -30,6 +31,9 @@ class ParserRequest:
     local_date: str
     time_zone: str
     candidates: tuple[dict, ...] = field(repr=False)
+    pending_candidates: tuple[dict, ...] = field(default_factory=tuple, repr=False)
+    pending_questions: dict[str, dict[str, str]] = field(default_factory=dict, repr=False)
+    has_reply: bool = False
 
 
 class Parser(Protocol):
@@ -80,8 +84,14 @@ def parser_request(context: dict) -> ParserRequest:
     public = tuple({k: c[k] for k in ("ref", "name", "nutrition_basis", "weight_basis",
                                      "food_kind", "declared_fat_percent")}
                    for c in context["candidates"])
+    pending = tuple({k: c[k] for k in ("ref", "name", "nutrition_basis", "weight_basis",
+                                       "food_kind", "declared_fat_percent")}
+                    for c in context.get("pending_candidates", ()))
     return ParserRequest(source_text=context["source_text"], local_date=context["local_date"],
-                         time_zone=context["time_zone"], candidates=public)
+                         time_zone=context["time_zone"], candidates=public,
+                         pending_candidates=pending,
+                         pending_questions=context.get("pending_questions", {}),
+                         has_reply=context.get("has_reply", False))
 
 
 @dataclass(frozen=True)
@@ -90,6 +100,7 @@ class Resolution:
     reason: str
     command: CommandEnvelope | None = None
     pending_food_date: date | None = None
+    pending_questions: dict[str, dict[str, str]] | None = None
 
 
 def normalized(text: str) -> str:
@@ -169,7 +180,9 @@ def identity_words(text):
 
 
 def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> Resolution:
-    validate_parser_context(output, {c["ref"]: "product" for c in context["candidates"]}, {},
+    candidate_kinds = {c["ref"]: "product" for c in context["candidates"]}
+    candidate_kinds.update({c["ref"]: "pending" for c in context.get("pending_candidates", ())})
+    validate_parser_context(output, candidate_kinds, context.get("pending_questions", {}),
                             source_text=context["source_text"], has_reply=context["has_reply"])
     if len(output.actions) != 1:
         return Resolution("unsupported", "multiple_actions")
@@ -177,12 +190,44 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
     if isinstance(action, NonLogging):
         status = {"ambiguous_intent": "unresolved", "unsupported": "unsupported"}.get(action.reason, "non_logging")
         return Resolution(status, action.reason)
+    if isinstance(action, AnswerClarification):
+        pending = context.get("pending")
+        if pending is None or action.pending is None:
+            return Resolution("unresolved", "clarification_context_missing")
+        if action.pending.candidate_ref not in context.get("pending_questions", {}):
+            return Resolution("unresolved", "clarification_context_missing")
+        original = ParserOutput.model_validate(pending["proposal"])
+        if len(original.actions) != 1 or not isinstance(original.actions[0], AddFood):
+            return Resolution("unsupported", "pending_action_not_implemented")
+        # The answer is evidence for the original action. Backend resolution
+        # re-runs against the original message plus the answer, preserving the
+        # original local date and operation identity.
+        answer_text = context["source_text"]
+        merged = dict(pending["context"])
+        merged["source_text"] = pending["context"]["source_text"] + "\n" + answer_text
+        merged["has_reply"] = False
+        merged["forwarded"] = False
+        merged["pending_questions"] = {}
+        merged["pending_candidates"] = []
+        merged["pending_identity_confirmed"] = True
+        merged["evidence_update_ids"] = [UUID(pending["origin_update_id"]), origin]
+        merged["pending_action_id"] = UUID(pending["job_id"])
+        nutrition_answers = [answer.value for answer in action.answers if isinstance(answer.value, NutritionAnswer)]
+        if not nutrition_answers or nutrition_answers[0].supplied_nutrition.fat_g is None:
+            return Resolution("unresolved", "clarification_answer_incomplete",
+                              pending_food_date=date.fromisoformat(pending["context"]["local_date"]),
+                              pending_questions=context["pending_questions"])
+        return resolve(actor, UUID(pending["origin_update_id"]), merged, original)
     if not isinstance(action, AddFood):
         return Resolution("unsupported", "action_not_implemented")
     target_date = effective_date(context, action.date_hint.text)
+    pending_ref = action.food.candidate_ref if action.food.kind == "candidate" else None
 
     def defer(reason):
-        return Resolution("unresolved", reason, pending_food_date=target_date)
+        questions = None
+        if reason == "dairy_fat_missing" and pending_ref is not None:
+            questions = {pending_ref: {"q1": "nutrition"}}
+        return Resolution("unresolved", reason, pending_food_date=target_date, pending_questions=questions)
 
     if action.depends_on or action.unresolved:
         return defer("proposal_unresolved")
@@ -201,6 +246,7 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
         return Resolution("unsupported", "dependent_food_source")
     if len(matching) != 1:
         return defer("product_unresolved")
+    pending_ref = matching[0]["ref"]
     product = matching[0]
     # Duplicate indistinguishable names are ambiguity even if the model picked a token.
     if sum(normalized(c["name"]) == normalized(product["name"]) for c in candidates) != 1:
@@ -226,7 +272,8 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
             if (not re.search(r"[a-zа-я]{2,}", distinctive, re.I)
                     or normalized(product["name"]) not in normalized(text)):
                 return defer("dairy_fat_missing")
-    if not identity_words(product["name"]).issubset(identity_words(text)):
+    if (not context.get("pending_identity_confirmed")
+            and not identity_words(product["name"]).issubset(identity_words(text))):
         return defer("product_evidence_conflict")
     folded = normalized(text)
     if ((RAW_WORD.search(folded) and product["weight_basis"] != "raw") or
@@ -257,9 +304,12 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
     normalized_quantity = ({"kind": "mass", "edible_g": amount, "gross_g": None, "inedible_g": None,
                             "weight_basis": product["weight_basis"]} if quantity.unit == "g" else
                            {"kind": "volume", "ml": amount, "weight_basis": product["weight_basis"]})
+    evidence_ids = context.get("evidence_update_ids", [origin])
+    pending_action_id = context.get("pending_action_id")
     payload = {"schema_version": "1.0", "user_id": str(actor), "operation_id": str(operation_id_for(origin)),
                "context_revision": context["context_revision"],
-               "source": {"origin_update_id": str(origin), "evidence_update_ids": [str(origin)], "pending_action_id": None},
+               "source": {"origin_update_id": str(origin), "evidence_update_ids": [str(item) for item in evidence_ids],
+                          "pending_action_id": None if pending_action_id is None else str(pending_action_id)},
                "command": {"kind": "add_consumed_food", "food": {
                    "effective_date": target_date.isoformat(), "time_zone": context["time_zone"], "meal": action.meal,
                    "description": product["name"], "components": [{"kind": "product", "description": product["name"],

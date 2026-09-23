@@ -28,6 +28,7 @@ class Claim:
     actor: UUID
     origin: UUID
     token: UUID
+    operation_id: UUID
     context: dict
     prepared: bool
 
@@ -45,16 +46,16 @@ class ConversationWorker:
         return sa.and_(db.conversation_jobs.c.user_id == actor, db.conversation_jobs.c.origin_update_id == origin)
 
     @staticmethod
-    def _prepared(connection, actor, origin):
+    def _prepared(connection, actor, operation_id):
         return connection.execute(sa.select(db.prepared_operations.c.id).where(
             db.prepared_operations.c.user_id == actor,
-            db.prepared_operations.c.id == operation_id_for(origin))).scalar_one_or_none() is not None
+            db.prepared_operations.c.id == operation_id)).scalar_one_or_none() is not None
 
     @staticmethod
-    def _applied(connection, actor, origin):
+    def _applied(connection, actor, operation_id):
         return connection.execute(sa.select(db.applied_operations.c.id).where(
             db.applied_operations.c.user_id == actor,
-            db.applied_operations.c.id == operation_id_for(origin))).scalar_one_or_none() is not None
+            db.applied_operations.c.id == operation_id)).scalar_one_or_none() is not None
 
     @staticmethod
     def _context(connection, user, source, parser_version):
@@ -68,13 +69,39 @@ class ConversationWorker:
                    "source_text": source["text"], "time_zone": source["source_time_zone"],
                    "local_date": source["source_sent_at"].astimezone(ZoneInfo(source["source_time_zone"])).date().isoformat(),
                    "has_reply": source["reply_to_message_id"] is not None, "forwarded": source["forwarded"],
-                   "catalog_overflow": len(rows) > MAX_CANDIDATES, "candidates": []}
+                   "catalog_overflow": len(rows) > MAX_CANDIDATES, "candidates": [],
+                   "pending_candidates": [], "pending_questions": {}, "pending": None}
         if not context["catalog_overflow"]:
             context["candidates"] = [{"ref": f"c{i}", "version_id": str(row["id"]), "name": row["name"],
                 "nutrition_basis": row["nutrition_basis"], "weight_basis": row["weight_basis"],
                 "food_kind": row["food_kind"], "declared_fat_percent":
                     None if row["declared_fat_percent"] is None else str(row["declared_fat_percent"])}
                 for i, row in enumerate(rows, 1)]
+        if source["reply_to_message_id"] is not None:
+            original = db.inbox_updates.alias("original_inbox")
+            pending = connection.execute(sa.select(db.conversation_jobs).select_from(
+                db.conversation_jobs.join(original, sa.and_(
+                    original.c.user_id == db.conversation_jobs.c.user_id,
+                    original.c.id == db.conversation_jobs.c.origin_update_id))).where(
+                db.conversation_jobs.c.user_id == user["id"],
+                db.conversation_jobs.c.status == "unresolved",
+                db.conversation_jobs.c.pending_questions.is_not(None),
+                original.c.telegram_account_id == source["telegram_account_id"],
+                original.c.telegram_message_id == source["reply_to_message_id"]
+            ).order_by(original.c.created_at, original.c.id).limit(1)).mappings().first()
+            if pending is not None:
+                original_context = pending["context"]
+                pending_questions = pending["pending_questions"]
+                refs = set(pending_questions)
+                context["pending_questions"] = pending_questions
+                context["pending_candidates"] = [candidate for candidate in original_context["candidates"]
+                                                   if candidate["ref"] in refs]
+                context["pending"] = {
+                    "job_id": str(pending["id"]),
+                    "origin_update_id": str(pending["origin_update_id"]),
+                    "proposal": pending["proposal"],
+                    "context": original_context,
+                }
         return context
 
     def _set(self, connection, actor, origin, status, reason, **values):
@@ -109,24 +136,28 @@ class ConversationWorker:
                 connection.execute(jobs.insert().values(user_id=actor, origin_update_id=origin,
                                                        status="ready", reason="accepted"))
                 job = connection.execute(sa.select(jobs).where(self._where(actor, origin))).mappings().one()
-            if self._applied(connection, actor, origin):
-                self._set(connection, actor, origin, "applied", "stored_result_recovered")
-                return {"status": "applied", "origin_update_id": str(origin)}
             if job["status"] in TERMINAL:
                 return {"status": job["status"], "reason": job["reason"], "origin_update_id": str(origin)}
             if job["status"] == "processing" and job["lease_until"] > now:
                 return {"status": "busy", "origin_update_id": str(origin)}
             if job["status"] == "retry" and job["next_attempt_at"] > now:
                 return {"status": "waiting", "origin_update_id": str(origin)}
-            prepared = self._prepared(connection, actor, origin)
+            context = job["context"]
+            if context is None:
+                context = self._context(connection, user, source, parser_version)
+            execution_origin = UUID(context["pending"]["origin_update_id"]) if context.get("pending") else origin
+            execution_operation_id = operation_id_for(execution_origin)
+            if self._applied(connection, actor, execution_operation_id):
+                self._set(connection, actor, origin, "applied", "stored_result_recovered")
+                if context.get("pending"):
+                    self._clear_pending(connection, Claim(actor, origin, uuid4(), execution_operation_id, context, True))
+                return {"status": "applied", "origin_update_id": str(origin)}
+            prepared = self._prepared(connection, actor, execution_operation_id)
             # A frozen command is recoverable without another interpretation, even
             # after the final lease expired following a successful preparation.
             if job["attempts"] >= MAX_ATTEMPTS and not prepared:
                 self._set(connection, actor, origin, "failed", "attempt_limit")
                 return {"status": "failed", "reason": "attempt_limit", "origin_update_id": str(origin)}
-            context = job["context"]
-            if context is None and not prepared:
-                context = self._context(connection, user, source, parser_version)
             if not prepared and (context["parser_version"] != parser_version or
                     context["resolver_version"] != RESOLVER_VERSION or context["context_version"] != CONTEXT_VERSION):
                 self._set(connection, actor, origin, "failed", "interpretation_version_changed")
@@ -136,13 +167,25 @@ class ConversationWorker:
                 reason="resuming_command" if prepared else "interpreting", attempts=job["attempts"] + 1,
                 context=context, claim_token=token, lease_until=now + timedelta(seconds=self.lease_seconds),
                 next_attempt_at=None))
-            return Claim(actor, origin, token, context, prepared)
+            return Claim(actor, origin, token, execution_operation_id, context, prepared)
 
     def _live_claim(self, connection, claim):
         now = connection.execute(sa.select(sa.func.clock_timestamp())).scalar_one()
         return connection.execute(sa.select(db.conversation_jobs).where(self._where(claim.actor, claim.origin),
             db.conversation_jobs.c.status == "processing", db.conversation_jobs.c.claim_token == claim.token,
             db.conversation_jobs.c.lease_until > now)).mappings().one_or_none()
+
+    @staticmethod
+    def _clear_pending(connection, claim):
+        pending = claim.context.get("pending")
+        if pending is None:
+            return
+        connection.execute(db.conversation_jobs.update().where(
+            db.conversation_jobs.c.user_id == claim.actor,
+            db.conversation_jobs.c.origin_update_id == UUID(pending["origin_update_id"]),
+            db.conversation_jobs.c.status == "unresolved",
+        ).values(status="applied", reason="clarification_resolved", pending_food_date=None,
+                 pending_questions=None, claim_token=None, lease_until=None, next_attempt_at=None))
 
     def _freeze(self, claim, proposal, resolution):
         with self.engine.begin() as connection:
@@ -151,7 +194,8 @@ class ConversationWorker:
                 return False
             if resolution.command is not None:
                 self.service._prepare(connection, claim.actor, resolution.command)
-            values = {"proposal": proposal}
+            values = {"proposal": proposal,
+                      "pending_questions": resolution.pending_questions}
             # _set normally clears the date; use a separate value assignment below.
             self._set(connection, claim.actor, claim.origin, resolution.status, resolution.reason, **values)
             if resolution.pending_food_date is not None:
@@ -162,8 +206,9 @@ class ConversationWorker:
     def _failure(self, claim, reason, *, retryable, require_claim=True, retry_after=None):
         with self.engine.begin() as connection:
             self.service._user(connection, claim.actor)
-            if self._applied(connection, claim.actor, claim.origin):
+            if self._applied(connection, claim.actor, claim.operation_id):
                 self._set(connection, claim.actor, claim.origin, "applied", "stored_result_recovered")
+                self._clear_pending(connection, claim)
                 return "applied"
             row = (self._live_claim(connection, claim) if require_claim else connection.execute(
                 sa.select(db.conversation_jobs).where(self._where(claim.actor, claim.origin))).mappings().one())
@@ -193,7 +238,7 @@ class ConversationWorker:
         if not claim.prepared:
             context = claim.context
             proposal = None
-            if context["has_reply"] or context["forwarded"]:
+            if (context["has_reply"] or context["forwarded"]) and context.get("pending") is None:
                 resolution = Resolution("unresolved", "conversation_context_required")
             elif context["catalog_overflow"]:
                 resolution = Resolution("unsupported", "catalog_context_limit")
@@ -226,7 +271,7 @@ class ConversationWorker:
                 return {"status": resolution.status, "reason": resolution.reason,
                         "origin_update_id": str(claim.origin)}
         try:
-            outcome = self.service.execute(actor, operation_id_for(claim.origin),
+            outcome = self.service.execute(actor, claim.operation_id,
                 fault=lambda name: point(name.replace("commit", "domain_commit")))
         except ApplicationError:
             status = self._failure(claim, "command_rejected", retryable=False, require_claim=False)
@@ -237,6 +282,7 @@ class ConversationWorker:
         with self.engine.begin() as connection:
             self.service._user(connection, actor)
             self._set(connection, actor, claim.origin, "applied", "command_applied")
+            self._clear_pending(connection, claim)
         return {"status": "applied", "origin_update_id": str(claim.origin), "outcome": outcome.model_dump(mode="json")}
 
     def status(self, actor: UUID, origin: UUID | None = None):

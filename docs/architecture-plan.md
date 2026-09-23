@@ -2,7 +2,7 @@
 
 Date: 2026-09-22
 
-Status: current design overview. Product choices and technical proposals are distinguished in the decision register. Typed contracts, M1 persistence, W002 private Telegram transport, and W003's controlled-proposal conversation worker are implemented. W004 implements the Nebius request adapter; live compatibility and model quality remain unverified. Later domains and deployment remain unimplemented; revision-specific verification belongs in the work briefs.
+Status: current design overview. Product choices and technical proposals are distinguished in the decision register. Typed contracts, M1 persistence, W002 private Telegram transport, W003's controlled-proposal conversation worker, and W006's reply-linked dairy clarification path are implemented for their bounded scopes. W004 implements the Nebius request adapter; live compatibility and model quality remain unverified. Later domains and deployment remain unimplemented; revision-specific verification belongs in the work briefs.
 
 Input: the personal nutrition tracker architecture brief dated 2026-09-21.
 
@@ -108,7 +108,7 @@ W002 uses D007's private account mappings and durable polling cursor. A per-bot 
 
 Accepted continuous-persistence semantics are recorded in D001. The accepted M1 relational revision decision is [0003-relational-storage.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0003-relational-storage.md?type=file&root=%252F): keep current pointers and ordinary immutable revisions without requiring full event replay.
 
-W003's D011 adds per-inbox conversation jobs, database-clock leases, frozen owned catalog context, and atomic proposal/command preparation. Short user-row locks fence state changes; parser work runs outside transactions. Restart recovery reuses M1's prepared command and outbox. Unsupported or unresolved inputs remain durable and inspectable. W004 adds the explicit Nebius adapter with generated-schema requests, local validation, terminal provider failures and durable Retry-After handling (D012). Protocol checks use injected responses; live compatibility and the full conversational workflow remain separate verification/work.
+W003's D011 adds per-inbox conversation jobs, database-clock leases, frozen owned catalog context, and atomic proposal/command preparation. W006's D015 adds a bounded pending-question map and reply-linked resumption that reuses the original operation and evidence chain. Short user-row locks fence state changes; parser work runs outside transactions. Restart recovery reuses M1's prepared command and outbox. Unsupported or unresolved inputs remain durable and inspectable. W004 adds the explicit Nebius adapter with generated-schema requests, local validation, terminal provider failures and durable Retry-After handling (D012). Protocol checks use injected responses; live compatibility and the remaining conversational workflow remain separate verification/work.
 
 Immutability applies to ordinary editing. Explicit account erasure and agreed retention rules may purge personal revisions and source data; an audit trail is not an exception to deletion policy.
 

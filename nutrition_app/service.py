@@ -110,8 +110,13 @@ class FoodService:
             raise Unsupported("This slice supports resolved add-food commands only")
         if any(not isinstance(c, ProductComponent) for c in command.command.food.components):
             raise Unsupported("This slice supports pinned product components only")
-        if command.source.pending_action_id is not None or command.source.evidence_update_ids != [command.source.origin_update_id]:
-            raise Unsupported("Clarification workflows are not implemented in this slice")
+        evidence = command.source.evidence_update_ids
+        if evidence[0] != command.source.origin_update_id or len(set(evidence)) != len(evidence):
+            raise ApplicationError("Evidence must begin with the original source and contain no duplicates")
+        if command.source.pending_action_id is None and evidence != [command.source.origin_update_id]:
+            raise Unsupported("Additional evidence requires a pending clarification")
+        if command.source.pending_action_id is not None and len(evidence) < 2:
+            raise Unsupported("A clarification command requires answer evidence")
         if command.operation_id != operation_id_for(command.source.origin_update_id):
             raise ApplicationError("Operation identity must match its original message and position")
 
@@ -133,6 +138,21 @@ class FoodService:
         )).one_or_none()
         if source is None:
             raise NotFound("Source message not found")
+        if command.source.pending_action_id is not None:
+            pending = connection.execute(sa.select(db.conversation_jobs.c.id).where(
+                db.conversation_jobs.c.user_id == actor,
+                db.conversation_jobs.c.id == command.source.pending_action_id,
+                db.conversation_jobs.c.origin_update_id == command.source.origin_update_id,
+                db.conversation_jobs.c.status == "unresolved",
+                db.conversation_jobs.c.pending_questions.is_not(None),
+            )).scalar_one_or_none()
+            if pending is None:
+                raise Conflict("Pending clarification is missing or already resolved")
+            evidence_rows = connection.execute(sa.select(sa.func.count()).select_from(db.inbox_updates).where(
+                db.inbox_updates.c.user_id == actor,
+                db.inbox_updates.c.id.in_(command.source.evidence_update_ids))).scalar_one()
+            if evidence_rows != len(command.source.evidence_update_ids):
+                raise NotFound("Clarification evidence source not found")
         existing = connection.execute(sa.select(db.prepared_operations).where(
             db.prepared_operations.c.user_id == actor, db.prepared_operations.c.id == command.operation_id,
         )).mappings().one_or_none()
