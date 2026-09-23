@@ -2,12 +2,12 @@
 
 ## Identity and scope
 
-Date: 2026-09-23  
-Reviewer and role: lead assistant, developer verification  
-Work brief and acceptance criteria: [006-clarification-resumption.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/006-clarification-resumption.md?type=file&root=%252F)  
-Review type: developer verification  
-Commit SHA: `ed179b5`  
-Working tree: clean before this evidence-only update  
+Date: 2026-09-23
+Reviewer and role: lead assistant, developer verification
+Work brief and acceptance criteria: [006-clarification-resumption.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/006-clarification-resumption.md?type=file&root=%252F)
+Review type: developer verification
+Commit SHA: `ed179b5`
+Working tree: clean before this evidence-only update
 Revision/tree state: implementation and tests were committed as `ed179b5`; this report records the checks run against that revision.
 Environment: Python 3.14.0 virtual environment; pinned runtime dependencies; local PostgreSQL 17.11 on the documented port; disposable random PostgreSQL schemas.
 
@@ -40,7 +40,7 @@ This is developer verification, not an independent W006 QA review. The checks us
 
 ## Verdict and rechecks
 
-Verdict: pass for W006's bounded scope.  
-Blocking findings: none.  
-Remaining nonblocking findings: independent W006 review and live provider/transport checks are still outstanding.  
+Verdict: pass for W006's bounded scope.
+Blocking findings: none.
+Remaining nonblocking findings: independent W006 review and live provider/transport checks are still outstanding.
 Next action: continue M2 with mixed-message partial saving, then same-entry correction/delete/undo; keep the live Nebius evaluation separate from protocol evidence.
