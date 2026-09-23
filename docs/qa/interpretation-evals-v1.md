@@ -125,8 +125,14 @@ The user ran the same v4 prompt and `INTAKE-001` against three candidate IDs:
 | `meta-llama/Llama-3.3-70B-Instruct` | HTTP `403` | The model is not permitted for this project; no quality result. |
 | `deepseek-ai/DeepSeek-V3-0324` | HTTP `404` | This model ID is unavailable; no quality result. |
 | `openai/gpt-oss-120b` | `ParserRejected: Nebius proposal failed local schema validation` | This general instruction model also failed the same local contract gate. |
+| `zai-org/GLM-5.2` | `ParserRejected: Invalid, incomplete or refused Nebius interpretation` | The response failed before a bounded schema-stage diagnosis; no quality result. |
+| `deepseek-ai/DeepSeek-V4-Pro` | `ParserRejected: ...evidence:string_too_short` on all six actions | Reproduced the short-evidence failure. |
+| `deepseek-ai/DeepSeek-V4-Pro-0813` | `ParserRejected: Invalid, incomplete or refused Nebius interpretation` | The response failed before a bounded schema-stage diagnosis; no quality result. |
+| `MiniMaxAI/MiniMax-M3` | `ParserRejected: ...evidence:string_too_short` on five add-food actions and one non-logging action | Reproduced the short-evidence failure and misclassified one action. |
 
 Parser fingerprints were `nebius:296f39d6b9666f616f007abe08a66c568998b138821b3ecb3a6dc4cbb5a6e099`, `nebius:9a521cb7901b724312334bb6bfa612709cb5fe1a695cf9d268fe08f9e9b22c33`, `nebius:5f5309068e0146636e1997661a2669f474ed73c9e173625912959138d1aa9af2`, and `nebius:456fafe3ce87ea87e82dec261236e3178af8d4f5252975bb2b0767f1ba9ea969` respectively. No candidate passed schema validation, and no full batch was run. The adapter now has a redacted field-level schema diagnostic for the next single probe.
+
+The subsequent four probes also produced no schema-valid proposal. Their parser fingerprints were `nebius:4b8df16be523d5fc8b5587d554ecc3073fd926c58184613df3eb47c1c76ad756`, `nebius:798208b0f4a8a7215709ffa92f532df94aeebcee77136bf64fc08f4816449751`, `nebius:083653763b381a4ba1b527306ce406c646c0c8cfa8e3650c1848309fd52e299b`, and `nebius:c6703633f383566b041379ef9d68dfaf6c29f8adf666c1ddc415a28386c75a9e`. DeepSeek V4 Pro and MiniMax reproduced short evidence; GLM 5.2 and DeepSeek V4 Pro 0813 failed before the schema-stage diagnostic. This is now a provider/model structured-output compatibility concern, not evidence against one particular Qwen model.
 
 ## Findings
 
