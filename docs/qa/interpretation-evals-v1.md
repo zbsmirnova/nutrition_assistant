@@ -153,6 +153,39 @@ The user ran both controls against `MiniMaxAI/MiniMax-M3` with parser fingerprin
 
 Both cases passed all applicable checks with no errors. Evidence validity is backend-derived in this diagnostic and must not be counted as model evidence. The result isolates the current production failure: removing model-authored evidence allows the same model to produce correct candidate references and quantities. A production contract decision remains open; no live model is selected and no full diagnostic batch was run.
 
+## Diagnostic full batch — 2026-09-23
+
+The user ran the nine-case diagnostic batch with `MiniMaxAI/MiniMax-M3` and the no-model-evidence contract. Seven calls returned proposals and two were unavailable (`INTAKE-001`, `INTAKE-004`). The human-readable scorecard was:
+
+```text
+case         pass  #food  clar?  checks / notes
+------------------------------------------------------------------------------
+INTAKE-001   ERR   -      -      ParserUnavailable: Nebius request unavailable
+INTAKE-002   yes   1      no     OK
+INTAKE-003   no    3      no     FAIL: clarification,clarification_paths [gaps:1]
+INTAKE-004   ERR   -      -      ParserUnavailable: Nebius request unavailable
+INTAKE-005   yes   5      yes    OK [gaps:3]
+INTAKE-006   yes   1      no     OK [gaps:1]
+INTAKE-007   yes   1      no     OK [gaps:1]
+INTAKE-008   yes   3      no     OK [gaps:1]
+INTAKE-009   no    1      no     FAIL: clarification,clarification_paths [gaps:1]
+
+Aggregate (rate (n)):
+  case pass rate        0.56
+  consumed intent       1.00 (7)
+  add_food count        1.00 (7)
+  evidence spans valid  1.00 (7)
+  date_hint valid       1.00 (7)
+  clarification recall  0.33 (3)
+  clarification specif. 1.00 (3)
+  quantity extraction   1.00 (7)
+  candidate selection   1.00 (7)
+  max_add_food respected 1.00 (5)
+  errors                2
+```
+
+This is partial exploratory evidence: quantities and candidate selection were perfect on the seven returned proposals, while required clarification was missed for the ambiguous cafeteria meal (`INTAKE-003`) and bone-in chicken (`INTAKE-009`). Evidence validity is backend-derived by the diagnostic and is not a model-quality result. The two unavailable cases need targeted reruns before a complete semantic baseline is interpreted.
+
 ## Findings
 
 The seven returned proposals preserved consumption intent and included an expected candidate, but the aggregate result is below the draft quality bars. Failures are concentrated in uncertainty handling and action discipline:
