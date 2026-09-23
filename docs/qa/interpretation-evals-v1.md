@@ -186,6 +186,12 @@ Aggregate (rate (n)):
 
 This is partial exploratory evidence: quantities and candidate selection were perfect on the seven returned proposals, while required clarification was missed for the ambiguous cafeteria meal (`INTAKE-003`) and bone-in chicken (`INTAKE-009`). Evidence validity is backend-derived by the diagnostic and is not a model-quality result. The two unavailable cases need targeted reruns before a complete semantic baseline is interpreted.
 
+## Diagnostic targeted reruns — 2026-09-23
+
+The user reran the two unavailable cases with the same diagnostic parser fingerprint. `INTAKE-001` passed with five actions, the accepted 57.5/57.5 ratio split, and candidate/quantity checks at `1.00`. `INTAKE-004` passed with peach at 100 g and a quantity clarification for the unweighed physalis; candidate/quantity checks were also `1.00`.
+
+Combining the seven completed cases from the full batch with these two targeted replacements gives a complete nine-case semantic sample across two diagnostic runs: case pass `7/9 = 0.78`, candidate selection `1.00 (9)`, quantity extraction `1.00 (9)`, and clarification specificity `1.00 (3)`. Required clarification recall remains `1/3 = 0.33`: `INTAKE-003` and `INTAKE-009` still missed the required ambiguity question, while `INTAKE-005` asked. This combined result is exploratory and not a single-run stability estimate; evidence remains backend-derived.
+
 ## Findings
 
 The seven returned proposals preserved consumption intent and included an expected candidate, but the aggregate result is below the draft quality bars. Failures are concentrated in uncertainty handling and action discipline:

@@ -56,6 +56,8 @@ The user ran both diagnostic controls against `MiniMaxAI/MiniMax-M3` with finger
 
 The subsequent nine-case diagnostic batch returned seven proposals and two `ParserUnavailable` results (`INTAKE-001`, `INTAKE-004`). The seven returned proposals had candidate selection `1.00`, quantity extraction `1.00`, and clarification specificity `1.00`; clarification recall was `0.33`, with misses on `INTAKE-003` and `INTAKE-009`. Case-pass was `0.56` across the batch. This is partial exploratory evidence only; the unavailable cases require targeted reruns and the clarification policy remains below its draft threshold.
 
+The targeted reruns then passed `INTAKE-001` and `INTAKE-004`. Across the nine completed cases from the two diagnostic runs, case-pass was `0.78` (7/9), candidate selection and quantity extraction were `1.00`, and required clarification recall remained `0.33` (1/3). This establishes a useful semantic baseline but not single-run stability or production readiness. The remaining failures are deliberate safety clarifications for approximate/bone-in food, which need a backend or prompt policy decision.
+
 ## Setup follow-up — 2026-09-23
 
 The user reported `parser_unavailable` / `Nebius request unavailable` while setting up the synthetic smoke check with Qwen/Qwen3-30B-A3B-Instruct-2507 as a candidate. On revision 715b20d128abc7ef8e179e581bba1aebae07f973 (application runtime unchanged from W004's a2eb614), a developer probe using the project's Python 3.14.0 reproduced certificate verification failure (code 20, unable to get local issuer certificate); the default CA file was missing. A sandboxed probe first encountered DNS restrictions; the certificate failure and successful recheck were observed with network access approved.
