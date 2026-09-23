@@ -1,0 +1,55 @@
+{
+  "format_version": "1.0",
+  "title": "Russian food-message time-resolution evaluation draft",
+  "status": "authored from user-provided cases; no live-model execution",
+  "scope": "date extraction and backend date resolution only",
+  "shared_fixture": {
+    "source_local_date": "2026-09-23",
+    "time_zone": "Europe/Berlin",
+    "food_identity": "An owned synthetic cottage-cheese product/profile is pre-resolved for this suite. Dairy-fat/product clarification is intentionally outside these cases.",
+    "quantity": "100 g",
+    "persistence_boundary": "A date result becomes a food entry only after the normal food-identity and quantity checks succeed."
+  },
+  "cases": [
+    {
+      "id": "TIME-001",
+      "message": "Съела 100 г творога",
+      "expect": {
+        "model_date_hint": null,
+        "backend_effective_date": "2026-09-23",
+        "date_source": "message_local_date",
+        "must_not": ["use worker-processing date when it differs from the message local date"]
+      }
+    },
+    {
+      "id": "TIME-002",
+      "message": "Вчера съела 100 г творога",
+      "expect": {
+        "model_date_hint": "вчера",
+        "backend_effective_date": "2026-09-22",
+        "date_source": "message_local_date minus one day",
+        "must_not": ["use the date when the worker happens to process the message"]
+      }
+    },
+    {
+      "id": "TIME-003",
+      "message": "Съела 100 г творога 20 сентября",
+      "expect": {
+        "model_date_hint": "20 сентября",
+        "backend_effective_date": "2026-09-20",
+        "date_source": "explicit Russian date phrase under the fixture's unambiguous calendar context",
+        "must_not": ["default the explicit date phrase to the message local date", "interpret 20 as food quantity"]
+      }
+    },
+    {
+      "id": "TIME-004",
+      "message": "Три дня назад съела 100 г творога",
+      "expect": {
+        "model_date_hint": "три дня назад",
+        "backend_disposition": "needs_date_clarification",
+        "clarification": "Ask the user to specify the date when this relative expression is unsupported or cannot be resolved unambiguously.",
+        "must_not": ["silently default to the message local date", "save food under a guessed date"]
+      }
+    }
+  ]
+}
