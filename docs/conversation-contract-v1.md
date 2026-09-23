@@ -94,6 +94,12 @@ Rules for the clarification workflow (the single reply-linked dairy-fat path is 
 8. “Отмени запись супа” cancels an uncommitted soup action when that is the clear target. It does not delete unrelated already saved food. A cancellation is acknowledged and never silently marks the food as eaten.
 9. A pending correction does not remove the currently committed entry from totals. Explain that its old value remains until corrected; only an unresolved new entry contributes nothing.
 
+### MVP exact-weight clarification
+
+For the MVP, ask for an exact usable weight or an explicit user-approved assumption whenever the amount is approximate, ranged, partial, count-based without a trusted mass conversion, bone/skin or other inedible-weight ambiguous, gross-versus-edible ambiguous, or dependent on an uncertain cooked yield. Keep the pending food outside totals until the answer arrives. An exact compatible gram or millilitre amount with a clear raw/cooked/as-sold basis does not require this question.
+
+If the user approves an assumption, the reply and stored provenance must say that the amount is assumed or estimated; it must not be presented as a measured value. Until the command and persistence models carry that assumption marker, the backend keeps the action pending rather than silently treating the assumption as exact. The backend applies this guard even when the parser proposal has no unresolved fields.
+
 Clarifications must not hold a database transaction or block unrelated messages. Revalidate referenced records before applying an answer; a record may have changed while the question was open.
 
 ## 6. Accepted mixed-message behavior
