@@ -1,0 +1,15 @@
+Executor: independent QA
+Base: 7d561e03942c4fd5f559f8bf42f0c11ec36ca5d9
+Patch SHA256: abb14015920b0bab1095ec152a03e274ea46961e2b06742546c43eea8afe700f
+Command: ['/private/tmp/nutrition-http-status-review-4ki38q0u/.venv/bin/python', '-m', 'unittest', 'qa_http_diagnostic', '-v']
+
+test_qa01_cli_status_is_visible_without_body_reason_or_header_output (qa_http_diagnostic.DiagnosticQA.test_qa01_cli_status_is_visible_without_body_reason_or_header_output) ... ok
+test_qa02_noninteger_status_never_reaches_interpolated_diagnostic (qa_http_diagnostic.DiagnosticQA.test_qa02_noninteger_status_never_reaches_interpolated_diagnostic) ... ok
+test_qa03_base_request_fingerprint_and_classification_are_unchanged (qa_http_diagnostic.DiagnosticQA.test_qa03_base_request_fingerprint_and_classification_are_unchanged) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.321s
+
+OK
+
+Exit status: 0

@@ -131,7 +131,7 @@ class NebiusParser:
                 delay = 60
             raise ParserUnavailable("Nebius temporarily unavailable", retry_after=delay)
         if status != 200:
-            raise ParserRejected(f"Nebius rejected the request (HTTP {status}); check credentials, model and schema support")
+            raise ParserRejected("Nebius rejected the request; check credentials, model and schema support")
         try:
             if not isinstance(raw, bytes) or len(raw) > MAX_BYTES:
                 raise ValueError

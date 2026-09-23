@@ -187,6 +187,34 @@ class NebiusProtocolTests(unittest.TestCase):
             self.assertEqual(json.loads(output.getvalue())["error"], "nebius_configuration")
             engine.assert_not_called();network.assert_not_called()
 
+    def test_smoke_http_rejection_reports_status_without_provider_data(self):
+        for status in (301, 400, 401, 402, 403, 404, 422):
+            with self.subTest(status=status), \
+                    patch.dict(os.environ, {"NEBIUS_API_KEY": "test-secret", "NUTRITION_LLM_MODEL": "example/model"}), \
+                    patch("sys.argv", ["nutrition_app", "nebius-smoke"]), \
+                    patch("nutrition_app.__main__.engine_for") as engine, \
+                    patch("nutrition_app.nebius.http.client.HTTPSConnection") as connection, \
+                    patch("sys.stdout", new_callable=io.StringIO) as stdout, \
+                    patch("sys.stderr", new_callable=io.StringIO) as stderr:
+                reply = connection.return_value.getresponse.return_value
+                reply.status = status
+                reply.getheader.return_value = "sensitive-header"
+                reply.reason = "sensitive-reason"
+                reply.read.return_value = ("test-secret " + TEXT + " sensitive-body").encode()
+                with self.assertRaises(SystemExit) as caught:
+                    main()
+                self.assertEqual(caught.exception.code, 1)
+                diagnostic = json.loads(stdout.getvalue())
+                self.assertEqual(diagnostic["error"], "parser_rejected")
+                self.assertIn(f"HTTP {status}", diagnostic["message"])
+                self.assertEqual(set(diagnostic), {"error", "message"})
+                for private in ("test-secret", TEXT, "sensitive-header", "sensitive-reason", "sensitive-body"):
+                    self.assertNotIn(private, stdout.getvalue() + stderr.getvalue())
+                reply.read.assert_not_called()
+                connection.return_value.request.assert_called_once()
+                connection.return_value.close.assert_called_once()
+                engine.assert_not_called()
+
     def test_live_worker_cli_processes_only_explicit_source_and_omits_outcome(self):
         from uuid import UUID
         actor = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"

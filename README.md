@@ -91,7 +91,7 @@ After configuring the two environment variables through your secret mechanism, a
 .venv/bin/python -m nutrition_app nebius-smoke
 ~~~
 
-This sends one fixed synthetic dairy entry to Nebius, validates the returned action through the existing resolver, and prints validation flags plus a parser fingerprint. It never opens the database and does not print the source, response or key. No live smoke result is recorded yet; the configured model must support the actual schema.
+This sends one fixed synthetic dairy entry to Nebius, validates the returned action through the existing resolver, and prints validation flags plus a parser fingerprint. It never opens the database and does not print the source, response or key. No successful live smoke result is recorded yet; the configured model must support the actual schema.
 
 ### macOS certificate setup
 
@@ -105,6 +105,8 @@ export SSL_CERT_FILE=/etc/ssl/cert.pem
 Run these commands in the same terminal where NEBIUS_API_KEY and NUTRITION_LLM_MODEL are exported. SSL_CERT_FILE lasts for that shell session and its child processes; no credentials need to be re-entered or written to a file. Use this setting only where that CA bundle exists and is appropriate for the environment.
 
 Developer connectivity check on 2026-09-23: the application's Python interpreter, with this setting and default HTTPS verification, reached GET /v1/models and received HTTP 401, as expected without authentication. No API key, food input, or inference request was sent. This confirms HTTPS connectivity only; authenticated model/schema compatibility remains unverified.
+
+If the smoke check reports `parser_rejected` with `Nebius rejected the request (HTTP NNN)`, share that diagnostic to identify the provider's status before changing credentials or the request schema. An older message without the HTTP number cannot distinguish these causes; rerun with the current code in the same configured terminal. The diagnostic exposes only the numeric status, not the provider's error body, headers, or API key. The status narrows investigation but does not prove the exact cause.
 
 ### Processing an explicit inbox source
 
@@ -128,7 +130,7 @@ Transient failures retry through durable job state, with three total claims and 
 git diff --check
 ~~~
 
-The first command runs 79 checks: 32 contract, 9 arithmetic, 11 Telegram protocol/rendering, 13 controlled resolver, and 14 Nebius protocol/CLI tests. The integration command runs 59 tests against local PostgreSQL, including 15 worker and 6 Nebius-worker checks; the separate QA command runs 32 retained checks from M1, W002, W003, and W004. Developer verification and independent review are distinguished in the work briefs and QA reports. Each database test creates and removes its own randomly named schema. These commands do not reset development data or call Telegram/Nebius. An unavailable database fails the run; there is no silent skip or SQLite substitute.
+The first command runs 82 checks: 32 contract, 9 arithmetic, 11 Telegram protocol/rendering, 13 controlled resolver, 15 Nebius protocol/CLI, and 2 intake-evaluation fixture checks. The integration command runs 59 tests against local PostgreSQL, including 15 worker and 6 Nebius-worker checks; the separate QA command runs 32 retained checks from M1, W002, W003, and W004. Developer verification and independent review are distinguished in the work briefs and QA reports. Each database test creates and removes its own randomly named schema. These commands do not reset development data or call Telegram/Nebius. An unavailable database fails the run; there is no silent skip or SQLite substitute.
 
 Runtime dependencies are pinned in [requirements-runtime.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/requirements-runtime.txt?type=file&root=%252F), including [requirements-contracts.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/requirements-contracts.txt?type=file&root=%252F). For contract-only work, install the latter and run unittest discovery with the pattern test_contracts.py. No provider credentials are needed.
 

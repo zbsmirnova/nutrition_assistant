@@ -1,0 +1,101 @@
+diff --git a/README.md b/README.md
+index d63f3d1..2135f54 100644
+--- a/README.md
++++ b/README.md
+@@ -106,6 +106,8 @@ Run these commands in the same terminal where NEBIUS_API_KEY and NUTRITION_LLM_M
+ 
+ Developer connectivity check on 2026-09-23: the application's Python interpreter, with this setting and default HTTPS verification, reached GET /v1/models and received HTTP 401, as expected without authentication. No API key, food input, or inference request was sent. This confirms HTTPS connectivity only; authenticated model/schema compatibility remains unverified.
+ 
++If the smoke check reports `parser_rejected` with `Nebius rejected the request (HTTP NNN)`, share that diagnostic to identify the provider's status before changing credentials or the request schema. An older message without the HTTP number cannot distinguish these causes; rerun with the current code in the same configured terminal. The diagnostic exposes only the numeric status, not the provider's error body, headers, or API key. The status narrows investigation but does not prove the exact cause.
++
+ ### Processing an explicit inbox source
+ 
+ For an explicit identified inbox source, the operator command is:
+@@ -128,7 +130,7 @@ Transient failures retry through durable job state, with three total claims and
+ git diff --check
+ ~~~
+ 
+-The first command runs 79 checks: 32 contract, 9 arithmetic, 11 Telegram protocol/rendering, 13 controlled resolver, and 14 Nebius protocol/CLI tests. The integration command runs 59 tests against local PostgreSQL, including 15 worker and 6 Nebius-worker checks; the separate QA command runs 32 retained checks from M1, W002, W003, and W004. Developer verification and independent review are distinguished in the work briefs and QA reports. Each database test creates and removes its own randomly named schema. These commands do not reset development data or call Telegram/Nebius. An unavailable database fails the run; there is no silent skip or SQLite substitute.
++The first command runs 82 checks: 32 contract, 9 arithmetic, 11 Telegram protocol/rendering, 13 controlled resolver, 15 Nebius protocol/CLI, and 2 intake-evaluation fixture checks. The integration command runs 59 tests against local PostgreSQL, including 15 worker and 6 Nebius-worker checks; the separate QA command runs 32 retained checks from M1, W002, W003, and W004. Developer verification and independent review are distinguished in the work briefs and QA reports. Each database test creates and removes its own randomly named schema. These commands do not reset development data or call Telegram/Nebius. An unavailable database fails the run; there is no silent skip or SQLite substitute.
+ 
+ Runtime dependencies are pinned in [requirements-runtime.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/requirements-runtime.txt?type=file&root=%252F), including [requirements-contracts.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/requirements-contracts.txt?type=file&root=%252F). For contract-only work, install the latter and run unittest discovery with the pattern test_contracts.py. No provider credentials are needed.
+ 
+diff --git a/docs/decisions/0012-nebius-adapter.md b/docs/decisions/0012-nebius-adapter.md
+index dd22db3..4a1bf0b 100644
+--- a/docs/decisions/0012-nebius-adapter.md
++++ b/docs/decisions/0012-nebius-adapter.md
+@@ -18,6 +18,8 @@ Set a 30-second socket timeout and a 256-KiB request/response limit. The timeout
+ 
+ Accept only one index-zero assistant choice ending with stop, nonempty content, no refusal, and no tool/function call. Validate the content against ParserOutput and scoped evidence/references before returning it to W003, which validates/resolves again. Reject malformed envelopes, truncated/refused outputs, invalid JSON/schema/evidence, oversized responses and permanent non-200 statuses. Operational error strings contain no key, model payload, source text, provider body or exception details.
+ 
++Setup follow-up on 2026-09-23: permanent HTTP rejection diagnostics include the integer HTTP status so operator troubleshooting can distinguish provider responses. Error bodies remain unread; response headers and reason phrases are not printed. This diagnostic-only change preserves request semantics and parser identity.
++
+ Transient network errors, HTTP 408/429 and 5xx use the existing durable worker retry budget of three claims. Retry-After supports integer seconds or HTTP dates after normalizing surrounding HTTP spaces/tabs; the stored delay is the greater of the hint and existing exponential backoff. A 429 without a usable hint waits at least 60 seconds. Hints beyond one day stop visibly instead of retrying earlier than instructed. Permanent provider rejection becomes a terminal failed job; no food/outbox mutation occurs. The inbox remains inspectable. Resetting terminal jobs after operator corrections remains later explicit recovery tooling, not silent automatic reprocessing.
+ 
+ The parser version hashes adapter policy, fixed endpoint, timeout/limits, model, system prompt, schema and generation parameters. It excludes the key, so key rotation does not invalidate a retry. A changed interpretation identity fences unfinished work as in D011. Already prepared/applied operations recover without another API request. This identifies application request semantics, not a provider's immutable model weights behind a mutable model ID.
+diff --git a/docs/work/004-nebius-adapter.md b/docs/work/004-nebius-adapter.md
+index d73e024..9bcad67 100644
+--- a/docs/work/004-nebius-adapter.md
++++ b/docs/work/004-nebius-adapter.md
+@@ -51,3 +51,9 @@ The user reported `parser_unavailable` / `Nebius request unavailable` while sett
+ Setting SSL_CERT_FILE to the existing /etc/ssl/cert.pem allowed the same interpreter's default HTTPS connection to GET /v1/models to return HTTP 401 without authentication. No key, source text, inference request, or database access was used by these probes. This verifies the local TLS setup fix, not authentication, model availability, or successful inference. The user must retry the smoke command in the terminal holding their environment variables. Setup instructions are maintained in [README.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/README.md?type=file&root=%252F).
+ 
+ Only documentation changed. Validation for this follow-up covers the observed connection failure/recheck, affected document links and formatting; no new independent QA or application regression run is claimed. The original implementation review above remains scoped to its recorded source.
++
++## HTTP diagnostic follow-up — 2026-09-23
++
++Status: implementing. The next user smoke attempt reached a permanent HTTP rejection, but the existing message hid the status. Expose only the integer status in that error message; keep credentials, response bodies, headers and reason phrases out of diagnostics. This change does not determine the cause of the user's rejection or establish model compatibility.
++
++Acceptance: the smoke CLI prints the rejection's numeric HTTP status and exits unsuccessfully; error bodies remain unread and no sensitive data appears in stdout/stderr; requests, parser identity, retry classification and database behavior remain unchanged. Validate with offline protocol/CLI regressions and independent review of an identified source before committing. No live call or database test is needed for a diagnostic-text change.
+diff --git a/nutrition_app/nebius.py b/nutrition_app/nebius.py
+index acb8b9b..7db0246 100644
+--- a/nutrition_app/nebius.py
++++ b/nutrition_app/nebius.py
+@@ -131,7 +131,7 @@ class NebiusParser:
+                 delay = 60
+             raise ParserUnavailable("Nebius temporarily unavailable", retry_after=delay)
+         if status != 200:
+-            raise ParserRejected("Nebius rejected the request; check credentials, model and schema support")
++            raise ParserRejected(f"Nebius rejected the request (HTTP {status}); check credentials, model and schema support")
+         try:
+             if not isinstance(raw, bytes) or len(raw) > MAX_BYTES:
+                 raise ValueError
+diff --git a/tests/test_nebius.py b/tests/test_nebius.py
+index a9b35d5..f215c30 100644
+--- a/tests/test_nebius.py
++++ b/tests/test_nebius.py
+@@ -187,6 +187,34 @@ class NebiusProtocolTests(unittest.TestCase):
+             self.assertEqual(json.loads(output.getvalue())["error"], "nebius_configuration")
+             engine.assert_not_called();network.assert_not_called()
+ 
++    def test_smoke_http_rejection_reports_status_without_provider_data(self):
++        for status in (301, 400, 401, 402, 403, 404, 422):
++            with self.subTest(status=status), \
++                    patch.dict(os.environ, {"NEBIUS_API_KEY": "test-secret", "NUTRITION_LLM_MODEL": "example/model"}), \
++                    patch("sys.argv", ["nutrition_app", "nebius-smoke"]), \
++                    patch("nutrition_app.__main__.engine_for") as engine, \
++                    patch("nutrition_app.nebius.http.client.HTTPSConnection") as connection, \
++                    patch("sys.stdout", new_callable=io.StringIO) as stdout, \
++                    patch("sys.stderr", new_callable=io.StringIO) as stderr:
++                reply = connection.return_value.getresponse.return_value
++                reply.status = status
++                reply.getheader.return_value = "sensitive-header"
++                reply.reason = "sensitive-reason"
++                reply.read.return_value = ("test-secret " + TEXT + " sensitive-body").encode()
++                with self.assertRaises(SystemExit) as caught:
++                    main()
++                self.assertEqual(caught.exception.code, 1)
++                diagnostic = json.loads(stdout.getvalue())
++                self.assertEqual(diagnostic["error"], "parser_rejected")
++                self.assertIn(f"HTTP {status}", diagnostic["message"])
++                self.assertEqual(set(diagnostic), {"error", "message"})
++                for private in ("test-secret", TEXT, "sensitive-header", "sensitive-reason", "sensitive-body"):
++                    self.assertNotIn(private, stdout.getvalue() + stderr.getvalue())
++                reply.read.assert_not_called()
++                connection.return_value.request.assert_called_once()
++                connection.return_value.close.assert_called_once()
++                engine.assert_not_called()
++
+     def test_live_worker_cli_processes_only_explicit_source_and_omits_outcome(self):
+         from uuid import UUID
+         actor = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
