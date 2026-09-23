@@ -93,6 +93,21 @@ After configuring the two environment variables through your secret mechanism, a
 
 This sends one fixed synthetic dairy entry to Nebius, validates the returned action through the existing resolver, and prints validation flags plus a parser fingerprint. It never opens the database and does not print the source, response or key. No live smoke result is recorded yet; the configured model must support the actual schema.
 
+### macOS certificate setup
+
+If nebius-smoke returns `parser_unavailable` with `Nebius request unavailable`, the HTTPS request raised an exception. This message alone does not distinguish a certificate failure from a timeout or another connection problem. On this development Mac, Python 3.14's default CA file was missing, and a separate request reproduced `SSLCertVerificationError: unable to get local issuer certificate`. Using the existing macOS CA bundle fixed that connection while retaining certificate verification:
+
+~~~sh
+export SSL_CERT_FILE=/etc/ssl/cert.pem
+.venv/bin/python -m nutrition_app nebius-smoke
+~~~
+
+Run these commands in the same terminal where NEBIUS_API_KEY and NUTRITION_LLM_MODEL are exported. SSL_CERT_FILE lasts for that shell session and its child processes; no credentials need to be re-entered or written to a file. Use this setting only where that CA bundle exists and is appropriate for the environment.
+
+Developer connectivity check on 2026-09-23: the application's Python interpreter, with this setting and default HTTPS verification, reached GET /v1/models and received HTTP 401, as expected without authentication. No API key, food input, or inference request was sent. This confirms HTTPS connectivity only; authenticated model/schema compatibility remains unverified.
+
+### Processing an explicit inbox source
+
 For an explicit identified inbox source, the operator command is:
 
 ~~~sh
