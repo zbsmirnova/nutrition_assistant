@@ -23,13 +23,16 @@ import sqlalchemy as sa
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import DBAPIError, IntegrityError
 
-from nutrition_contracts.commands import CommandEnvelope
-from nutrition_contracts.common import NutrientValue
+from nutrition_contracts.commands import (
+    CommandEnvelope, CommandSource, CorrectFoodEntry, DeleteFoodEntry,
+    FoodState, ProductComponent, RestoreFoodEntry,
+)
+from nutrition_contracts.common import Mass, NutrientValue
 from nutrition_app.db import database_url, engine_for, migrate, ROOT
 from nutrition_app.demo import DEMO_DATE, food_command, message, seed_product, seed_user, synthetic_nutrition
 from nutrition_app.errors import ApplicationError, Conflict, NotFound, NumericOverflow, Unauthorized
 from nutrition_app.outbox import DefinitelyNotSent, FakeSender, OutboxWorker
-from nutrition_app.service import FoodService
+from nutrition_app.service import FoodService, operation_id_for
 from nutrition_app import schema as db
 
 
@@ -109,6 +112,107 @@ class FoodPersistenceTests(unittest.TestCase):
         for table in (db.food_entries, db.food_entry_revisions, db.food_components, db.applied_operations, db.outbox):
             self.assertEqual(self.count(table), 1)
         self.assertEqual(self.row(db.outbox)["payload"], {"result": result.model_dump(mode="json")})
+
+    def test_correction_keeps_entry_identity_and_revises_snapshot(self):
+        added = self.service.apply(self.seed.user_id, self.command(1)).result.food_entries[0]
+        source = self.service.accept_message(self.seed.user_id, message(self.seed, 2, text="Было 80 г"))
+        correction = CommandEnvelope(
+            schema_version="1.0", user_id=self.seed.user_id, operation_id=operation_id_for(source),
+            context_revision=1, source=CommandSource(origin_update_id=source, evidence_update_ids=[source], pending_action_id=None),
+            command=CorrectFoodEntry(kind="correct_food_entry", entry_id=added.entry_id,
+                expected_revision_id=added.revision_id, reason="Было 80 г",
+                replacement=FoodState(effective_date=DEMO_DATE, time_zone="Europe/Berlin", meal="lunch",
+                    description="Synthetic product A", components=[ProductComponent(
+                        kind="product", description="Synthetic product A", product_version_id=self.seed.version_id,
+                        quantity=Mass(kind="mass", edible_g="80", gross_g=None, inedible_g=None, weight_basis="as_sold"))])),
+        )
+        result = self.service.apply(self.seed.user_id, correction).result
+        changed = result.food_entries[0]
+        self.assertEqual(changed.entry_id, added.entry_id)
+        self.assertNotEqual(changed.revision_id, added.revision_id)
+        self.assertEqual(changed.change, "corrected")
+        self.assertEqual(changed.nutrition.kcal.value, "80")
+        self.assertEqual(result.daily_summaries[0].nutrition.kcal.amount.value, "80")
+        self.assertEqual(self.service.apply(self.seed.user_id, correction).result, result)
+        self.assertEqual(self.count(db.food_entries), 1)
+        self.assertEqual(self.count(db.food_entry_revisions), 2)
+        self.assertEqual(self.count(db.food_components), 2)
+        with self.engine.connect() as connection:
+            old = connection.execute(sa.select(db.food_entry_revisions).where(
+                db.food_entry_revisions.c.id == added.revision_id)).mappings().one()
+            old_component = connection.execute(sa.select(db.food_components).where(
+                db.food_components.c.food_entry_revision_id == added.revision_id)).mappings().one()
+        self.assertEqual((old["state"], old["revision_no"], old_component["edible_g"]), ("active", 1, Decimal("250")))
+
+    def test_delete_and_restore_preserve_history_and_recalculate_day(self):
+        added = self.service.apply(self.seed.user_id, self.command(1)).result.food_entries[0]
+        delete_source = self.service.accept_message(self.seed.user_id, message(self.seed, 2, text="Удали запись"))
+        delete = CommandEnvelope(
+            schema_version="1.0", user_id=self.seed.user_id, operation_id=operation_id_for(delete_source),
+            context_revision=1, source=CommandSource(origin_update_id=delete_source, evidence_update_ids=[delete_source], pending_action_id=None),
+            command=DeleteFoodEntry(kind="delete_food_entry", entry_id=added.entry_id,
+                expected_revision_id=added.revision_id, reason="Удали запись"),
+        )
+        deleted = self.service.apply(self.seed.user_id, delete).result
+        self.assertEqual(deleted.food_entries[0].change, "deleted")
+        self.assertIsNone(deleted.food_entries[0].nutrition)
+        self.assertEqual(deleted.daily_summaries[0].entry_count, 0)
+        self.assertEqual(self.service.get_entry(self.seed.user_id, added.entry_id).change, "deleted")
+
+        restore_source = self.service.accept_message(self.seed.user_id, message(self.seed, 3, text="Верни последнюю запись"))
+        restore = CommandEnvelope(
+            schema_version="1.0", user_id=self.seed.user_id, operation_id=operation_id_for(restore_source),
+            context_revision=2, source=CommandSource(origin_update_id=restore_source, evidence_update_ids=[restore_source], pending_action_id=None),
+            command=RestoreFoodEntry(kind="restore_food_entry", entry_id=added.entry_id,
+                expected_revision_id=deleted.food_entries[0].revision_id,
+                restore_from_revision_id=added.revision_id),
+        )
+        restored = self.service.apply(self.seed.user_id, restore).result
+        self.assertEqual(restored.food_entries[0].change, "restored")
+        self.assertEqual(restored.food_entries[0].nutrition.kcal.value, "250")
+        self.assertEqual(restored.daily_summaries[0].nutrition.kcal.amount.value, "250")
+        self.assertEqual(self.service.apply(self.seed.user_id, restore).result, restored)
+        self.assertEqual(self.count(db.food_entries), 1)
+        self.assertEqual(self.count(db.food_entry_revisions), 3)
+        self.assertEqual(self.count(db.food_components), 2)
+        self.assertEqual(self.count(db.outbox), 3)
+
+    def test_stale_food_revision_is_rejected_without_domain_mutation(self):
+        added = self.service.apply(self.seed.user_id, self.command(1)).result.food_entries[0]
+        source = self.service.accept_message(self.seed.user_id, message(self.seed, 2, text="Удали старую версию"))
+        stale = CommandEnvelope(
+            schema_version="1.0", user_id=self.seed.user_id, operation_id=operation_id_for(source),
+            context_revision=1, source=CommandSource(origin_update_id=source, evidence_update_ids=[source], pending_action_id=None),
+            command=DeleteFoodEntry(kind="delete_food_entry", entry_id=added.entry_id,
+                expected_revision_id=uuid4(), reason="Удали старую версию"),
+        )
+        with self.assertRaises(Conflict):
+            self.service.apply(self.seed.user_id, stale)
+        self.assertEqual(self.service.get_entry(self.seed.user_id, added.entry_id).revision_id, added.revision_id)
+        self.assertEqual(self.service.get_day(self.seed.user_id, DEMO_DATE).nutrition.kcal.amount.value, "250")
+        self.assertEqual(self.count(db.food_entry_revisions), 1)
+        self.assertEqual(self.count(db.outbox), 1)
+
+    def test_correction_move_returns_source_and_destination_day_summaries(self):
+        added = self.service.apply(self.seed.user_id, self.command(1)).result.food_entries[0]
+        destination = DEMO_DATE.replace(day=DEMO_DATE.day + 1)
+        source = self.service.accept_message(self.seed.user_id, message(self.seed, 2, text="Перенеси на завтра"))
+        correction = CommandEnvelope(
+            schema_version="1.0", user_id=self.seed.user_id, operation_id=operation_id_for(source),
+            context_revision=1, source=CommandSource(origin_update_id=source, evidence_update_ids=[source], pending_action_id=None),
+            command=CorrectFoodEntry(kind="correct_food_entry", entry_id=added.entry_id,
+                expected_revision_id=added.revision_id, reason="Перенеси на завтра",
+                replacement=FoodState(effective_date=destination, time_zone="Europe/Berlin",
+                    meal="lunch", description="Synthetic product A", components=[ProductComponent(
+                        kind="product", description="Synthetic product A", product_version_id=self.seed.version_id,
+                        quantity=Mass(kind="mass", edible_g="250", gross_g=None, inedible_g=None, weight_basis="as_sold"))])),
+        )
+        result = self.service.apply(self.seed.user_id, correction).result
+        self.assertEqual([day.effective_date for day in result.daily_summaries], [DEMO_DATE, destination])
+        self.assertEqual(result.daily_summaries[0].entry_count, 0)
+        self.assertEqual(result.daily_summaries[1].nutrition.kcal.amount.value, "250")
+        self.assertEqual(self.service.get_day(self.seed.user_id, DEMO_DATE).entry_count, 0)
+        self.assertEqual(self.service.get_day(self.seed.user_id, destination).entry_count, 1)
 
     def test_duplicate_delivery_and_operation_do_not_add_a_portion(self):
         original = self.command()

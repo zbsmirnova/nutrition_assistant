@@ -12,7 +12,10 @@ import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import Connection, Engine
 
-from nutrition_contracts.commands import AddConsumedFood, CommandEnvelope, ProductComponent
+from nutrition_contracts.commands import (
+    AddConsumedFood, CommandEnvelope, CorrectFoodEntry, DeleteFoodEntry,
+    ProductComponent, RestoreFoodEntry,
+)
 from nutrition_contracts.common import Contract, Count, PositiveCount, Text
 from nutrition_contracts.results import Applied, DailySummary, FoodEntrySummary, MutationReceipt, OutcomeEnvelope
 
@@ -108,17 +111,23 @@ class FoodService:
 
     @staticmethod
     def _validate_supported(command: CommandEnvelope, position: int = 0) -> None:
-        if not isinstance(command.command, AddConsumedFood):
-            raise Unsupported("This slice supports resolved add-food commands only")
-        if any(not isinstance(c, ProductComponent) for c in command.command.food.components):
-            raise Unsupported("This slice supports pinned product components only")
+        if not isinstance(command.command, (AddConsumedFood, CorrectFoodEntry, DeleteFoodEntry, RestoreFoodEntry)):
+            raise Unsupported("This slice supports resolved food add/correction/delete/restore commands only")
         evidence = command.source.evidence_update_ids
         if evidence[0] != command.source.origin_update_id or len(set(evidence)) != len(evidence):
             raise ApplicationError("Evidence must begin with the original source and contain no duplicates")
-        if command.source.pending_action_id is None and evidence != [command.source.origin_update_id]:
-            raise Unsupported("Additional evidence requires a pending clarification")
-        if command.source.pending_action_id is not None and len(evidence) < 2:
-            raise Unsupported("A clarification command requires answer evidence")
+        if isinstance(command.command, AddConsumedFood):
+            if any(not isinstance(c, ProductComponent) for c in command.command.food.components):
+                raise Unsupported("This slice supports pinned product components only")
+            if command.source.pending_action_id is None and evidence != [command.source.origin_update_id]:
+                raise Unsupported("Additional evidence requires a pending clarification")
+            if command.source.pending_action_id is not None and len(evidence) < 2:
+                raise Unsupported("A clarification command requires answer evidence")
+        elif isinstance(command.command, CorrectFoodEntry) and any(
+                not isinstance(c, ProductComponent) for c in command.command.replacement.components):
+            raise Unsupported("This slice supports pinned product components only")
+        elif command.source.pending_action_id is not None or evidence != [command.source.origin_update_id]:
+            raise Unsupported("Corrections cannot depend on a pending clarification in this slice")
         if command.operation_id != operation_id_for(command.source.origin_update_id, position):
             raise ApplicationError("Operation identity must match its original message and position")
 
@@ -192,7 +201,7 @@ class FoodService:
             self._validate_supported(command, prepared["position"])
             # M1's explicit additive commands commute: revalidate pinned sources under
             # this user lock. Do not reinterpret date or switch to a newer product.
-            result = self._add(connection, actor, command)
+            result = self._mutate(connection, actor, command)
             connection.execute(db.applied_operations.insert().values(
                 id=operation_id, user_id=actor, outcome=result.model_dump(mode="json")))
             account_id = connection.execute(sa.select(db.inbox_updates.c.telegram_account_id).where(
@@ -267,6 +276,175 @@ class FoodService:
             daily_summaries=[self._day(connection, actor, food.effective_date)], recipe=None))
 
     @staticmethod
+    def _current_entry(connection, actor, entry_id, *, lock=False):
+        query = sa.select(
+            db.food_entries.c.id.label("entry_id"),
+            db.food_entries.c.current_revision_id,
+            db.food_entry_revisions.c.id.label("revision_id"),
+            db.food_entry_revisions.c.revision_no,
+            db.food_entry_revisions.c.food_day_id,
+            db.food_entry_revisions.c.description,
+            db.food_entry_revisions.c.meal,
+            db.food_entry_revisions.c.time_zone,
+            db.food_entry_revisions.c.state,
+            db.food_days.c.local_date.label("effective_date"),
+        ).select_from(
+            db.food_entries.join(db.food_entry_revisions, sa.and_(
+                db.food_entries.c.user_id == db.food_entry_revisions.c.user_id,
+                db.food_entries.c.id == db.food_entry_revisions.c.food_entry_id,
+                db.food_entries.c.current_revision_id == db.food_entry_revisions.c.id))
+            .join(db.food_days, sa.and_(
+                db.food_entry_revisions.c.user_id == db.food_days.c.user_id,
+                db.food_entry_revisions.c.food_day_id == db.food_days.c.id))
+        ).where(db.food_entries.c.user_id == actor, db.food_entries.c.id == entry_id)
+        if lock:
+            query = query.with_for_update()
+        return connection.execute(query).mappings().one_or_none()
+
+    @staticmethod
+    def _ensure_day(connection, actor, effective_date, time_zone):
+        day = connection.execute(sa.select(db.food_days).where(
+            db.food_days.c.user_id == actor, db.food_days.c.local_date == effective_date,
+        )).mappings().one_or_none()
+        if day is not None:
+            return day["id"]
+        day_id = uuid4()
+        connection.execute(db.food_days.insert().values(
+            id=day_id, user_id=actor, local_date=effective_date, time_zone=time_zone))
+        return day_id
+
+    @staticmethod
+    def _touch_days(connection, actor, day_ids):
+        for day_id in dict.fromkeys(day_ids):
+            connection.execute(db.food_days.update().where(
+                db.food_days.c.user_id == actor, db.food_days.c.id == day_id
+            ).values(revision=db.food_days.c.revision + 1, explicit_zero_food=False))
+
+    @staticmethod
+    def _copy_components(connection, actor, source_revision_id, target_revision_id):
+        rows = connection.execute(sa.select(db.food_components).where(
+            db.food_components.c.user_id == actor,
+            db.food_components.c.food_entry_revision_id == source_revision_id,
+        ).order_by(db.food_components.c.position)).mappings().all()
+        for row in rows:
+            values = dict(row)
+            values.pop("id", None)
+            values.pop("created_at", None)
+            values["food_entry_revision_id"] = target_revision_id
+            connection.execute(db.food_components.insert().values(**values))
+        return rows
+
+    def _changed_entry_result(self, connection, actor, command, *, entry_id, revision_id,
+                              effective_date, description, change, nutrition, day_dates):
+        entry = FoodEntrySummary(entry_id=entry_id, revision_id=revision_id,
+            effective_date=effective_date, description=description, nutrition=nutrition, change=change)
+        return OutcomeEnvelope(result=Applied(schema_version="1.0", operation_id=command.operation_id,
+            outcome="applied", mutations=[MutationReceipt(entity_kind="food_entry", entity_id=entry_id,
+                revision_id=revision_id, effective_date=effective_date)], food_entries=[entry], observations=[],
+            daily_summaries=[self._day(connection, actor, day) for day in sorted(set(day_dates))], recipe=None))
+
+    def _check_current_revision(self, connection, actor, command, *, allow_deleted=False):
+        current = self._current_entry(connection, actor, command.entry_id, lock=True)
+        if current is None:
+            raise NotFound("Food entry not found")
+        if current["revision_id"] != command.expected_revision_id:
+            raise Conflict("Food entry revision has changed")
+        if not allow_deleted and current["state"] != "active":
+            raise Conflict("Food entry is deleted")
+        return current
+
+    def _correct(self, connection, actor, envelope):
+        command: CorrectFoodEntry = envelope.command
+        current = self._check_current_revision(connection, actor, command)
+        food = command.replacement
+        components = [self._component(connection, actor, component) for component in food.components]
+        day_id = self._ensure_day(connection, actor, food.effective_date, food.time_zone)
+        revision_id = uuid4()
+        connection.execute(db.food_entry_revisions.insert().values(
+            id=revision_id, user_id=actor, food_entry_id=command.entry_id,
+            revision_no=current["revision_no"] + 1, food_day_id=day_id,
+            applied_operation_id=envelope.operation_id, description=food.description,
+            meal=food.meal, time_zone=food.time_zone, state="active"))
+        snapshots = []
+        for position, (values, snapshot) in enumerate(components):
+            connection.execute(db.food_components.insert().values(
+                user_id=actor, food_entry_revision_id=revision_id, position=position, **values))
+            snapshots.append(snapshot)
+        connection.execute(db.food_entries.update().where(
+            db.food_entries.c.user_id == actor, db.food_entries.c.id == command.entry_id
+        ).values(current_revision_id=revision_id))
+        self._touch_days(connection, actor, [current["food_day_id"], day_id])
+        return self._changed_entry_result(connection, actor, envelope, entry_id=command.entry_id,
+            revision_id=revision_id, effective_date=food.effective_date, description=food.description,
+            change="corrected", nutrition=entry_nutrition(snapshots),
+            day_dates=[current["effective_date"], food.effective_date])
+
+    def _delete(self, connection, actor, envelope):
+        command: DeleteFoodEntry = envelope.command
+        current = self._check_current_revision(connection, actor, command)
+        revision_id = uuid4()
+        connection.execute(db.food_entry_revisions.insert().values(
+            id=revision_id, user_id=actor, food_entry_id=command.entry_id,
+            revision_no=current["revision_no"] + 1, food_day_id=current["food_day_id"],
+            applied_operation_id=envelope.operation_id, description=current["description"],
+            meal=current["meal"], time_zone=current["time_zone"], state="deleted"))
+        connection.execute(db.food_entries.update().where(
+            db.food_entries.c.user_id == actor, db.food_entries.c.id == command.entry_id
+        ).values(current_revision_id=revision_id))
+        self._touch_days(connection, actor, [current["food_day_id"]])
+        return self._changed_entry_result(connection, actor, envelope, entry_id=command.entry_id,
+            revision_id=revision_id, effective_date=current["effective_date"],
+            description=current["description"], change="deleted", nutrition=None,
+            day_dates=[current["effective_date"]])
+
+    def _restore(self, connection, actor, envelope):
+        command: RestoreFoodEntry = envelope.command
+        current = self._check_current_revision(connection, actor, command, allow_deleted=True)
+        if current["revision_id"] == command.restore_from_revision_id:
+            raise Conflict("Restore source is already the current revision")
+        source = connection.execute(sa.select(
+            db.food_entry_revisions, db.food_days.c.local_date.label("effective_date")
+        ).select_from(db.food_entry_revisions.join(db.food_days, sa.and_(
+            db.food_entry_revisions.c.user_id == db.food_days.c.user_id,
+            db.food_entry_revisions.c.food_day_id == db.food_days.c.id
+        ))).where(
+            db.food_entry_revisions.c.user_id == actor,
+            db.food_entry_revisions.c.food_entry_id == command.entry_id,
+            db.food_entry_revisions.c.id == command.restore_from_revision_id,
+        )).mappings().one_or_none()
+        if source is None:
+            raise NotFound("Restore revision not found")
+        if source["state"] != "active":
+            raise Conflict("Only an active revision can be restored")
+        revision_id = uuid4()
+        connection.execute(db.food_entry_revisions.insert().values(
+            id=revision_id, user_id=actor, food_entry_id=command.entry_id,
+            revision_no=current["revision_no"] + 1, food_day_id=source["food_day_id"],
+            applied_operation_id=envelope.operation_id, description=source["description"],
+            meal=source["meal"], time_zone=source["time_zone"], state="active"))
+        rows = self._copy_components(connection, actor, source["id"], revision_id)
+        connection.execute(db.food_entries.update().where(
+            db.food_entries.c.user_id == actor, db.food_entries.c.id == command.entry_id
+        ).values(current_revision_id=revision_id))
+        self._touch_days(connection, actor, [current["food_day_id"], source["food_day_id"]])
+        nutrition = entry_nutrition([from_columns(row) for row in rows])
+        return self._changed_entry_result(connection, actor, envelope, entry_id=command.entry_id,
+            revision_id=revision_id, effective_date=source["effective_date"],
+            description=source["description"], change="restored", nutrition=nutrition,
+            day_dates=[current["effective_date"], source["effective_date"]])
+
+    def _mutate(self, connection, actor, command):
+        if isinstance(command.command, AddConsumedFood):
+            return self._add(connection, actor, command)
+        if isinstance(command.command, CorrectFoodEntry):
+            return self._correct(connection, actor, command)
+        if isinstance(command.command, DeleteFoodEntry):
+            return self._delete(connection, actor, command)
+        if isinstance(command.command, RestoreFoodEntry):
+            return self._restore(connection, actor, command)
+        raise Unsupported("This slice supports resolved food add/correction/delete/restore commands only")
+
+    @staticmethod
     def _current_components(actor):
         return sa.select(db.food_components, db.food_entries.c.id.label("entry_id"),
             db.food_entry_revisions.c.id.label("revision_id"), db.food_days.c.local_date,
@@ -303,9 +481,15 @@ class FoodService:
     def get_entry(self, actor: UUID, entry_id: UUID) -> FoodEntrySummary:
         with self.engine.begin() as connection:
             self._user(connection, actor, read=True)
-            rows = connection.execute(self._current_components(actor).where(db.food_entries.c.id == entry_id)).mappings().all()
-            if not rows:
+            current = self._current_entry(connection, actor, entry_id)
+            if current is None:
                 raise NotFound("Food entry not found")
+            if current["state"] == "deleted":
+                return FoodEntrySummary(entry_id=entry_id, revision_id=current["revision_id"],
+                    effective_date=current["effective_date"], description=current["description"],
+                    nutrition=None, change="deleted")
+            rows = connection.execute(self._current_components(actor).where(
+                db.food_entries.c.id == entry_id)).mappings().all()
             return FoodEntrySummary(entry_id=entry_id, revision_id=rows[0]["revision_id"],
                 effective_date=rows[0]["local_date"], description=rows[0]["entry_description"],
                 nutrition=entry_nutrition([from_columns(row) for row in rows]), change="added")

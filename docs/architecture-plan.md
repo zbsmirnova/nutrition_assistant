@@ -2,7 +2,7 @@
 
 Date: 2026-09-22
 
-Status: current design overview. Product choices and technical proposals are distinguished in the decision register. Typed contracts, M1 persistence, W002 private Telegram transport, W003's controlled-proposal conversation worker, W006's reply-linked dairy clarification path, and W007's bounded mixed-food partial saving are implemented for their stated scopes. W004 implements the Nebius request adapter; live compatibility and model quality remain unverified. Later domains and deployment remain unimplemented; revision-specific verification belongs in the work briefs.
+Status: current design overview. Product choices and technical proposals are distinguished in the decision register. Typed contracts, M1 persistence, W002 private Telegram transport, W003's controlled-proposal conversation worker, W006's reply-linked dairy clarification path, W007's bounded mixed-food partial saving, and W008's trusted correction/delete/restore execution are implemented for their stated scopes. W004 implements the Nebius request adapter; live compatibility and model quality remain unverified. Later domains and deployment remain unimplemented; revision-specific verification belongs in the work briefs.
 
 Input: the personal nutrition tracker architecture brief dated 2026-09-21.
 
