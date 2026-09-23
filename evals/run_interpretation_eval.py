@@ -15,6 +15,7 @@ Usage:
   .venv/bin/python -m evals.run_interpretation_eval --parser stub
   SSL_CERT_FILE=/etc/ssl/cert.pem .venv/bin/python -m evals.run_interpretation_eval --parser nebius
   .venv/bin/python -m evals.run_interpretation_eval --parser stub --json
+  .venv/bin/python -m evals.run_interpretation_eval --render-json /tmp/report.json
 """
 
 from __future__ import annotations
@@ -278,6 +279,11 @@ def format_report(report: dict) -> str:
     return "\n".join(lines)
 
 
+def load_report(path: str | Path) -> dict:
+    """Load a previously saved runner report without invoking a parser."""
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Batch Russian interpretation evaluation (hypothesis #1).")
     ap.add_argument("--parser", choices=["nebius", "stub"], default="nebius")
@@ -285,7 +291,17 @@ def main(argv=None) -> int:
     ap.add_argument("--prompt", default=None,
                     help="Path to a candidate system prompt for A/B (nebius only); default uses production")
     ap.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
+    ap.add_argument("--render-json", metavar="PATH",
+                    help="Render a previously saved JSON report; makes no parser calls")
     args = ap.parse_args(argv)
+
+    if args.render_json:
+        try:
+            report = load_report(args.render_json)
+        except (OSError, json.JSONDecodeError) as exc:
+            ap.error(f"cannot read report {args.render_json!r}: {exc}")
+        print(format_report(report))
+        return 0
 
     report = run(args.parser, args.only, args.prompt)
     if args.json:
