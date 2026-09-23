@@ -1,6 +1,8 @@
 # W015 developer verification — MVP exact-weight clarification guard
 
-Revision: `b3fb0bc4b7eda2c332e32a89bf1882df2fece5d4` (completion commit for this slice).
+Implementation revision: `fe1135248cbc201b020103299c88326460c3148b`.
+This report update is a follow-up documentation commit so the implementation
+revision can be recorded without a self-referential commit hash.
 Date: 2026-09-23.
 Role: developer verification by the lead assistant; no independent QA review.
 
