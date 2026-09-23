@@ -242,6 +242,15 @@ class ContractTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             check_context(data)
 
+    def test_source_action_evidence_is_nontrivial_but_short_replies_are_allowed(self):
+        data = example("01_add_food")
+        data["parser"]["actions"][0]["evidence"] = "я"
+        with self.assertRaises(ValidationError):
+            wire(ParserOutput, data["parser"])
+        reply = example("03_clarification_after_midnight")
+        reply["parser"]["actions"][0]["evidence"] = "5%"
+        wire(ParserOutput, reply["parser"])
+
     def test_action_ids_dependencies_and_recipe_result_references(self):
         for defect in ("duplicate_id", "missing_dependency", "cycle", "undeclared_result", "wrong_result_type"):
             data = example("11_define_recipe_then_eat")["parser"]

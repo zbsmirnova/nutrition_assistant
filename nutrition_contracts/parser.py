@@ -8,13 +8,13 @@ from .common import (
     ActionId, CandidateReference, Contract, Count, DateHint, DescribedTarget,
     EntryTarget, FoodReference, IngredientMention, Name, PendingCandidate,
     PositiveCount, ProductTarget, QuantityMention, QuestionToken, RecipeTarget,
-    SuppliedNutrition, Text, UnresolvedField, WeightBasis, Meal,
+    SourceEvidence, SuppliedNutrition, Text, UnresolvedField, WeightBasis, Meal,
 )
 
 
 class Proposal(Contract):
     action_id: ActionId
-    evidence: Text
+    evidence: SourceEvidence
     depends_on: list[ActionId]
     unresolved: list[UnresolvedField]
 
@@ -236,12 +236,14 @@ class ClarificationAnswer(Contract):
 
 
 class AnswerClarification(Proposal):
+    evidence: Text
     kind: Literal["answer_clarification"]
     pending: PendingCandidate | None
     answers: Annotated[list[ClarificationAnswer], Field(min_length=1, max_length=100)]
 
 
 class CancelClarification(Proposal):
+    evidence: Text
     kind: Literal["cancel_clarification"]
     pending: Annotated[PendingCandidate | DescribedTarget, Field(discriminator="kind")]
 

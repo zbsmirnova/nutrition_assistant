@@ -12,6 +12,7 @@ class Contract(BaseModel):
 
 
 Text = Annotated[str, StringConstraints(min_length=1, max_length=16000, pattern=r"\S")]
+SourceEvidence = Annotated[str, StringConstraints(min_length=3, max_length=16000, pattern=r"\S")]
 Name = Annotated[str, StringConstraints(min_length=1, max_length=256, pattern=r"\S")]
 # Some JSON Schema regex engines let `$` match before a trailing newline.
 # The portable exclusion keeps their accepted wire values aligned with Python.

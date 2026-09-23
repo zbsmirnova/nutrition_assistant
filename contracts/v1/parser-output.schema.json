@@ -37,7 +37,7 @@
         },
         "evidence": {
           "maxLength": 16000,
-          "minLength": 1,
+          "minLength": 3,
           "pattern": "\\S",
           "title": "Evidence",
           "type": "string"
@@ -539,7 +539,7 @@
         },
         "evidence": {
           "maxLength": 16000,
-          "minLength": 1,
+          "minLength": 3,
           "pattern": "\\S",
           "title": "Evidence",
           "type": "string"
@@ -620,7 +620,7 @@
         },
         "evidence": {
           "maxLength": 16000,
-          "minLength": 1,
+          "minLength": 3,
           "pattern": "\\S",
           "title": "Evidence",
           "type": "string"
@@ -770,7 +770,7 @@
         },
         "evidence": {
           "maxLength": 16000,
-          "minLength": 1,
+          "minLength": 3,
           "pattern": "\\S",
           "title": "Evidence",
           "type": "string"
@@ -826,7 +826,7 @@
         },
         "evidence": {
           "maxLength": 16000,
-          "minLength": 1,
+          "minLength": 3,
           "pattern": "\\S",
           "title": "Evidence",
           "type": "string"
@@ -927,7 +927,7 @@
         },
         "evidence": {
           "maxLength": 16000,
-          "minLength": 1,
+          "minLength": 3,
           "pattern": "\\S",
           "title": "Evidence",
           "type": "string"
@@ -1088,7 +1088,7 @@
         },
         "evidence": {
           "maxLength": 16000,
-          "minLength": 1,
+          "minLength": 3,
           "pattern": "\\S",
           "title": "Evidence",
           "type": "string"
@@ -1175,7 +1175,7 @@
         },
         "evidence": {
           "maxLength": 16000,
-          "minLength": 1,
+          "minLength": 3,
           "pattern": "\\S",
           "title": "Evidence",
           "type": "string"
@@ -1231,7 +1231,7 @@
         },
         "evidence": {
           "maxLength": 16000,
-          "minLength": 1,
+          "minLength": 3,
           "pattern": "\\S",
           "title": "Evidence",
           "type": "string"
@@ -1302,7 +1302,7 @@
         },
         "evidence": {
           "maxLength": 16000,
-          "minLength": 1,
+          "minLength": 3,
           "pattern": "\\S",
           "title": "Evidence",
           "type": "string"
@@ -1463,7 +1463,7 @@
         },
         "evidence": {
           "maxLength": 16000,
-          "minLength": 1,
+          "minLength": 3,
           "pattern": "\\S",
           "title": "Evidence",
           "type": "string"
@@ -1855,7 +1855,7 @@
         },
         "evidence": {
           "maxLength": 16000,
-          "minLength": 1,
+          "minLength": 3,
           "pattern": "\\S",
           "title": "Evidence",
           "type": "string"
@@ -1930,7 +1930,7 @@
         },
         "evidence": {
           "maxLength": 16000,
-          "minLength": 1,
+          "minLength": 3,
           "pattern": "\\S",
           "title": "Evidence",
           "type": "string"
@@ -2093,7 +2093,7 @@
         },
         "evidence": {
           "maxLength": 16000,
-          "minLength": 1,
+          "minLength": 3,
           "pattern": "\\S",
           "title": "Evidence",
           "type": "string"
@@ -2163,7 +2163,7 @@
         },
         "evidence": {
           "maxLength": 16000,
-          "minLength": 1,
+          "minLength": 3,
           "pattern": "\\S",
           "title": "Evidence",
           "type": "string"
@@ -2320,7 +2320,7 @@
         },
         "evidence": {
           "maxLength": 16000,
-          "minLength": 1,
+          "minLength": 3,
           "pattern": "\\S",
           "title": "Evidence",
           "type": "string"
