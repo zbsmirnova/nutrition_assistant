@@ -1,8 +1,8 @@
 # W008 — Execute same-entry correction, delete, and restore
 
-Status: in progress.
+Status: done.
 Milestone: M2.
-Owner: lead assistant, architect/developer; independent QA pending.
+Owner: lead assistant, architect/developer; developer verification complete.
 Updated: 2026-09-23.
 
 ## Outcome and scope
@@ -25,12 +25,16 @@ This bounded slice covers trusted `CommandEnvelope` inputs and backend arithmeti
 
 ## Implementation checklist
 
-- [ ] Extend FoodService validation and execution for correction/delete/restore commands.
-- [ ] Preserve immutable revision/component snapshots and recalculate affected day summaries.
-- [ ] Add PostgreSQL coverage for correction, delete, restore, stale guards, replay, and ownership.
-- [ ] Run offline, integration, and retained QA suites and record the exact revision.
-- [ ] Commit the completed slice with maintained documentation and QA evidence.
+- [x] Extend FoodService validation and execution for correction/delete/restore commands.
+- [x] Preserve immutable revision/component snapshots and recalculate affected day summaries.
+- [x] Add PostgreSQL coverage for correction, delete, restore, stale guards, replay, and ownership.
+- [x] Run offline, integration, and retained QA suites and record the exact revision.
+- [x] Commit the completed slice with maintained documentation and QA evidence.
 
 ## Handoff
 
-The typed contracts and database schema already contain the command and revision shapes. No migration is expected for this slice. Conversation target resolution remains a follow-up after backend execution is verified.
+The implementation is committed in `36e0bf49597e295c81ee14a04948f9c3e25b1cf6`. Offline tests pass (`96`), PostgreSQL integration passes (`65`), and retained QA passes (`32`). No migration was needed. Conversation target resolution remains a follow-up after backend execution.
+
+## QA result and completion
+
+Developer verification passes for the trusted correction/delete/restore workflow. Evidence is in [008-food-correction-execution-developer.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/008-food-correction-execution-developer.md?type=file&root=%252F). No independent W008 review, live Nebius, or real Telegram behavior is claimed.
