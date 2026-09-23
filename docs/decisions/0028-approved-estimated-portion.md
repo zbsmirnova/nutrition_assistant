@@ -9,7 +9,7 @@ Related decisions: D026, D027.
 
 ## Decision
 
-An explicit estimate approval may resolve the portion amount of an already identified, pinned product or saved recipe. The command and persisted component retain `user_approved_estimate` provenance and the clarification update that approved it. Replies must make the estimate visible.
+An explicit estimate approval may resolve the portion amount of an already identified, pinned product or saved recipe. The user must state the amount themselves—normally in grams for a portion-size clarification—and explicitly approve using that amount; the model and backend cannot choose or fill in the grams. A compatible millilitre answer remains valid only when the identified product is defined on a volume basis. The command and persisted component retain `user_approved_estimate` provenance and the clarification update that approved it. Replies must make the estimate visible.
 
 An exact quantity answer remains measured. A bare confirmation without a quantity is insufficient. Unknown restaurant nutrition, average product selection, recipe substitution, and model-generated nutrition remain pending; this decision does not authorize a nutrition source for an unknown dish.
 

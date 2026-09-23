@@ -104,7 +104,7 @@ For the MVP, ask for an exact usable weight or an explicit user-approved assumpt
 
 If the user approves an assumption, the reply and stored provenance must say that the amount is assumed or estimated; it must not be presented as a measured value. Until the command and persistence models carry that assumption marker, the backend keeps the action pending rather than silently treating the assumption as exact. The backend applies this guard even when the parser proposal has no unresolved fields.
 
-W016 adds a typed `approved_estimate` answer for a known product or saved recipe. It must contain one compatible amount and explicit approval wording such as “считай примерно 120 г”. The resulting component is marked as `user_approved_estimate` and retains the clarification update as approval evidence. A plain “да” cannot approve an amount, and this path does not authorize nutrition for an unknown restaurant dish.
+W016 adds a typed `approved_estimate` answer for a known product or saved recipe. The user must provide the amount themselves—normally in grams for a portion-size clarification—and include explicit approval wording such as “считай примерно 120 г”. A compatible millilitre answer remains valid only for a product defined on a volume basis. The resulting component is marked as `user_approved_estimate` and retains the clarification update as approval evidence. A plain “да” cannot approve an amount, and this path does not authorize nutrition for an unknown restaurant dish.
 
 Clarifications must not hold a database transaction or block unrelated messages. Revalidate referenced records before applying an answer; a record may have changed while the question was open.
 
