@@ -1,6 +1,6 @@
 # Russian interpretation evaluation v1
 
-Status: instrument complete and self-tested offline; four live batches recorded 2026-09-23 as exploratory developer evidence (not independent QA). The evaluator was hardened at `5ecc774` before the latest two batches. Thresholds approved by the product owner.
+Status: instrument complete and self-tested offline; six live batches recorded 2026-09-23 as exploratory developer evidence (not independent QA). The evaluator was hardened at `5ecc774` before the latest four batches. Thresholds approved by the product owner.
 Owner: product owner approves rubric/thresholds; lead assistant/QA maintains the instrument and records runs.
 
 ## What this validates
@@ -80,6 +80,23 @@ This is a stronger diagnosis than the earlier permissive runs: the model is emit
 
 The human-readable command made another nine-call request, so it is a separate batch from the preceding JSON command. All nine calls returned proposals, but every case failed the evidence and date-hint gates. Its scorecard was case-pass `0.00`, evidence-valid `0.00 (9)`, date-hint-valid `0.00 (9)`, clarification recall `0.00/3`, quantity extraction `0.78 (9)`, candidate selection `0.89 (9)`, max-action compliance `1.00 (5)`, and errors `0`. This confirms the evidence/date defect is repeatable while provider availability remains variable.
 
+## Candidate prompt v2 — two strict live batches — 2026-09-23
+
+The user A/B-tested [prompt_candidate_v2.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/evals/prompt_candidate_v2.txt?type=file&root=%252F) with parser fingerprint `nebius:132a2f3d9d75146b4fdd9841cfe8e243117f51968502d3673cc938e88c6db545`. Each CLI command made a separate nine-call batch; the supplied JSON and human-readable outputs therefore represent two runs.
+
+| Dimension | Candidate JSON batch | Candidate human-readable batch |
+| --- | ---: | ---: |
+| Case pass rate | 0.00 | 0.00 |
+| Evidence validity | 0.00 (9) | 0.00 (9) |
+| Date-hint validity | 0.00 (9) | 0.00 (9) |
+| Clarification recall | 0.33 (3) | 0.67 (3) |
+| Clarification specificity | 1.00 (3) | 1.00 (3) |
+| Quantity extraction | 0.89 (9) | 1.00 (9) |
+| Candidate selection | 0.56 (9) | 0.67 (9) |
+| Errors | 0 | 0 |
+
+Candidate v2 improves the intended uncertainty behavior and quantity handling compared with the strict production batches: clarification recall rises from 0.00 to 0.33–0.67, and quantity extraction rises from 0.75–0.78 to 0.89–1.00. It does not improve evidence or date hints, and it reduces exact candidate selection because the model often emits one-character food names instead of the supplied c-tokens. The candidate prompt is not ready for promotion.
+
 ## Findings
 
 The seven returned proposals preserved consumption intent and included an expected candidate, but the aggregate result is below the draft quality bars. Failures are concentrated in uncertainty handling and action discipline:
@@ -87,16 +104,17 @@ The seven returned proposals preserved consumption intent and included an expect
 1. **No clarifications raised.** In the first batch, recall was 0/3; in the second, the two scored required cases also had recall 0/2 because INTAKE-005 was unavailable. INTAKE-003 (cafeteria/bone-vs-edible and sauce) and INTAKE-009 (gross meat weight needs an edible basis) were answered silently. This threatens FOOD-002 and the “do not silently choose / do not assume portions” principles.
 2. **INTAKE-001 is structurally unreliable despite valid JSON.** It returned six actions, one-character evidence spans, an invented date hint (`"2"`), and incorrect quantities instead of preserving the stated meal items and total quantities.
 3. **Unavailable calls are not stable across batches.** INTAKE-007 and INTAKE-008 failed in the first batch; INTAKE-005 and INTAKE-007 failed in the second. The affected cases need targeted reruns before interpreting their model behavior.
-4. **The strengthened evaluator exposes a systematic evidence/date defect.** Every action in both strict batches used a one-character evidence span and the invented date hint `"2"`, so all cases failed those gates. This is a model/prompt failure, not a transport failure.
+4. **The strengthened evaluator exposes a systematic evidence/date defect.** Every action in all strict production and candidate-v2 batches used a one-character evidence span and the invented date hint `"2"`, so all cases failed those gates. This is a model/prompt failure, not a transport failure.
+5. **Candidate v2 helps clarification but harms identity selection.** Its required-case recall improved to 0.33–0.67, but candidate selection fell to 0.56–0.67 because the model returned names or omitted allowed references. The next prompt must make the c-token requirement explicit and show a complete multi-action example.
 
 The clarification and action-discipline failures are prompt-alignment hypotheses, not evidence of a model-capability ceiling. The two provider errors are operational evidence only.
 
 ## Prompt iteration plan
 
-Candidate prompt [prompt_candidate_v2.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/evals/prompt_candidate_v2.txt?type=file&root=%252F) targets exactly these faults without touching the production prompt: it requires an unresolved clarification for missing/ambiguous fields (no-quantity items, multi-recipe names, gross meat weight), forbids dropping a mentioned item, and forbids the model from splitting a stated total by ratio. Next step: A/B it live against the production prompt via `--prompt`, then promote to `nebius_prompt.txt` only if it lifts clarification recall and fixes the splits **without** regressing identity (1.00), intent (1.00), or the no-invented-items guard.
+Candidate prompt [prompt_candidate_v2.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/evals/prompt_candidate_v2.txt?type=file&root=%252F) targets missing/ambiguous fields, dropped items, and ratio splitting. It improves clarification and quantities but still needs a v3 revision that explicitly requires evidence excerpts of at least three characters, sets `date_hint.text` to `null` unless a literal date phrase appears, and uses the supplied c-token exactly for resolved candidates. Do not promote v2.
 
 ## Limits and next work
 
-- n=9 per batch, temperature 0; two permissive batches and two strict batches are recorded. The strict batches both had zero valid evidence/date fields, while provider availability differed, so repeat stability is not established.
+- n=9 per batch, temperature 0; two permissive production batches, two strict production batches, and two strict candidate-v2 batches are recorded. Evidence/date validity remained zero in all strict batches; provider availability and quality rates varied, so repeat stability is not established.
 - Nine cases validate the instrument and give a first signal; they do not select a model or certify quality. Expand the corpus (corrections/undo, plans-vs-consumption, dates/history boundaries, observations) as a held-out set separate from prompt-development cases.
 - Two context/schema gaps surfaced, tracked as product decisions, not model failures: personal shortcuts ("кофе как обычно") belong in the DB and need a context slot; history references ("тот же что раньше") resolve by a 2–4 day lookback and need a context slot. These affect INTAKE-001/005 (coffee) and INTAKE-007 (cheese), currently carried as `known_gaps`. See Q04 and Q09 in [README.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/README.md?type=file&root=%252F).
