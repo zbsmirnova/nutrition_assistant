@@ -1,6 +1,6 @@
 # Russian interpretation evaluation v1
 
-Status: instrument complete and self-tested offline; six live batches and one v3 single-case attempt were recorded 2026-09-23 as exploratory developer evidence (not independent QA). The evaluator was hardened at `5ecc774` before the latest four batches. Candidate prompt v3 and a provider runtime quality guard are prepared; the next scored live A/B run is pending. Thresholds approved by the product owner.
+Status: instrument complete and self-tested offline; six live batches and one v3 single-case attempt were recorded 2026-09-23 as exploratory developer evidence (not independent QA). The evaluator was hardened at `5ecc774` before the latest four batches. Candidate prompts v3 and v4 and a provider runtime quality guard are prepared; the next scored live A/B run is pending. Thresholds approved by the product owner.
 Owner: product owner approves rubric/thresholds; lead assistant/QA maintains the instrument and records runs.
 
 ## What this validates
@@ -106,6 +106,10 @@ The generated parser schema now requires at least three characters for source-ba
 ## Candidate prompt v3 — single-case rejection — 2026-09-23
 
 The user ran `INTAKE-001` with parser fingerprint `nebius:59378dac5158660ec5a32b4ec30a17b294fc8edcedd60cdb1b48a32d22e81153`. The call returned `ParserRejected: Nebius proposal failed local schema validation`, so no proposal was scored. This confirms that the model response reached the adapter but did not conform to the regenerated contract; the exact field remains redacted. The result is consistent with earlier one-character evidence fragments, but does not by itself prove that evidence was the sole schema violation. Do not spend a full batch until the prompt/model or contract diagnostic path is selected.
+
+## Candidate prompt v4 — prepared for single-case rerun — 2026-09-23
+
+[prompt_candidate_v4.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/evals/prompt_candidate_v4.txt?type=file&root=%252F) condenses v3 and adds one complete valid `add_food` JSON example. It keeps the strict evidence, date, exact c-token, unresolved-field, and no-arithmetic rules while reducing competing prose. It is a prompt experiment only; the shared contract and runtime guard are unchanged. Run `INTAKE-001` only, then compare whether the response passes local schema validation before considering a full batch or another model.
 
 ## Findings
 
