@@ -342,5 +342,10 @@ def validate_parser_context(
                 if answer.question_ref in seen:
                     raise ValueError("question answered more than once")
                 seen.add(answer.question_ref)
-                if expected.get(answer.question_ref) != answer.value.kind:
+                accepted = expected.get(answer.question_ref)
+                if isinstance(accepted, (list, tuple, set, frozenset)):
+                    valid = answer.value.kind in accepted
+                else:
+                    valid = accepted == answer.value.kind
+                if not valid:
                     raise ValueError("question missing from pending action or answer type mismatches")

@@ -13,7 +13,7 @@ If eaten grams are missing or expressed as a serving, the same clarification flo
 
 ## Consequences
 
-W013 remains the bounded resolver for explicit refs and unique names. W014 must add pending recipe candidates, selection/text/gram answers, safe resumption, and user-facing clarification rendering. No generic product substitution, default portion, or recipe batch is introduced.
+W013 remains the bounded resolver for explicit refs and unique names. W014 adds pending recipe candidates, selection/text/gram answers, safe resumption, and user-facing clarification rendering. No generic product substitution, default portion, or recipe batch is introduced.
 
 ## References
 

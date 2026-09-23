@@ -1,6 +1,6 @@
 # W014 — Recipe ambiguity and eaten-grams clarification
 
-Status: ready.
+Status: done.
 Milestone: M3 / M2.
 Owner: lead assistant, architect/developer.
 Updated: 2026-09-23.
@@ -26,4 +26,8 @@ No alias table, general recipe search, default portion, batch entity, external d
 
 ## Readiness
 
-Product behavior is accepted in D024. Implementation can proceed without another product decision; the typed answer contract and clarification-rendering details are the next technical design step.
+Product behavior is accepted in D024. The bounded typed-answer and clarification-rendering implementation is complete; broader recipe aliases and general search remain future work.
+
+## Developer handoff and completion
+
+Implemented pending recipe candidate context, selection/text/quantity answer handling, bounded fuzzy name matching, and user-facing clarification text in the worker result. The parser contract models were unchanged; no schema regeneration or migration was required. Verification is recorded in [014-recipe-clarification-developer.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/014-recipe-clarification-developer.md?type=file&root=%252F). No independent W014 review or live model/Telegram behavior is claimed.

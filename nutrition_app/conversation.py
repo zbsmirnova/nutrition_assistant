@@ -43,6 +43,27 @@ class ConversationWorker:
         self.lease_seconds = lease_seconds
 
     @staticmethod
+    def _clarification(context, reason, pending_questions):
+        if reason == "recipe_target_ambiguous":
+            records = {record["ref"]: record for record in context.get("recipe_records", ())}
+            choices = []
+            for number, recipe in enumerate((item for item in context.get("recipes", ())
+                                              if item["ref"] in pending_questions), 1):
+                record = records.get(recipe["ref"], {})
+                kcal = record.get("kcal")
+                suffix = "" if kcal is None else f" — {kcal} ккал/100 г"
+                choices.append(f"{number}. {recipe['name']}{suffix}")
+            if choices:
+                return "Какой сохранённый рецепт записать?\n" + "\n".join(choices) + \
+                    "\nОтветьте номером или напишите более точное название рецепта."
+        if reason == "quantity_unresolved":
+            ref = next(iter(pending_questions), None)
+            recipe = next((item for item in context.get("recipes", ()) if item["ref"] == ref), None)
+            name = "этого рецепта" if recipe is None else f"«{recipe['name']}»"
+            return f"Сколько граммов {name} вы съели? Укажите точный вес в граммах."
+        return None
+
+    @staticmethod
     def _where(actor, origin):
         return sa.and_(db.conversation_jobs.c.user_id == actor, db.conversation_jobs.c.origin_update_id == origin)
 
@@ -69,6 +90,7 @@ class ConversationWorker:
             db.recipe_versions.c.id.label("version_id"),
             db.recipe_versions.c.recipe_id,
             db.recipe_versions.c.name,
+            db.recipe_versions.c.kcal,
         ).select_from(db.recipes.join(db.recipe_versions, sa.and_(
             db.recipes.c.user_id == db.recipe_versions.c.user_id,
             db.recipes.c.current_version_id == db.recipe_versions.c.id,
@@ -82,7 +104,8 @@ class ConversationWorker:
                    "has_reply": source["reply_to_message_id"] is not None, "forwarded": source["forwarded"],
                    "catalog_overflow": catalog_overflow, "candidates": [], "recipes": [],
                    "recipe_records": [],
-                   "pending_candidates": [], "pending_entries": [], "pending_questions": {}, "pending": None,
+                   "pending_candidates": [], "pending_recipes": [], "pending_entries": [],
+                   "pending_questions": {}, "pending": None, "pending_reason": None,
                    "entries": [], "reply_entry_ref": None}
         if not context["catalog_overflow"]:
             context["candidates"] = [{"ref": f"c{i}", "version_id": str(row["id"]), "name": row["name"],
@@ -94,7 +117,8 @@ class ConversationWorker:
             context["recipes"] = [{"ref": f"c{i}", "name": row["name"]}
                                    for i, row in enumerate(recipe_rows, recipe_start)]
             context["recipe_records"] = [{"ref": f"c{i}", "recipe_id": str(row["recipe_id"]),
-                                           "version_id": str(row["version_id"]), "name": row["name"]}
+                                           "version_id": str(row["version_id"]), "name": row["name"],
+                                           "kcal": None if row["kcal"] is None else str(row["kcal"])}
                                           for i, row in enumerate(recipe_rows, recipe_start)]
         entry_rows = connection.execute(sa.select(
             db.food_entries.c.id.label("entry_id"),
@@ -211,8 +235,11 @@ class ConversationWorker:
                 pending_questions = pending["pending_questions"]
                 refs = set(pending_questions)
                 context["pending_questions"] = pending_questions
+                context["pending_reason"] = pending["reason"]
                 context["pending_candidates"] = [candidate for candidate in original_context["candidates"]
                                                    if candidate["ref"] in refs]
+                context["pending_recipes"] = [recipe for recipe in original_context.get("recipes", ())
+                                               if recipe["ref"] in refs]
                 context["pending_entries"] = [entry for entry in original_context.get("entries", ())
                                                if entry["ref"] in refs]
                 context["pending"] = {
@@ -322,6 +349,7 @@ class ConversationWorker:
                 self.service._prepare(connection, claim.actor, resolution.command, position=position)
             if resolution.pending_questions:
                 claim.context["pending_questions"] = resolution.pending_questions
+                claim.context["pending_reason"] = resolution.reason
                 claim.context["pending_position"] = resolution.pending_position or 0
                 claim.context["pending_food_date"] = (None if resolution.pending_food_date is None
                                                         else resolution.pending_food_date.isoformat())
@@ -418,8 +446,14 @@ class ConversationWorker:
                 return {"status": "lost_claim", "origin_update_id": str(claim.origin)}
             point("after_prepare")
             if resolution.command is None:
-                return {"status": resolution.status, "reason": resolution.reason,
-                        "origin_update_id": str(claim.origin)}
+                result = {"status": resolution.status, "reason": resolution.reason,
+                          "origin_update_id": str(claim.origin)}
+                if resolution.pending_questions:
+                    clarification = self._clarification(claim.context, resolution.reason,
+                                                         resolution.pending_questions)
+                    if clarification is not None:
+                        result["clarification"] = clarification
+                return result
         try:
             outcome = self.service.execute(actor, claim.operation_id,
                 fault=lambda name: point(name.replace("commit", "domain_commit")))
@@ -441,7 +475,14 @@ class ConversationWorker:
             else:
                 self._set(connection, actor, claim.origin, "applied", "command_applied")
                 self._clear_pending(connection, claim)
-        return {"status": "applied", "origin_update_id": str(claim.origin), "outcome": outcome.model_dump(mode="json")}
+        result = {"status": "applied", "origin_update_id": str(claim.origin),
+                  "outcome": outcome.model_dump(mode="json")}
+        if claim.context.get("pending_questions") and claim.context.get("pending") is None:
+            clarification = self._clarification(claim.context, claim.context.get("pending_reason"),
+                                                 claim.context["pending_questions"])
+            if clarification is not None:
+                result["clarification"] = clarification
+        return result
 
     def status(self, actor: UUID, origin: UUID | None = None):
         """Operator diagnostics exclude input, catalog, provider payloads and credentials."""

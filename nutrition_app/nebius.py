@@ -95,6 +95,9 @@ class NebiusParser:
         if request.recipes:
             context["recipes"] = [{key: candidate[key] for key in ("ref", "name")}
                                    for candidate in request.recipes]
+        if request.pending_recipes:
+            context["pending_recipes"] = [{key: candidate[key] for key in ("ref", "name")}
+                                           for candidate in request.pending_recipes]
         if request.entries:
             context["entries"] = [{key: candidate[key] for key in ("ref", "description", "effective_date", "meal", "state")}
                                    for candidate in request.entries]
@@ -171,6 +174,7 @@ class NebiusParser:
             output = ParserOutput.model_validate_json(content)
             candidate_kinds = {c["ref"]: "product" for c in request.candidates}
             candidate_kinds.update({c["ref"]: "recipe" for c in request.recipes})
+            candidate_kinds.update({c["ref"]: {"pending", "recipe"} for c in request.pending_recipes})
             candidate_kinds.update({c["ref"]: "entry" for c in request.entries})
             candidate_kinds.update({c["ref"]: {"pending", "product"} for c in request.pending_candidates})
             candidate_kinds.update({c["ref"]: {"pending", "entry"} for c in request.pending_entries})

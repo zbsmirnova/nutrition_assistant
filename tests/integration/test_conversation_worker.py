@@ -131,8 +131,96 @@ class ConversationWorkerTests(unittest.TestCase):
         origin = self.source(3, text=text)
         result = self.worker.run_one(self.actor, ControlledParser(
             self.recipe_output(text, {"kind": "name", "name": "мой суп"})), origin=origin)
-        self.assertEqual((result["status"], result["reason"]), ("unresolved", "food_target_ambiguous"))
+        self.assertEqual((result["status"], result["reason"]), ("unresolved", "recipe_target_ambiguous"))
+        self.assertIn("Ответьте номером", result["clarification"])
         self.assertEqual(self.count(db.food_entries), 0)
+
+    def test_ambiguous_recipe_selection_resumes_original_action_once(self):
+        self.define_recipe(1)
+        self.define_recipe(2)
+        text = "Съела 250 г мой суп"
+        original = self.source(3, text=text)
+        initial_parser = ControlledParser(self.recipe_output(text, {"kind": "name", "name": "мой суп"}))
+        initial = self.worker.run_one(self.actor, initial_parser, origin=original)
+        self.assertEqual((initial["status"], initial["reason"]), ("unresolved", "recipe_target_ambiguous"))
+        self.assertIn("Ответьте номером", initial["clarification"])
+        with self.engine.begin() as connection:
+            job = connection.execute(sa.select(db.conversation_jobs).where(
+                db.conversation_jobs.c.user_id == self.actor,
+                db.conversation_jobs.c.origin_update_id == original)).mappings().one()
+            self.assertEqual(job["pending_questions"], {"c2": {"q1": ["selection", "text"]},
+                                                           "c3": {"q1": ["selection", "text"]}})
+            message_id = connection.execute(sa.select(db.inbox_updates.c.telegram_message_id).where(
+                db.inbox_updates.c.id == original)).scalar_one()
+        reply = self.source(4, text="2", reply_to_message_id=message_id)
+        answer = {"schema_version": "1.0", "actions": [{
+            "kind": "answer_clarification", "action_id": "a1", "evidence": "2",
+            "depends_on": [], "unresolved": [],
+            "pending": {"kind": "candidate", "candidate_ref": "c2", "candidate_kind": "pending"},
+            "answers": [{"question_ref": "q1", "value": {"kind": "selection",
+                "selection": {"kind": "candidate", "candidate_ref": "c3", "candidate_kind": "recipe"}}}],
+        }]}
+        parser = ControlledParser(answer)
+        resumed = self.worker.run_one(self.actor, parser, origin=reply)
+        self.assertEqual(resumed["status"], "applied")
+        self.assertNotIn("clarification", resumed)
+        self.assertEqual(parser.requests[0].pending_recipes,
+                         ({"ref": "c2", "name": "мой суп"}, {"ref": "c3", "name": "мой суп"}))
+        self.assertEqual(self.count(db.food_entries), 1)
+        self.assertEqual(self.count(db.outbox), 3)  # two recipe definitions plus one consumed-food result
+        self.assertEqual(self.worker.run_one(self.actor, parser, origin=reply)["status"], "applied")
+        self.assertEqual(self.count(db.food_entries), 1)
+        self.assertEqual(self.count(db.outbox), 3)
+
+    def test_specific_recipe_name_answer_resolves_fuzzy_ambiguity(self):
+        self.define_recipe(1, name="суп с яблоком")
+        self.define_recipe(2, name="суп с грушей")
+        text = "Съела 250 г суп"
+        original = self.source(3, text=text)
+        initial = self.worker.run_one(self.actor, ControlledParser(
+            self.recipe_output(text, {"kind": "name", "name": "суп"})), origin=original)
+        self.assertEqual((initial["status"], initial["reason"]), ("unresolved", "recipe_target_ambiguous"))
+        with self.engine.begin() as connection:
+            message_id = connection.execute(sa.select(db.inbox_updates.c.telegram_message_id).where(
+                db.inbox_updates.c.id == original)).scalar_one()
+        reply = self.source(4, text="суп с яблоком", reply_to_message_id=message_id)
+        answer = {"schema_version": "1.0", "actions": [{
+            "kind": "answer_clarification", "action_id": "a1", "evidence": "суп с яблоком",
+            "depends_on": [], "unresolved": [],
+            "pending": {"kind": "candidate", "candidate_ref": "c2", "candidate_kind": "pending"},
+            "answers": [{"question_ref": "q1", "value": {"kind": "text", "text": "суп с яблоком"}}],
+        }]}
+        result = self.worker.run_one(self.actor, ControlledParser(answer), origin=reply)
+        self.assertEqual(result["status"], "applied")
+        self.assertNotIn("clarification", result)
+        self.assertEqual(self.count(db.food_entries), 1)
+
+    def test_missing_recipe_grams_asks_and_resumes_with_exact_quantity(self):
+        self.define_recipe(1)
+        text = "Съела порцию мой суп"
+        original = self.source(2, text=text)
+        output = self.recipe_output(text, {"kind": "candidate", "candidate_kind": "recipe", "candidate_ref": "c2"})
+        output["actions"][0]["quantity"] = {"amount": None, "unit": "g"}
+        initial = self.worker.run_one(self.actor, ControlledParser(output), origin=original)
+        self.assertEqual((initial["status"], initial["reason"]), ("unresolved", "quantity_unresolved"))
+        self.assertIn("точный вес", initial["clarification"])
+        with self.engine.begin() as connection:
+            message_id = connection.execute(sa.select(db.inbox_updates.c.telegram_message_id).where(
+                db.inbox_updates.c.id == original)).scalar_one()
+        reply = self.source(3, text="250 г", reply_to_message_id=message_id)
+        answer = {"schema_version": "1.0", "actions": [{
+            "kind": "answer_clarification", "action_id": "a1", "evidence": "250 г",
+            "depends_on": [], "unresolved": [],
+            "pending": {"kind": "candidate", "candidate_ref": "c2", "candidate_kind": "pending"},
+            "answers": [{"question_ref": "q1", "value": {"kind": "quantity",
+                "quantity": {"amount": "250", "unit": "g"}}}],
+        }]}
+        result = self.worker.run_one(self.actor, ControlledParser(answer), origin=reply)
+        self.assertEqual(result["status"], "applied")
+        self.assertNotIn("clarification", result)
+        with self.engine.connect() as connection:
+            self.assertEqual(str(connection.execute(sa.select(db.food_components.c.edible_g).where(
+                db.food_components.c.user_id == self.actor)).scalar_one()), "250.000000")
 
     def test_clear_message_saves_expected_nutrition_and_replays_once(self):
         origin = self.source()

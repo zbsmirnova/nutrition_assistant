@@ -15,14 +15,15 @@ from uuid import UUID
 from nutrition_contracts.commands import CommandEnvelope
 from nutrition_contracts.parser import (AddFood, AnswerClarification, CandidateAnswer, CorrectFood,
                                          DeleteFood, MoveDate, NonLogging, NutritionAnswer, ParserOutput,
+                                         QuantityAnswer, TextAnswer,
                                          SetMeal, SetQuantity, UndoFood, validate_parser_context)
 
 from .errors import ApplicationError
 from .service import digest, operation_id_for
 
 
-CONTEXT_VERSION = "single-food-context-v4"
-RESOLVER_VERSION = "single-food-resolver-v7"
+CONTEXT_VERSION = "single-food-context-v5"
+RESOLVER_VERSION = "single-food-resolver-v8"
 MAX_CANDIDATES = 64
 
 
@@ -33,6 +34,7 @@ class ParserRequest:
     time_zone: str
     candidates: tuple[dict, ...] = field(repr=False)
     recipes: tuple[dict, ...] = field(default_factory=tuple, repr=False)
+    pending_recipes: tuple[dict, ...] = field(default_factory=tuple, repr=False)
     pending_candidates: tuple[dict, ...] = field(default_factory=tuple, repr=False)
     pending_questions: dict[str, dict[str, str]] = field(default_factory=dict, repr=False)
     pending_entries: tuple[dict, ...] = field(default_factory=tuple, repr=False)
@@ -97,9 +99,12 @@ def parser_request(context: dict) -> ParserRequest:
                             for c in context.get("pending_entries", ()))
     recipes = tuple({k: c[k] for k in ("ref", "name")}
                     for c in context.get("recipes", ()))
+    pending_recipes = tuple({k: c[k] for k in ("ref", "name")}
+                            for c in context.get("pending_recipes", ()))
     return ParserRequest(source_text=context["source_text"], local_date=context["local_date"],
                          time_zone=context["time_zone"], candidates=public,
                          recipes=recipes,
+                         pending_recipes=pending_recipes,
                          pending_candidates=pending,
                          pending_questions=context.get("pending_questions", {}),
                          pending_entries=pending_entries,
@@ -120,6 +125,18 @@ class Resolution:
 
 def normalized(text: str) -> str:
     return " ".join(text.casefold().replace("ё", "е").split())
+
+
+def recipe_name_matches(name: str, recipes):
+    wanted = normalized(name)
+    exact = [recipe for recipe in recipes if normalized(recipe["name"]) == wanted]
+    if exact:
+        return exact
+    words = set(re.findall(r"[a-zа-я0-9]+", wanted))
+    if not words:
+        return []
+    return [recipe for recipe in recipes
+            if words.issubset(set(re.findall(r"[a-zа-я0-9]+", normalized(recipe["name"]))))]
 
 
 DATE_WORDS = re.compile(r"\b(?:сегодня|вчера|позавчера|завтра|послезавтра|today|yesterday|tomorrow|"
@@ -327,6 +344,7 @@ def resolve_entry_action(actor: UUID, origin: UUID, context: dict, action) -> Re
 def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> Resolution:
     candidate_kinds = {c["ref"]: "product" for c in context["candidates"]}
     candidate_kinds.update({c["ref"]: "recipe" for c in context.get("recipes", ())})
+    candidate_kinds.update({c["ref"]: {"pending", "recipe"} for c in context.get("pending_recipes", ())})
     candidate_kinds.update({c["ref"]: "entry" for c in context.get("entries", ())})
     candidate_kinds.update({c["ref"]: {"pending", "product"} for c in context.get("pending_candidates", ())})
     candidate_kinds.update({c["ref"]: {"pending", "entry"} for c in context.get("pending_entries", ())})
@@ -364,6 +382,44 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
                       "candidate_kind": "entry"}
             original_action = type(original_action).model_validate({
                 **original_action.model_dump(mode="json"), "target": target})
+        elif isinstance(original_action, AddFood):
+            selections = [answer.value.selection for answer in action.answers
+                          if isinstance(answer.value, CandidateAnswer)]
+            text_answers = [answer.value.text for answer in action.answers if isinstance(answer.value, TextAnswer)]
+            quantity_answers = [answer.value.quantity for answer in action.answers
+                                if isinstance(answer.value, QuantityAnswer)]
+            nutrition_answers = [answer.value for answer in action.answers
+                                 if isinstance(answer.value, NutritionAnswer)]
+            if selections:
+                if len(selections) != 1 or selections[0].candidate_kind != "recipe":
+                    return Resolution("unresolved", "clarification_answer_incomplete",
+                                      pending_questions=context["pending_questions"])
+                selected = selections[0]
+                if selected.candidate_ref not in context["pending_questions"]:
+                    return Resolution("unresolved", "clarification_context_missing")
+                food = {"kind": "candidate", "candidate_ref": selected.candidate_ref,
+                        "candidate_kind": "recipe"}
+                original_action = type(original_action).model_validate({
+                    **original_action.model_dump(mode="json"), "food": food})
+            elif text_answers:
+                if len(text_answers) != 1:
+                    return Resolution("unresolved", "clarification_answer_incomplete",
+                                      pending_questions=context["pending_questions"])
+                original_action = type(original_action).model_validate({
+                    **original_action.model_dump(mode="json"),
+                    "food": {"kind": "name", "name": text_answers[0]}})
+            elif quantity_answers:
+                if len(quantity_answers) != 1:
+                    return Resolution("unresolved", "clarification_answer_incomplete",
+                                      pending_questions=context["pending_questions"])
+                original_action = type(original_action).model_validate({
+                    **original_action.model_dump(mode="json"),
+                    "quantity": quantity_answers[0].model_dump(mode="json")})
+            elif nutrition_answers:
+                pass
+            else:
+                return Resolution("unresolved", "clarification_answer_incomplete",
+                                  pending_questions=context["pending_questions"])
         original = ParserOutput(schema_version=original_output.schema_version, actions=[original_action])
         # The answer is evidence for the original action. Backend resolution
         # re-runs against the original message plus the answer, preserving the
@@ -375,13 +431,13 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
         merged["forwarded"] = False
         merged["pending_questions"] = {}
         merged["pending_candidates"] = []
+        merged["pending_recipes"] = []
         merged["pending_entries"] = []
         merged["pending_identity_confirmed"] = True
         merged["operation_position"] = pending_position
         merged["evidence_update_ids"] = [UUID(pending["origin_update_id"]), origin]
         merged["pending_action_id"] = UUID(pending["job_id"])
-        if isinstance(original_action, AddFood):
-            nutrition_answers = [answer.value for answer in action.answers if isinstance(answer.value, NutritionAnswer)]
+        if isinstance(original_action, AddFood) and not (selections or text_answers or quantity_answers):
             if not nutrition_answers or nutrition_answers[0].supplied_nutrition.fat_g is None:
                 return Resolution("unresolved", "clarification_answer_incomplete",
                                   pending_food_date=date.fromisoformat(pending["context"]["local_date"]),
@@ -394,9 +450,8 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
     target_date = effective_date(context, action.date_hint.text)
     pending_ref = action.food.candidate_ref if action.food.kind == "candidate" else None
 
-    def defer(reason):
-        questions = None
-        if reason == "dairy_fat_missing" and pending_ref is not None:
+    def defer(reason, questions=None):
+        if questions is None and reason == "dairy_fat_missing" and pending_ref is not None:
             questions = {pending_ref: {"q1": "nutrition"}}
         return Resolution("unresolved", reason, pending_food_date=target_date, pending_questions=questions)
 
@@ -416,12 +471,15 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
         matching_recipes = [c for c in recipes if c["ref"] == action.food.candidate_ref]
     elif action.food.kind == "name":
         matching_products = [c for c in candidates if normalized(c["name"]) == normalized(action.food.name)]
-        matching_recipes = [c for c in recipes if normalized(c["name"]) == normalized(action.food.name)]
+        matching_recipes = recipe_name_matches(action.food.name, recipes)
     else:
         return Resolution("unsupported", "dependent_food_source")
     if len(matching_products) + len(matching_recipes) != 1:
         if not matching_products and not matching_recipes:
             return defer("product_unresolved")
+        if matching_recipes and action.food.kind == "name":
+            return defer("recipe_target_ambiguous",
+                         {recipe["ref"]: {"q1": ["selection", "text"]} for recipe in matching_recipes})
         return defer("food_target_ambiguous")
     if matching_recipes:
         recipe = matching_recipes[0]
@@ -431,10 +489,11 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
         recipe_record = next((record for record in recipe_records if record["ref"] == recipe["ref"]), None)
         if recipe_record is None:
             return defer("recipe_unresolved")
+        pending_ref = recipe["ref"]
         quantity = action.quantity
         matches = list(QUANTITY.finditer(context["source_text"]))
         if quantity.amount is None or quantity.unit != "g" or len(matches) != 1:
-            return defer("quantity_unresolved")
+            return defer("quantity_unresolved", {pending_ref: {"q1": "quantity"}})
         lexical = AMOUNT_UNIT.fullmatch(matches[0].group())
         if (Decimal(lexical.group(1).replace(",", ".")) != Decimal(quantity.amount)
                 or UNITS[lexical.group(2).casefold()] != "g"):

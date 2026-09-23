@@ -13,7 +13,7 @@ A named recipe is auto-selected only when exactly one current owned recipe match
 
 ## Consequences
 
-Recipe consumption now shares the product resolver's date, quantity, evidence, operation, retry, and daily-total behavior. Recipe-name aliases, inflection-aware retrieval, recipe clarification questions, recipe-aware corrections, and multi-action recipe definition plus consumption remain later work. The parser context is bounded by the combined product/recipe candidate limit.
+Recipe consumption now shares the product resolver's date, quantity, evidence, operation, retry, and daily-total behavior. Recipe-name aliases, broader inflection-aware retrieval, recipe-aware corrections, and multi-action recipe definition plus consumption remain later work. W014 adds the accepted bounded clarification path. The parser context is bounded by the combined product/recipe candidate limit.
 
 ## References
 
