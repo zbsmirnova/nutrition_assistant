@@ -49,7 +49,7 @@ A complete-day average describes only those selected days. Do not present it as 
 
 ### Check-in boundary
 
-The accepted product choice and its rationale are recorded in [0001-continuous-food-saving.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0001-continuous-food-saving.md?type=file&root=%252F). The dinner-triggered interaction and proposed delivery defaults now live in section 9 of [conversation-contract-v1.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/conversation-contract-v1.md?type=file&root=%252F). Scheduled reminders are outside MVP; the dinner offer has one logical daily identity separate from food completeness.
+The accepted product choice and its rationale are recorded in [0001-continuous-food-saving.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0001-continuous-food-saving.md?type=file&root=%252F). The dinner-triggered interaction and proposed delivery defaults now live in section 9 of [conversation-contract-v1.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/conversation-contract-v1.md?type=file&root=%252F). Scheduled reminders are outside MVP and planned for [W019](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/019-scheduled-check-in-reminders.md?type=file&root=%252F); the dinner offer has one logical daily identity separate from food completeness.
 
 ## 3. Interpretation boundary
 

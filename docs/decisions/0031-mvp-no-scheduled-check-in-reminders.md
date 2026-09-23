@@ -13,11 +13,11 @@ The MVP offers the combined completion/activity check-in only when a successfull
 
 The dinner-triggered offer keeps D030's three actions: “Everything logged”, “Add steps”, and “Later”. Closure and completion suppress the offer; late food additions do not create another offer. The user may still send a conversational close command without waiting for a reminder.
 
-Scheduled reminder rules, local-time scheduling, DST occurrence handling, notification runs, and scheduled-outbox delivery are outside MVP and remain future work. Weekly reports remain a separate open question.
+Scheduled reminder rules, local-time scheduling, DST occurrence handling, notification runs, and scheduled-outbox delivery are outside MVP and are planned as [W019](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/019-scheduled-check-in-reminders.md?type=file&root=%252F). Weekly reports remain a separate open question.
 
 ## Consequences
 
-W018 no longer needs a scheduler, fallback occurrence keys, DST scheduler tests, notification rules, or notification-run rows. Its MVP runtime needs dinner-triggered check-in persistence, inline-keyboard/callback transport, stale-callback validation, and idempotent use of the existing ordinary reply outbox.
+W018 no longer needs a scheduler, fallback occurrence keys, DST scheduler tests, notification rules, or notification-run rows. Its MVP runtime needs dinner-triggered check-in persistence, inline-keyboard/callback transport, stale-callback validation, and idempotent use of the existing ordinary reply outbox. W019 is the planned post-MVP reminder slice and must settle those deferred mechanics before coding.
 
 D030 remains historical for the dinner-triggered behavior and its action semantics; its 21:00 fallback is superseded for MVP. A later reminder feature must introduce a new technical decision before implementation.
 

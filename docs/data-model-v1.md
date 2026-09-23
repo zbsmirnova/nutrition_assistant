@@ -168,7 +168,7 @@ Correcting either measurement onto a different date uses the two daily slots in 
 
 ## 9. Check-ins and report snapshots
 
-MVP implements only a dinner-triggered check-in. Scheduled reminders, local-time rules, notification runs, DST occurrence handling, and scheduled-outbox delivery are future scope under D031; the logical tables below retain them as a later extension rather than current MVP requirements.
+MVP implements only a dinner-triggered check-in. Scheduled reminders, local-time rules, notification runs, DST occurrence handling, and scheduled-outbox delivery are future scope under D031 and [W019](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/019-scheduled-check-in-reminders.md?type=file&root=%252F); the logical tables below retain them as a later extension rather than current MVP requirements.
 
 | Table | Important columns | Keys and rules |
 | --- | --- | --- |

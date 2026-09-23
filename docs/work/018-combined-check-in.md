@@ -34,7 +34,7 @@ These mechanics are unresolved technical design and should be recorded in a foll
 
 ## Implementation checklist
 
-Not started. Ordering proposal: (1) technical decision for callback transport and dinner-offer persistence; (2) migration for `daily_check_ins` and callback/action state; (3) offer lifecycle service (attach/dismiss/complete/suppress) with idempotency; (4) callback ingress and inline-keyboard delivery; (5) PostgreSQL tests for stale callbacks, retries, and one-logical-offer races. Scheduled reminders, scheduler, DST, and scheduled-outbox delivery are deferred by D031.
+Not started. Ordering proposal: (1) technical decision for callback transport and dinner-offer persistence; (2) migration for `daily_check_ins` and callback/action state; (3) offer lifecycle service (attach/dismiss/complete/suppress) with idempotency; (4) callback ingress and inline-keyboard delivery; (5) PostgreSQL tests for stale callbacks, retries, and one-logical-offer races. Scheduled reminders, scheduler, DST, and scheduled-outbox delivery are deferred by D031 to [W019](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/019-scheduled-check-in-reminders.md?type=file&root=%252F).
 
 ## Developer handoff
 
