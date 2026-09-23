@@ -27,7 +27,7 @@ Milestone statuses: planned, in progress, complete, blocked. The first implement
 
 ## Implementation sequence now
 
-1. Complete W006’s reply-linked dairy clarification with PostgreSQL and independent QA, then extend M2 to mixed-message partial saving and same-entry correction/delete/undo. W003’s bounded worker does not replace these accepted requirements.
+1. Extend M2 to mixed-message partial saving and same-entry correction/delete/undo. W006’s reply-linked dairy clarification is complete for its bounded synthetic scope; W003’s worker still does not replace the remaining accepted requirements.
 2. Configure and smoke-check the selected Nebius model through W004’s explicit synthetic command, then measure Russian interpretation quality. The user supplies NEBIUS_API_KEY as a secret; keep NUTRITION_LLM_MODEL configurable and select it through measured Russian-language evaluation. Q09’s remaining request/evaluation choices and Q10’s data-lifecycle choices stay in the question register. Offline adapter verification is complete. The user has configured a key and candidate model and reported a live completion that passed schema/reference checks; resolving the synthetic smoke expectation and measuring interpretation quality remain next. The W004 brief owns the exact setup evidence.
 3. Add recipe persistence and consumption on top of the completed W005 calculation foundation while preserving M2 clarification/resumption and corrections. W003’s bounded worker does not replace these accepted requirements.
 
