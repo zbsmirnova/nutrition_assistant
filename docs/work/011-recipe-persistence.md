@@ -1,6 +1,6 @@
 # W011 — Recipe persistence and immutable versions
 
-Status: in progress.
+Status: done.
 Milestone: M3.
 Owner: lead assistant, architect/developer.
 Updated: 2026-09-23.
@@ -23,3 +23,7 @@ Persist user recipe definitions and revisions using the existing typed command b
 ## Boundaries
 
 The service does not yet interpret natural-language recipe messages, search recipes, consume recipe grams in food entries, resolve volume density, compare against an external general database, or render recipe Telegram replies.
+
+## QA result and completion
+
+Developer verification passes: 96 offline tests, 73 PostgreSQL integration tests, 32 retained QA tests, and `git diff --check`. Evidence is in [011-recipe-persistence-developer.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/011-recipe-persistence-developer.md?type=file&root=%252F). No independent W011 review, live Nebius, or real Telegram behavior is claimed.
