@@ -108,6 +108,8 @@ Developer connectivity check on 2026-09-23: the application's Python interpreter
 
 If the smoke check reports `parser_rejected` with `Nebius rejected the request (HTTP NNN)`, share that diagnostic to identify the provider's status before changing credentials or the request schema. An older message without the HTTP number cannot distinguish these causes; rerun with the current code in the same configured terminal. The diagnostic exposes only the numeric status, not the provider's error body, headers, or API key. The status narrows investigation but does not prove the exact cause.
 
+For HTTP 401, resolve authentication first: copy the complete secret value from [Nebius Token Factory API keys](https://tokenfactory.nebius.com/project/api-keys), creating a new key if the original value is unavailable. The value is displayed only at creation, according to [Nebius authentication instructions](https://docs.tokenfactory.nebius.com/api-reference/introduction#authentication). Supply only that value as NEBIUS_API_KEY, without quotes or a Bearer prefix; the adapter adds the prefix. Read it into the same shell with `read -rs 'NEBIUS_API_KEY?Paste API key, then press Enter: '`, paste the key when prompted, then run `echo` and `export NEBIUS_API_KEY` separately. Keep the model setting unchanged and rerun the smoke command. Never put the secret itself in command history, a repository file or chat. A 401 does not yet establish model or schema compatibility.
+
 ### Processing an explicit inbox source
 
 For an explicit identified inbox source, the operator command is:

@@ -54,7 +54,7 @@ Only documentation changed. Validation for this follow-up covers the observed co
 
 ## HTTP diagnostic follow-up — 2026-09-23
 
-Status: done for the diagnostic change; live rejection diagnosis awaits the user's new smoke output. The next user smoke attempt reached a permanent HTTP rejection, but the existing message hid the status. The error now exposes only the integer status; credentials, response bodies, headers and reason phrases stay out of diagnostics. This change does not determine the cause of the user's rejection or establish model compatibility.
+Status: done for the diagnostic change; authentication setup remains pending. The next user smoke attempt reached a permanent HTTP rejection, but the existing message hid the status. The error now exposes only the integer status; credentials, response bodies, headers and reason phrases stay out of diagnostics. The user subsequently reported HTTP 401 from the updated smoke command. This identifies an authentication rejection, without establishing why the credential was rejected or whether the model/schema is compatible. The next action is to re-enter a complete Token Factory secret key in the user's terminal and retry; no credential was inspected by the assistant.
 
 Acceptance: the smoke CLI prints the rejection's numeric HTTP status and exits unsuccessfully; error bodies remain unread and no sensitive data appears in stdout/stderr; requests, parser identity, retry classification and database behavior remain unchanged. Validate with offline protocol/CLI regressions and independent review of an identified source before committing. No live call or database test is needed for a diagnostic-text change.
 
