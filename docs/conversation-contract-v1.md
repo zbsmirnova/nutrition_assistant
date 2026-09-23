@@ -19,7 +19,7 @@ Accepted product choices and their evidence are recorded in D001/D004/D010 in [R
 
 The recipe clarification explicitly expands the saved recipe details to include ingredients and instructions while retaining the decision not to store portion sizes or preparation batches.
 
-Recipe recall is user-scoped. Normalize case, whitespace, ordinary inflection, and word order so phrases such as “тунцовая намазка” and “намазка тунцовая по моему рецепту” can identify the same saved recipe. An explicit “по моему рецепту” restricts resolution to the user's recipes. Auto-select only one uniquely matching recipe; if no recipe or more than one recipe matches, say so and ask the user to name or choose it. Never substitute a generic catalog product or invent a saved recipe.
+Recipe recall is user-scoped. Normalize case, whitespace, ordinary inflection, and word order so phrases such as “тунцовая намазка” and “намазка тунцовая по моему рецепту” can identify the same saved recipe. An explicit “по моему рецепту” restricts resolution to the user's recipes. Auto-select only one uniquely matching recipe; if no recipe or more than one recipe matches, keep the action pending and offer numbered choices plus a more-specific-name answer. Never substitute a generic catalog product or invent a saved recipe. W013 implements only exact normalized unique-name and explicit-reference resolution; D024/W014 own this clarification behavior.
 
 ## 3. Distinguishing intent
 
