@@ -1,0 +1,43 @@
+{
+  "format_version": "1.0",
+  "title": "Russian saved-recipe recall evaluation draft",
+  "status": "authored from user-provided behavior; recipe runtime is future work",
+  "cases": [
+    {
+      "id": "RECIPE-001",
+      "purpose": "Recall a uniquely matching user recipe through ordinary name variation.",
+      "fixtures": {
+        "user_recipes": [
+          {"id": "recipe-tuna-spread", "current_version": "tuna-spread-v3", "name": "Тунцовая намазка"}
+        ],
+        "catalog_products": [
+          {"id": "product-generic-tuna-spread", "name": "Тунец намазка"}
+        ]
+      },
+      "message_variants": [
+        "Тунцовая намазка",
+        "Намазка тунцовая по моему рецепту"
+      ],
+      "expect": {
+        "resolution": {"source_kind": "recipe", "recipe_id": "recipe-tuna-spread", "recipe_version": "tuna-spread-v3"},
+        "must_not": ["resolve product-generic-tuna-spread", "invent a recipe", "search another user's recipes"]
+      }
+    },
+    {
+      "id": "RECIPE-002",
+      "purpose": "Ask rather than silently choosing among normalized recipe-name matches.",
+      "fixtures": {
+        "user_recipes": [
+          {"id": "recipe-tuna-spread-a", "current_version": "tuna-spread-a-v1", "name": "Тунцовая намазка"},
+          {"id": "recipe-tuna-spread-b", "current_version": "tuna-spread-b-v2", "name": "Намазка тунцовая"}
+        ]
+      },
+      "message": "Намазка тунцовая по моему рецепту",
+      "expect": {
+        "disposition": "needs_recipe_clarification",
+        "clarification": "Ask the user to choose or name one saved recipe.",
+        "must_not": ["silently choose either recipe", "fall back to a generic catalog product"]
+      }
+    }
+  ]
+}
