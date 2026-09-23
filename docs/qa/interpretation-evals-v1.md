@@ -113,6 +113,18 @@ The user ran `INTAKE-001` with parser fingerprint `nebius:59378dac5158660ec5a32b
 
 The user ran `INTAKE-001` with v4 and again received `ParserRejected: Nebius proposal failed local schema validation`. The compact prompt therefore did not resolve the failure for `Qwen/Qwen3-30B-A3B-Instruct-2507`; no full v4 batch was run. The next experiment is a single case against another model ID confirmed by the provider's model list.
 
+## Alternative model single-case probes — 2026-09-23
+
+The user ran the same v4 prompt and `INTAKE-001` against three candidate IDs:
+
+| Model | Result | Interpretation |
+|---|---|---|
+| `Qwen/Qwen3-235B-A22B-Instruct-2507` | `ParserRejected: Nebius proposal failed local schema validation` | The larger Qwen model shows the same structured-proposal failure as Qwen 30B. |
+| `meta-llama/Llama-3.3-70B-Instruct` | HTTP `403` | The model is not permitted for this project; no quality result. |
+| `deepseek-ai/DeepSeek-V3-0324` | HTTP `404` | This model ID is unavailable; no quality result. |
+
+Parser fingerprints were `nebius:296f39d6b9666f616f007abe08a66c568998b138821b3ecb3a6dc4cbb5a6e099`, `nebius:9a521cb7901b724312334bb6bfa612709cb5fe1a695cf9d268fe08f9e9b22c33`, and `nebius:5f5309068e0146636e1997661a2669f474ed73c9e173625912959138d1aa9af2` respectively. No candidate passed schema validation, and no full batch was run. Query the provider model list before selecting the next accessible non-Qwen instruct model.
+
 ## Findings
 
 The seven returned proposals preserved consumption intent and included an expected candidate, but the aggregate result is below the draft quality bars. Failures are concentrated in uncertainty handling and action discipline:
