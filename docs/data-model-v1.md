@@ -139,9 +139,9 @@ A future name-alias table may map a confirmed phrase to a versioned product or r
 
 | Table | Important columns | Keys and rules |
 | --- | --- | --- |
-| `recipes` | `current_version_id`, `archived_at NULL` | Stable identity of a named reusable recipe. |
-| `recipe_versions` | `recipe_id`, `version_no`, `name`, `cooking_instructions NULL`, `nutrition_origin` (`provided` or `calculated`), `data_source_id`, per-100-g nutrition values and uncertainty, `calculation_yield_g NULL`, `yield_basis NULL`, `calculation_version NULL`, `applied_operation_id` | Unique `(user_id, recipe_id, version_no)`. Nutrition basis is fixed to per 100 g. A calculated profile requires a positive finished-weight basis and calculation version. That weight describes calculation provenance, never a default portion. No prepared-batch identity or serving-count fields. |
-| `recipe_ingredients` | `recipe_version_id`, `position`, `name_as_entered`, `original_quantity`, `original_unit`, `weight_basis`, `product_version_id NULL`, `calculation_quantity NULL`, `calculation_unit NULL` | Unique position within a version. Preserve the user's initial amounts, not amounts rescaled to a 100 g recipe. Pin resolved ingredient nutrition versions. A nullable product reference allows preserving an unresolved named ingredient; calculation requires its source to be resolved or explicitly marked unknown, never treated as zero. |
+| `recipes` | `current_version_id` | Stable identity of a named reusable recipe. |
+| `recipe_versions` | `recipe_id`, `version_no`, `name`, `cooking_instructions NULL`, `nutrition_kind` (`provided` or `calculate`), `data_source_id NULL`, per-100-g nutrition values, `finished_yield_g NULL`, `yield_basis NULL`, `estimate_approval_update_id NULL`, `calculation_policy_version NULL` | Unique `(user_id, recipe_id, version_no)`. Nutrition basis is fixed to per 100 g. A calculated profile requires a positive finished-weight basis and yield basis. That weight describes calculation provenance, never a default portion. No prepared-batch identity or serving-count fields. |
+| `recipe_ingredients` | `recipe_version_id`, `position`, `name_as_entered`, `original_quantity jsonb`, `weight_basis NULL`, `source jsonb` | Unique position within a version. W011 preserves the typed original quantity and source-resolution snapshot. A resolved source pins a product version and normalized quantity; an unknown source remains explicit and is never treated as zero. |
 
 Accepted storage policy after the conversation clarification: save recipe name, original ingredient amounts, cooking instructions when supplied, kcal/protein/fat/carbohydrate values per 100 g, provenance, and revision metadata. The exact provenance columns above are design proposals. Food entries store consumed grams and the resulting nutrient snapshot. For each known nutrient, `consumed_value = value_per_100_g * eaten_grams / 100`.
 
@@ -211,7 +211,7 @@ Initial indexes, in addition to unique constraints:
 - Outbox: `(status, next_attempt_at, created_at)` for dispatch; check-in and notification-run references.
 - Reports: `(user_id, period_start, period_end, generated_at)`.
 
-M1 index and deferred-constraint definitions are frozen in its migrations and exercised on local PostgreSQL. Indexes/tables for pending actions, observations, recipes, and reports remain later work.
+M1 index and deferred-constraint definitions are frozen in its migrations and exercised on local PostgreSQL. W011 now adds the recipe identity/version/ingredient tables and indexes. Pending actions, observations, and reports remain later work.
 
 ## 11. Walkthroughs to validate in implementation
 
