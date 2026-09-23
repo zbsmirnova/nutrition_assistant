@@ -1,0 +1,45 @@
+{
+  "format_version": "1.0",
+  "title": "Synthetic fixture catalog for food-intake calculation evaluations",
+  "status": "frozen evaluation fixture; not a production nutrition catalog",
+  "calculation_policy": {
+    "basis": "All nutrition values are per 100 g unless a profile rule says otherwise.",
+    "rounding": "Keep six decimal places in expected component and total values.",
+    "initial_day_nutrition": {"kcal": "0", "protein_g": "0", "fat_g": "0", "carbs_g": "0"}
+  },
+  "catalog": {
+    "egg_category_0": {"version": "egg-category-0-v1", "unit_weight_g": "65", "nutrition_per_100g": {"kcal": "157", "protein_g": "12.6", "fat_g": "10.6", "carbs_g": "1.1"}},
+    "egg": {"version": "egg-v1", "nutrition_per_100g": {"kcal": "157", "protein_g": "12.6", "fat_g": "10.6", "carbs_g": "1.1"}},
+    "egg_white": {"version": "egg-white-v1", "nutrition_per_100g": {"kcal": "52", "protein_g": "10.9", "fat_g": "0.2", "carbs_g": "0.7"}},
+    "whole_grain_bread": {"version": "whole-grain-bread-v1", "nutrition_per_100g": {"kcal": "230", "protein_g": "8", "fat_g": "3.2", "carbs_g": "41"}},
+    "butter": {"version": "butter-v1", "nutrition_per_100g": {"kcal": "748", "protein_g": "0.5", "fat_g": "82.5", "carbs_g": "0.8"}},
+    "oil": {"version": "oil-v1", "nutrition_per_100g": {"kcal": "884", "protein_g": "0", "fat_g": "100", "carbs_g": "0"}},
+    "dark_chocolate_85": {"version": "dark-chocolate-85-v1", "nutrition_per_100g": {"kcal": "600", "protein_g": "10", "fat_g": "52", "carbs_g": "19"}},
+    "cafeteria_chicken_thigh": {"version": "cafeteria-chicken-thigh-v1", "nutrition_per_100g": {"kcal": "210", "protein_g": "25", "fat_g": "12", "carbs_g": "0"}},
+    "cafeteria_stewed_vegetables_high_fat": {"version": "cafeteria-stewed-vegetables-high-fat-v1", "nutrition_per_100g": {"kcal": "120", "protein_g": "2", "fat_g": "8", "carbs_g": "9"}},
+    "vegetable_salad_no_dressing": {"version": "vegetable-salad-no-dressing-v1", "nutrition_per_100g": {"kcal": "25", "protein_g": "1.2", "fat_g": "0.3", "carbs_g": "4.5"}},
+    "peach": {"version": "peach-v1", "nutrition_per_100g": {"kcal": "39", "protein_g": "0.9", "fat_g": "0.3", "carbs_g": "9.5"}},
+    "physalis": {"version": "physalis-v1", "standard_single_berry_weight_g": "5", "nutrition_per_100g": {"kcal": "53", "protein_g": "1.9", "fat_g": "0.7", "carbs_g": "11.2"}},
+    "bretzel": {"version": "bretzel-v1", "nutrition_per_100g": {"kcal": "310", "protein_g": "9", "fat_g": "2.5", "carbs_g": "62"}},
+    "user_last_cheese": {"version": "user-last-cheese-v4", "nutrition_per_100g": {"kcal": "350", "protein_g": "25", "fat_g": "27", "carbs_g": "0"}},
+    "baked_potato": {"version": "baked-potato-v1", "nutrition_per_100g": {"kcal": "93", "protein_g": "2.5", "fat_g": "0.1", "carbs_g": "21"}},
+    "baked_sweet_potato": {"version": "baked-sweet-potato-v1", "nutrition_per_100g": {"kcal": "90", "protein_g": "2", "fat_g": "0.2", "carbs_g": "20.7"}},
+    "baked_chicken_leg_with_skin": {"version": "baked-chicken-leg-with-skin-v1", "nutrition_per_100g": {"kcal": "215", "protein_g": "24", "fat_g": "13", "carbs_g": "0"}}
+  },
+  "recipes": {
+    "tuna_spread": {"version": "tuna-spread-v3", "nutrition_per_100g": {"kcal": "180", "protein_g": "14", "fat_g": "12", "carbs_g": "4"}},
+    "pate_options": ["pate-v2", "pate-v3"]
+  },
+  "profile": {
+    "usual_coffee": {"version": "usual-coffee-v1", "nutrition_per_serving": {"kcal": "92", "protein_g": "5.4", "fat_g": "4.2", "carbs_g": "8.2"}},
+    "post_meal_grouping_window": "30 minutes"
+  },
+  "history": {
+    "no_recent_meal": true,
+    "user_last_cheese": {"catalog_ref": "user_last_cheese", "product_version": "user-last-cheese-v4"},
+    "no_pending_chicken": true
+  },
+  "continuations": {
+    "INTAKE-009": {"bone_weight_g": "40", "edible_weight_g": "110"}
+  }
+}

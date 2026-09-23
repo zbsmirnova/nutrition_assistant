@@ -21,7 +21,12 @@ class FoodIntakeCalculationEvalTests(unittest.TestCase):
             self.assertTrue(case["turns"])
             self.assertTrue(case["fixtures"])
             self.assertTrue(case["expect"]["intent"])
-            self.assertTrue(case["expect"].get("calculation") or case["expect"].get("clarifications"))
+            self.assertTrue(
+                case["expect"].get("calculation")
+                or case["expect"].get("clarifications")
+                or case["expect"].get("expected_nutrition")
+                or case["expect"].get("expected_nutrition_after_bone_answer")
+            )
 
     def test_fixture_contract_requires_independent_numeric_oracle(self) -> None:
         corpus = json.loads(CORPUS.read_text(encoding="utf-8"))

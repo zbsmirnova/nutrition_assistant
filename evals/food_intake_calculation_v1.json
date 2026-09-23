@@ -8,6 +8,7 @@
     "application: calculate using pinned fixture sources, persist only authorized resolved items, and update totals"
   ],
   "fixture_contract": {
+    "fixture_catalog": "fixtures/food_intake_v1.json",
     "catalog": "Synthetic catalog entries named in each case must have pinned kcal/macro values and preparation/basis metadata.",
     "recipes": "Named saved recipes must have a current immutable nutrition version.",
     "profile": "The coffee-as-usual rule and the short post-meal grouping window are explicit per-user fixtures.",
@@ -24,7 +25,7 @@
         "normalization": ["split 115 g omelet into 57.5 g egg and 57.5 g egg white"],
         "resolution": ["use recipe.tuna_spread.current for 45 g", "use profile.usual_coffee"],
         "persistence": ["save the resolved breakfast components with source/version provenance"],
-        "calculation": ["calculate each component and the day total from pinned fixture values"],
+        "expected_nutrition": {"components": {"egg_57_5g": {"kcal": "90.275000", "protein_g": "7.245000", "fat_g": "6.095000", "carbs_g": "0.632500"}, "egg_white_57_5g": {"kcal": "29.900000", "protein_g": "6.267500", "fat_g": "0.115000", "carbs_g": "0.402500"}, "bread_52g": {"kcal": "119.600000", "protein_g": "4.160000", "fat_g": "1.664000", "carbs_g": "21.320000"}, "tuna_spread_45g": {"kcal": "81.000000", "protein_g": "6.300000", "fat_g": "5.400000", "carbs_g": "1.800000"}, "butter_7g": {"kcal": "52.360000", "protein_g": "0.035000", "fat_g": "5.775000", "carbs_g": "0.056000"}, "usual_coffee": {"kcal": "92.000000", "protein_g": "5.400000", "fat_g": "4.200000", "carbs_g": "8.200000"}}, "day_total": {"kcal": "465.135000", "protein_g": "29.407500", "fat_g": "23.249000", "carbs_g": "32.411000"}},
         "must_not": ["substitute a generic tuna spread when the saved recipe exists", "invent unknown macros"]
       }
     },
@@ -36,7 +37,7 @@
         "intent": "consumed_food",
         "resolution": ["resolve catalog.dark_chocolate_85"],
         "persistence": ["save one 10 g entry in the snack grouping when no recent meal falls inside the configured window"],
-        "calculation": ["calculate kcal and all available macros from the resolved product version"],
+        "expected_nutrition": {"components": {"dark_chocolate_85_10g": {"kcal": "60.000000", "protein_g": "1.000000", "fat_g": "5.200000", "carbs_g": "1.900000"}}, "day_total": {"kcal": "60.000000", "protein_g": "1.000000", "fat_g": "5.200000", "carbs_g": "1.900000"}},
         "must_not": ["silently choose among multiple matching chocolate products"]
       }
     },
@@ -48,7 +49,7 @@
         "intent": "consumed_lunch_with_uncertainty",
         "resolution": ["do not search user recipes", "use conservative cafeteria/high-fat prepared-food sources for items with unspecified preparation", "use the no-dressing salad source"],
         "clarifications": ["ask whether there was sauce", "ask whether 120 g chicken includes bones or is edible meat"],
-        "calculation": ["render a cautious nutrition range and explain preparation uncertainty"],
+        "expected_nutrition": {"known_subtotal_excluding_chicken": {"kcal": "145.000000", "protein_g": "3.200000", "fat_g": "8.300000", "carbs_g": "13.500000"}},
         "must_not": ["add dressing to the explicitly unseasoned salad", "select lean home-cooked defaults for unspecified cafeteria preparation"]
       }
     },
@@ -60,7 +61,7 @@
         "intent": "consumed_food",
         "resolution": ["resolve peach at 100 g", "resolve one physalis berry using the catalog's standard single-berry weight"],
         "persistence": ["save the physalis assumed weight, estimate flag, and estimate provenance"],
-        "calculation": ["calculate both items from their pinned sources"],
+        "expected_nutrition": {"components": {"peach_100g": {"kcal": "39.000000", "protein_g": "0.900000", "fat_g": "0.300000", "carbs_g": "9.500000"}, "physalis_5g_estimate": {"kcal": "2.650000", "protein_g": "0.095000", "fat_g": "0.035000", "carbs_g": "0.560000"}}, "day_total": {"kcal": "41.650000", "protein_g": "0.995000", "fat_g": "0.335000", "carbs_g": "10.060000"}},
         "must_not": ["represent the physalis estimate as a weighed quantity"]
       }
     },
@@ -74,6 +75,7 @@
         "resolution": ["resolve coffee from profile.usual_coffee", "require pâté source clarification"],
         "persistence": ["save eggs, bread, butter, and coffee once", "keep pâté pending and out of totals until its recipe/source is confirmed"],
         "clarifications": ["ask whether pâté is from the user's saved recipes"],
+        "expected_nutrition": {"confirmed_subtotal_excluding_pate": {"kcal": "417.440000", "protein_g": "25.235000", "fat_g": "21.831000", "carbs_g": "27.284000"}},
         "must_not": ["treat the pâté as a generic catalog product before confirmation", "repeat already saved breakfast items after the answer"]
       }
     },
@@ -86,7 +88,7 @@
         "normalization": ["normalize Брезель to Брецель for lookup while preserving original source text"],
         "resolution": ["resolve catalog.bretzel"],
         "persistence": ["save one 30 g entry with the normalized source identity"],
-        "calculation": ["calculate available nutrition from the pinned product version"]
+        "expected_nutrition": {"components": {"bretzel_30g": {"kcal": "93.000000", "protein_g": "2.700000", "fat_g": "0.750000", "carbs_g": "18.600000"}}, "day_total": {"kcal": "93.000000", "protein_g": "2.700000", "fat_g": "0.750000", "carbs_g": "18.600000"}}
       }
     },
     {
@@ -97,7 +99,7 @@
         "intent": "consumed_food_by_history_reference",
         "resolution": ["resolve тот же to the authenticated user's most recently logged cheese", "reuse the referenced product's pinned source version"],
         "persistence": ["save one new 20 g cheese entry"],
-        "calculation": ["calculate from the referenced product version"],
+        "expected_nutrition": {"components": {"cheese_20g": {"kcal": "70.000000", "protein_g": "5.000000", "fat_g": "5.400000", "carbs_g": "0.000000"}}, "day_total": {"kcal": "70.000000", "protein_g": "5.000000", "fat_g": "5.400000", "carbs_g": "0.000000"}},
         "must_not": ["read another user's history", "guess when no prior cheese or an ambiguity exists"]
       }
     },
@@ -109,7 +111,7 @@
         "intent": "consumed_food",
         "normalization": ["split the 120 g total 1:1 by weight into 60 g potato and 60 g sweet potato"],
         "persistence": ["save 3 g oil as a component of the same meal"],
-        "calculation": ["calculate the three components from pinned sources"],
+        "expected_nutrition": {"components": {"baked_potato_60g": {"kcal": "55.800000", "protein_g": "1.500000", "fat_g": "0.060000", "carbs_g": "12.600000"}, "baked_sweet_potato_60g": {"kcal": "54.000000", "protein_g": "1.200000", "fat_g": "0.120000", "carbs_g": "12.420000"}, "oil_3g": {"kcal": "26.520000", "protein_g": "0.000000", "fat_g": "3.000000", "carbs_g": "0.000000"}}, "day_total": {"kcal": "136.320000", "protein_g": "2.700000", "fat_g": "3.180000", "carbs_g": "25.020000"}},
         "must_not": ["add hidden cooking oil in addition to the explicitly stated 3 g"]
       }
     },
@@ -121,7 +123,8 @@
         "intent": "consumed_food_needs_edible_weight",
         "normalization": ["retain 150 g as gross chicken weight including skin and bones"],
         "clarifications": ["ask for separately weighed bone mass"],
-        "persistence": ["persist pending work with gross weight and explicit no-oil fact", "after a bone answer, calculate edible weight as 150 g minus bone mass and save once"],
+        "persistence": ["persist pending work with gross weight and explicit no-oil fact", "after the fixture's 40 g bone answer, calculate edible weight as 110 g and save once"],
+        "expected_nutrition_after_bone_answer": {"components": {"edible_chicken_leg_with_skin_110g": {"kcal": "236.500000", "protein_g": "26.400000", "fat_g": "14.300000", "carbs_g": "0.000000"}}, "day_total": {"kcal": "236.500000", "protein_g": "26.400000", "fat_g": "14.300000", "carbs_g": "0.000000"}},
         "must_not": ["add cooking oil", "include unresolved chicken in confirmed totals"]
       }
     }
