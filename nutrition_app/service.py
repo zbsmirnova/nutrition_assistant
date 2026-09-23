@@ -13,14 +13,16 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import Connection, Engine
 
 from nutrition_contracts.commands import (
-    AddConsumedFood, CommandEnvelope, CorrectFoodEntry, DeleteFoodEntry,
-    ProductComponent, RestoreFoodEntry,
+    AddConsumedFood, CalculatedRecipeNutrition, CommandEnvelope, CorrectFoodEntry, DefineRecipe,
+    DeleteFoodEntry, ProductComponent, RecipeDefinition, ReviseRecipe, RestoreFoodEntry,
+    ResolvedIngredientSource, UnknownIngredientSource,
 )
-from nutrition_contracts.common import Contract, Count, PositiveCount, Text
-from nutrition_contracts.results import Applied, DailySummary, FoodEntrySummary, MutationReceipt, OutcomeEnvelope
+from nutrition_contracts.common import Contract, Count, NutritionSnapshot, PositiveCount, Text
+from nutrition_contracts.results import Applied, DailySummary, FoodEntrySummary, MutationReceipt, OutcomeEnvelope, RecipeProfile
 
 from .errors import ApplicationError, Conflict, NotFound, Unauthorized, Unsupported
-from .nutrition import CALCULATION_VERSION, day_nutrition, entry_nutrition, from_columns, scale, to_columns
+from .nutrition import (CALCULATION_VERSION, RECIPE_CALCULATION_VERSION, day_nutrition, entry_nutrition,
+                        from_columns, recipe_per_100_g, scale, to_columns)
 from . import schema as db
 
 
@@ -111,8 +113,9 @@ class FoodService:
 
     @staticmethod
     def _validate_supported(command: CommandEnvelope, position: int = 0) -> None:
-        if not isinstance(command.command, (AddConsumedFood, CorrectFoodEntry, DeleteFoodEntry, RestoreFoodEntry)):
-            raise Unsupported("This slice supports resolved food add/correction/delete/restore commands only")
+        if not isinstance(command.command, (AddConsumedFood, CorrectFoodEntry, DeleteFoodEntry, RestoreFoodEntry,
+                                            DefineRecipe, ReviseRecipe)):
+            raise Unsupported("This slice supports resolved food and recipe definition commands only")
         evidence = command.source.evidence_update_ids
         if evidence[0] != command.source.origin_update_id or len(set(evidence)) != len(evidence):
             raise ApplicationError("Evidence must begin with the original source and contain no duplicates")
@@ -126,6 +129,9 @@ class FoodService:
         elif isinstance(command.command, CorrectFoodEntry) and any(
                 not isinstance(c, ProductComponent) for c in command.command.replacement.components):
             raise Unsupported("This slice supports pinned product components only")
+        elif isinstance(command.command, (DefineRecipe, ReviseRecipe)):
+            if command.source.pending_action_id is not None or evidence != [command.source.origin_update_id]:
+                raise Unsupported("Recipe persistence does not depend on pending clarification in this slice")
         elif command.source.pending_action_id is None and evidence != [command.source.origin_update_id]:
             raise Unsupported("Additional correction evidence requires a pending clarification")
         elif command.source.pending_action_id is not None and len(evidence) < 2:
@@ -435,6 +441,136 @@ class FoodService:
             description=source["description"], change="restored", nutrition=nutrition,
             day_dates=[current["effective_date"], source["effective_date"]])
 
+    @staticmethod
+    def _empty_nutrition():
+        return NutritionSnapshot(kcal=None, protein_g=None, fat_g=None, carbs_g=None)
+
+    def _recipe_inputs(self, connection, actor, recipe: RecipeDefinition):
+        """Validate ingredient sources and calculate nutrition without trusting model arithmetic."""
+        nutrition = recipe.nutrition
+        if not isinstance(nutrition, CalculatedRecipeNutrition):
+            source_exists = connection.execute(sa.select(db.data_sources.c.id).where(
+                db.data_sources.c.user_id == actor, db.data_sources.c.id == nutrition.data_source_id
+            )).scalar_one_or_none()
+            if source_exists is None:
+                raise NotFound("Recipe data source not found")
+            return nutrition.per_100_g
+
+        ingredients = []
+        for ingredient in recipe.ingredients:
+            if isinstance(ingredient.source, UnknownIngredientSource):
+                ingredients.append((self._empty_nutrition(), Decimal("1")))
+                continue
+            source: ResolvedIngredientSource = ingredient.source
+            quantity = source.quantity
+            if quantity.kind != "mass":
+                raise Unsupported("Recipe calculation requires a normalized mass source")
+            version = connection.execute(sa.select(db.product_versions).where(
+                db.product_versions.c.user_id == actor,
+                db.product_versions.c.id == source.product_version_id,
+            )).mappings().one_or_none()
+            if version is None:
+                raise NotFound("Recipe ingredient product version not found")
+            if version["nutrition_basis"] != "per_100_g" or version["weight_basis"] != quantity.weight_basis:
+                raise ApplicationError("Recipe ingredient source and product bases do not match")
+            if ingredient.weight_basis is not None and ingredient.weight_basis != quantity.weight_basis:
+                raise ApplicationError("Recipe ingredient weight basis is inconsistent")
+            ingredients.append((from_columns(version), Decimal(quantity.edible_g)))
+        return recipe_per_100_g(ingredients, Decimal(nutrition.finished_yield_g))
+
+    def _recipe_profile(self, connection, actor, recipe_id, version_id):
+        row = connection.execute(sa.select(db.recipe_versions).where(
+            db.recipe_versions.c.user_id == actor,
+            db.recipe_versions.c.recipe_id == recipe_id,
+            db.recipe_versions.c.id == version_id,
+        )).mappings().one_or_none()
+        if row is None:
+            raise NotFound("Recipe version not found")
+        rows = connection.execute(sa.select(db.recipe_ingredients).where(
+            db.recipe_ingredients.c.user_id == actor,
+            db.recipe_ingredients.c.recipe_version_id == version_id,
+        ).order_by(db.recipe_ingredients.c.position)).mappings().all()
+        from nutrition_contracts.commands import RecipeIngredient
+        ingredients = [RecipeIngredient.model_validate({
+            "name_as_entered": item["name_as_entered"],
+            "original_quantity": item["original_quantity"],
+            "weight_basis": item["weight_basis"],
+            "source": item["source"],
+        }) for item in rows]
+        return RecipeProfile(recipe_id=recipe_id, version_id=version_id, name=row["name"],
+            ingredients=ingredients, cooking_instructions=row["cooking_instructions"],
+            per_100_g=from_columns(row))
+
+    @staticmethod
+    def _recipe_profile_from_definition(recipe_id, version_id, definition, nutrition):
+        return RecipeProfile(recipe_id=recipe_id, version_id=version_id, name=definition.name,
+            ingredients=definition.ingredients, cooking_instructions=definition.cooking_instructions,
+            per_100_g=nutrition)
+
+    def _insert_recipe_version(self, connection, actor, recipe_id, version_id, version_no, definition, profile):
+        nutrition = definition.nutrition
+        values = {
+            "id": version_id, "user_id": actor, "recipe_id": recipe_id, "version_no": version_no,
+            "name": definition.name, "cooking_instructions": definition.cooking_instructions,
+            "nutrition_kind": nutrition.kind, "data_source_id": None,
+            "finished_yield_g": None, "yield_basis": None,
+            "estimate_approval_update_id": None, "calculation_policy_version": None,
+            **to_columns(profile),
+        }
+        if isinstance(nutrition, CalculatedRecipeNutrition):
+            values.update(finished_yield_g=Decimal(nutrition.finished_yield_g), yield_basis=nutrition.yield_basis,
+                          estimate_approval_update_id=nutrition.estimate_approval_update_id,
+                          calculation_policy_version=nutrition.calculation_policy_version)
+        else:
+            values["data_source_id"] = nutrition.data_source_id
+        connection.execute(db.recipe_versions.insert().values(**values))
+        for position, ingredient in enumerate(definition.ingredients):
+            connection.execute(db.recipe_ingredients.insert().values(
+                id=uuid4(), user_id=actor, recipe_version_id=version_id, position=position,
+                name_as_entered=ingredient.name_as_entered,
+                original_quantity=ingredient.original_quantity.model_dump(mode="json"),
+                weight_basis=ingredient.weight_basis,
+                source=ingredient.source.model_dump(mode="json")))
+
+    def _recipe_result(self, command, recipe_id, version_id, profile):
+        return OutcomeEnvelope(result=Applied(schema_version="1.0", operation_id=command.operation_id,
+            outcome="applied", mutations=[MutationReceipt(entity_kind="recipe", entity_id=recipe_id,
+                revision_id=version_id, effective_date=None)], food_entries=[], observations=[],
+            daily_summaries=[], recipe=profile))
+
+    def _define_recipe(self, connection, actor, envelope):
+        command: DefineRecipe = envelope.command
+        recipe_id, version_id = uuid4(), uuid4()
+        profile = self._recipe_inputs(connection, actor, command.recipe)
+        connection.execute(db.recipes.insert().values(id=recipe_id, user_id=actor, current_version_id=version_id))
+        self._insert_recipe_version(connection, actor, recipe_id, version_id, 1, command.recipe, profile)
+        return self._recipe_result(envelope, recipe_id, version_id,
+                                   self._recipe_profile_from_definition(recipe_id, version_id, command.recipe, profile))
+
+    def _revise_recipe(self, connection, actor, envelope):
+        command: ReviseRecipe = envelope.command
+        recipe = connection.execute(sa.select(db.recipes).where(
+            db.recipes.c.user_id == actor, db.recipes.c.id == command.recipe_id
+        ).with_for_update()).mappings().one_or_none()
+        if recipe is None:
+            raise NotFound("Recipe not found")
+        if recipe["current_version_id"] != command.expected_version_id:
+            raise Conflict("Recipe version has changed")
+        current = connection.execute(sa.select(db.recipe_versions.c.version_no).where(
+            db.recipe_versions.c.user_id == actor,
+            db.recipe_versions.c.id == recipe["current_version_id"],
+        )).scalar_one()
+        version_id = uuid4()
+        profile = self._recipe_inputs(connection, actor, command.replacement)
+        self._insert_recipe_version(connection, actor, command.recipe_id, version_id, current + 1,
+                                    command.replacement, profile)
+        connection.execute(db.recipes.update().where(
+            db.recipes.c.user_id == actor, db.recipes.c.id == command.recipe_id
+        ).values(current_version_id=version_id))
+        return self._recipe_result(envelope, command.recipe_id, version_id,
+                                   self._recipe_profile_from_definition(command.recipe_id, version_id,
+                                                                        command.replacement, profile))
+
     def _mutate(self, connection, actor, command):
         if isinstance(command.command, AddConsumedFood):
             return self._add(connection, actor, command)
@@ -444,7 +580,20 @@ class FoodService:
             return self._delete(connection, actor, command)
         if isinstance(command.command, RestoreFoodEntry):
             return self._restore(connection, actor, command)
-        raise Unsupported("This slice supports resolved food add/correction/delete/restore commands only")
+        if isinstance(command.command, DefineRecipe):
+            return self._define_recipe(connection, actor, command)
+        if isinstance(command.command, ReviseRecipe):
+            return self._revise_recipe(connection, actor, command)
+        raise Unsupported("This slice supports resolved food and recipe definition commands only")
+
+    def get_recipe(self, actor: UUID, recipe_id: UUID) -> RecipeProfile:
+        with self.engine.begin() as connection:
+            self._user(connection, actor, read=True)
+            version_id = connection.execute(sa.select(db.recipes.c.current_version_id).where(
+                db.recipes.c.user_id == actor, db.recipes.c.id == recipe_id)).scalar_one_or_none()
+            if version_id is None:
+                raise NotFound("Recipe not found")
+            return self._recipe_profile(connection, actor, recipe_id, version_id)
 
     @staticmethod
     def _current_components(actor):

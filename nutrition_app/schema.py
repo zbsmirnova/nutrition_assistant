@@ -118,6 +118,49 @@ products.append_constraint(sa.ForeignKeyConstraint(
     ["product_versions.user_id", "product_versions.product_id", "product_versions.id"],
     name="fk_product_current_version", use_alter=True, deferrable=True, initially="DEFERRED"))
 
+recipes = owned("recipes", sa.Column("current_version_id", UUID(as_uuid=True), nullable=False))
+
+recipe_versions = owned("recipe_versions",
+    sa.Column("recipe_id", UUID(as_uuid=True), nullable=False),
+    sa.Column("version_no", sa.Integer, nullable=False),
+    sa.Column("name", sa.Text, nullable=False),
+    sa.Column("cooking_instructions", sa.Text),
+    sa.Column("nutrition_kind", sa.Text, nullable=False),
+    sa.Column("data_source_id", UUID(as_uuid=True)),
+    sa.Column("finished_yield_g", sa.Numeric(18, 6)),
+    sa.Column("yield_basis", sa.Text),
+    sa.Column("estimate_approval_update_id", UUID(as_uuid=True)),
+    sa.Column("calculation_policy_version", sa.Text),
+    *nutrition_columns(),
+    sa.ForeignKeyConstraint(["user_id", "recipe_id"], ["recipes.user_id", "recipes.id"]),
+    sa.ForeignKeyConstraint(["user_id", "data_source_id"], ["data_sources.user_id", "data_sources.id"]),
+    sa.UniqueConstraint("user_id", "recipe_id", "version_no", name="uq_recipe_version_number"),
+    sa.UniqueConstraint("user_id", "recipe_id", "id", name="uq_recipe_version_parent"),
+    sa.CheckConstraint("version_no > 0", name="positive_version"),
+    sa.CheckConstraint("nutrition_kind IN ('provided','calculate')", name="nutrition_kind"),
+    sa.CheckConstraint("yield_basis IS NULL OR yield_basis IN ('measured','ingredient_sum_no_evaporation','user_confirmed_estimate')",
+                       name="yield_basis"),
+    sa.CheckConstraint("finished_yield_g IS NULL OR finished_yield_g > 0", name="positive_yield"),
+    sa.CheckConstraint("(nutrition_kind = 'provided' AND finished_yield_g IS NULL AND yield_basis IS NULL) OR "
+                       "(nutrition_kind = 'calculate' AND finished_yield_g IS NOT NULL AND yield_basis IS NOT NULL)",
+                       name="nutrition_shape"))
+recipes.append_constraint(sa.ForeignKeyConstraint(
+    ["user_id", "id", "current_version_id"],
+    ["recipe_versions.user_id", "recipe_versions.recipe_id", "recipe_versions.id"],
+    name="fk_recipe_current_version", use_alter=True, deferrable=True, initially="DEFERRED"))
+
+recipe_ingredients = owned("recipe_ingredients",
+    sa.Column("recipe_version_id", UUID(as_uuid=True), nullable=False),
+    sa.Column("position", sa.Integer, nullable=False),
+    sa.Column("name_as_entered", sa.Text, nullable=False),
+    sa.Column("original_quantity", JSONB, nullable=False),
+    sa.Column("weight_basis", sa.Text),
+    sa.Column("source", JSONB, nullable=False),
+    sa.ForeignKeyConstraint(["user_id", "recipe_version_id"], ["recipe_versions.user_id", "recipe_versions.id"]),
+    sa.UniqueConstraint("user_id", "recipe_version_id", "position", name="uq_recipe_ingredient_position"),
+    sa.CheckConstraint("position >= 0 AND position < 100", name="position_range"),
+    sa.CheckConstraint("weight_basis IS NULL OR weight_basis IN ('raw','cooked','as_sold')", name="weight_basis"))
+
 food_days = owned("food_days",
     sa.Column("local_date", sa.Date, nullable=False),
     sa.Column("time_zone", sa.Text, nullable=False),
@@ -205,6 +248,8 @@ outbox = owned("outbox",
 sa.Index("ix_food_revisions_day", food_entry_revisions.c.user_id, food_entry_revisions.c.food_day_id)
 sa.Index("ix_prepared_origin", prepared_operations.c.user_id, prepared_operations.c.origin_update_id)
 sa.Index("ix_outbox_dispatch", outbox.c.status, outbox.c.created_at)
+sa.Index("ix_recipe_versions_parent", recipe_versions.c.user_id, recipe_versions.c.recipe_id)
+sa.Index("ix_recipe_ingredients_version", recipe_ingredients.c.user_id, recipe_ingredients.c.recipe_version_id)
 
 telegram_poll_cursors = sa.Table("telegram_poll_cursors", metadata,
     sa.Column("bot_id", sa.BigInteger, primary_key=True),
