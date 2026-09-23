@@ -1,6 +1,6 @@
 # Russian interpretation evaluation v1
 
-Status: instrument complete and self-tested offline; two live batches recorded 2026-09-23 as exploratory developer evidence (not independent QA). Thresholds approved by the product owner.
+Status: instrument complete and self-tested offline; four live batches recorded 2026-09-23 as exploratory developer evidence (not independent QA). The evaluator was hardened at `5ecc774` before the latest two batches. Thresholds approved by the product owner.
 Owner: product owner approves rubric/thresholds; lead assistant/QA maintains the instrument and records runs.
 
 ## What this validates
@@ -66,6 +66,20 @@ Aggregate (rate (n)):
 
 The difference between the two temperature-zero batches is itself a finding: the current evidence does not establish repeat stability. The second table is user-run exploratory evidence, not independent QA.
 
+## Evaluator hardening — revision 5ecc774
+
+The runner was strengthened before the next live calls. A scored action now needs a non-trivial evidence excerpt that occurs in the source, and a date hint must be absent unless the case contains date evidence and the hint quotes that evidence. Candidate selection must contain only allowed references, rather than merely containing one expected reference. These checks make the case-pass score stricter and expose malformed proposals that previously looked acceptable by count alone.
+
+## Third live batch — strict evaluator, JSON output — 2026-09-23
+
+The user ran the production prompt with parser fingerprint `nebius:d39eae6d90b4b4d33b80a8ca09d4cee68b45718a274a9406dee5f92f4ef0fbf0`. The JSON output records eight validated proposals and one `ParserUnavailable` (`INTAKE-007`). All eight validated proposals failed both new per-action gates: evidence spans were one-character fragments and date hints were the invented text `"2"`. The scorecard was case-pass `0.00`, evidence-valid `0.00 (8)`, date-hint-valid `0.00 (8)`, clarification accuracy `0.40 (5)`, quantity extraction `0.75 (8)`, candidate selection `0.88 (8)`, and errors `1`.
+
+This is a stronger diagnosis than the earlier permissive runs: the model is emitting schema-valid JSON, but the proposal evidence and date fields are systematically unusable. INTAKE-005 also selected an invalid candidate set under the stricter selection rule. The run remains user-run exploratory evidence, not independent QA.
+
+## Fourth live batch — strict evaluator, human-readable output — 2026-09-23
+
+The human-readable command made another nine-call request, so it is a separate batch from the preceding JSON command. All nine calls returned proposals, but every case failed the evidence and date-hint gates. Its scorecard was case-pass `0.00`, evidence-valid `0.00 (9)`, date-hint-valid `0.00 (9)`, clarification recall `0.00/3`, quantity extraction `0.78 (9)`, candidate selection `0.89 (9)`, max-action compliance `1.00 (5)`, and errors `0`. This confirms the evidence/date defect is repeatable while provider availability remains variable.
+
 ## Findings
 
 The seven returned proposals preserved consumption intent and included an expected candidate, but the aggregate result is below the draft quality bars. Failures are concentrated in uncertainty handling and action discipline:
@@ -73,7 +87,7 @@ The seven returned proposals preserved consumption intent and included an expect
 1. **No clarifications raised.** In the first batch, recall was 0/3; in the second, the two scored required cases also had recall 0/2 because INTAKE-005 was unavailable. INTAKE-003 (cafeteria/bone-vs-edible and sauce) and INTAKE-009 (gross meat weight needs an edible basis) were answered silently. This threatens FOOD-002 and the “do not silently choose / do not assume portions” principles.
 2. **INTAKE-001 is structurally unreliable despite valid JSON.** It returned six actions, one-character evidence spans, an invented date hint (`"2"`), and incorrect quantities instead of preserving the stated meal items and total quantities.
 3. **Unavailable calls are not stable across batches.** INTAKE-007 and INTAKE-008 failed in the first batch; INTAKE-005 and INTAKE-007 failed in the second. The affected cases need targeted reruns before interpreting their model behavior.
-4. **The evaluator is intentionally permissive in two places.** Candidate selection only requires an expected reference to appear, and `add_food_count` can pass while extra actions are semantically wrong. Evidence quality, date-hint quality, and extra candidates need stronger scoring before using this as a go/no-go gate.
+4. **The strengthened evaluator exposes a systematic evidence/date defect.** Every action in both strict batches used a one-character evidence span and the invented date hint `"2"`, so all cases failed those gates. This is a model/prompt failure, not a transport failure.
 
 The clarification and action-discipline failures are prompt-alignment hypotheses, not evidence of a model-capability ceiling. The two provider errors are operational evidence only.
 
@@ -83,6 +97,6 @@ Candidate prompt [prompt_candidate_v2.txt](air-file://fai6b8iclscp0tss0s3r/Users
 
 ## Limits and next work
 
-- n=9 per batch, temperature 0, two batches with two unavailable calls each — repeat stability is not established.
+- n=9 per batch, temperature 0; two permissive batches and two strict batches are recorded. The strict batches both had zero valid evidence/date fields, while provider availability differed, so repeat stability is not established.
 - Nine cases validate the instrument and give a first signal; they do not select a model or certify quality. Expand the corpus (corrections/undo, plans-vs-consumption, dates/history boundaries, observations) as a held-out set separate from prompt-development cases.
 - Two context/schema gaps surfaced, tracked as product decisions, not model failures: personal shortcuts ("кофе как обычно") belong in the DB and need a context slot; history references ("тот же что раньше") resolve by a 2–4 day lookback and need a context slot. These affect INTAKE-001/005 (coffee) and INTAKE-007 (cheese), currently carried as `known_gaps`. See Q04 and Q09 in [README.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/README.md?type=file&root=%252F).
