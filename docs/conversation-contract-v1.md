@@ -94,6 +94,10 @@ Rules for the clarification workflow (the single reply-linked dairy-fat path is 
 8. “Отмени запись супа” cancels an uncommitted soup action when that is the clear target. It does not delete unrelated already saved food. A cancellation is acknowledged and never silently marks the food as eaten.
 9. A pending correction does not remove the currently committed entry from totals. Explain that its old value remains until corrected; only an unresolved new entry contributes nothing.
 
+### MVP user-decision boundary
+
+The model can detect uncertainty and present bounded alternatives, but it cannot choose an approximation, average product, serving conversion, edible-weight interpretation, recipe substitute, or other nutrition-affecting assumption for the user. The user must explicitly choose or approve the option in the source message or a typed clarification answer. Until then, keep the action pending and outside totals. This applies even when the model proposal is structurally complete.
+
 ### MVP exact-weight clarification
 
 For the MVP, ask for an exact usable weight or an explicit user-approved assumption whenever the amount is approximate, ranged, partial, count-based without a trusted mass conversion, bone/skin or other inedible-weight ambiguous, gross-versus-edible ambiguous, or dependent on an uncertain cooked yield. Keep the pending food outside totals until the answer arrives. An exact compatible gram or millilitre amount with a clear raw/cooked/as-sold basis does not require this question.
