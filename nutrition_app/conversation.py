@@ -71,7 +71,7 @@ class ConversationWorker:
                    "local_date": source["source_sent_at"].astimezone(ZoneInfo(source["source_time_zone"])).date().isoformat(),
                    "has_reply": source["reply_to_message_id"] is not None, "forwarded": source["forwarded"],
                    "catalog_overflow": len(rows) > MAX_CANDIDATES, "candidates": [],
-                   "pending_candidates": [], "pending_questions": {}, "pending": None,
+                   "pending_candidates": [], "pending_entries": [], "pending_questions": {}, "pending": None,
                    "entries": [], "reply_entry_ref": None}
         if not context["catalog_overflow"]:
             context["candidates"] = [{"ref": f"c{i}", "version_id": str(row["id"]), "name": row["name"],
@@ -154,8 +154,7 @@ class ConversationWorker:
             replied_entry = connection.execute(sa.select(db.food_entries.c.id).select_from(
                 db.food_entries.join(db.food_entry_revisions, sa.and_(
                     db.food_entries.c.user_id == db.food_entry_revisions.c.user_id,
-                    db.food_entries.c.id == db.food_entry_revisions.c.food_entry_id,
-                    db.food_entries.c.current_revision_id == db.food_entry_revisions.c.id))
+                    db.food_entries.c.id == db.food_entry_revisions.c.food_entry_id))
                 .join(db.applied_operations, sa.and_(
                     db.food_entry_revisions.c.user_id == db.applied_operations.c.user_id,
                     db.food_entry_revisions.c.applied_operation_id == db.applied_operations.c.id))
@@ -191,6 +190,8 @@ class ConversationWorker:
                 context["pending_questions"] = pending_questions
                 context["pending_candidates"] = [candidate for candidate in original_context["candidates"]
                                                    if candidate["ref"] in refs]
+                context["pending_entries"] = [entry for entry in original_context.get("entries", ())
+                                               if entry["ref"] in refs]
                 context["pending"] = {
                     "job_id": str(pending["id"]),
                     "origin_update_id": str(pending["origin_update_id"]),

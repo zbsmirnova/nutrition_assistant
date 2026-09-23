@@ -43,12 +43,17 @@ class MoveDate(Contract):
     date_hint: DateHint
 
 
+class SetMeal(Contract):
+    kind: Literal["set_meal"]
+    meal: Meal
+
+
 class ReplaceFood(Contract):
     kind: Literal["replace_food"]
     food: FoodReference
 
 
-FoodChange = Annotated[SetQuantity | SetInedibleWeight | MoveDate | ReplaceFood, Field(discriminator="kind")]
+FoodChange = Annotated[SetQuantity | SetInedibleWeight | MoveDate | SetMeal | ReplaceFood, Field(discriminator="kind")]
 
 
 class CorrectFood(Proposal):
@@ -312,7 +317,11 @@ def validate_parser_context(
     def visit(value: object) -> None:
         if isinstance(value, dict):
             if value.get("kind") == "candidate":
-                if candidates.get(value["candidate_ref"]) != value["candidate_kind"]:
+                expected_kind = candidates.get(value["candidate_ref"])
+                if (isinstance(expected_kind, (set, frozenset))
+                        and value["candidate_kind"] not in expected_kind) or (
+                            not isinstance(expected_kind, (set, frozenset))
+                            and expected_kind != value["candidate_kind"]):
                     raise ValueError("candidate missing from scoped context or of the wrong type")
             if value.get("kind") == "reply" and not has_reply:
                 raise ValueError("no reply-to context exists")

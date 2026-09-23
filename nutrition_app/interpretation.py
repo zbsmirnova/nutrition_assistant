@@ -13,9 +13,9 @@ from typing import Protocol
 from uuid import UUID
 
 from nutrition_contracts.commands import CommandEnvelope
-from nutrition_contracts.parser import (AddFood, AnswerClarification, CorrectFood, DeleteFood,
-                                         NonLogging, NutritionAnswer, ParserOutput, SetQuantity,
-                                         UndoFood, validate_parser_context)
+from nutrition_contracts.parser import (AddFood, AnswerClarification, CandidateAnswer, CorrectFood,
+                                         DeleteFood, MoveDate, NonLogging, NutritionAnswer, ParserOutput,
+                                         SetMeal, SetQuantity, UndoFood, validate_parser_context)
 
 from .errors import ApplicationError
 from .service import digest, operation_id_for
@@ -34,6 +34,7 @@ class ParserRequest:
     candidates: tuple[dict, ...] = field(repr=False)
     pending_candidates: tuple[dict, ...] = field(default_factory=tuple, repr=False)
     pending_questions: dict[str, dict[str, str]] = field(default_factory=dict, repr=False)
+    pending_entries: tuple[dict, ...] = field(default_factory=tuple, repr=False)
     entries: tuple[dict, ...] = field(default_factory=tuple, repr=False)
     has_reply: bool = False
 
@@ -91,10 +92,13 @@ def parser_request(context: dict) -> ParserRequest:
                     for c in context.get("pending_candidates", ()))
     entries = tuple({k: c[k] for k in ("ref", "description", "effective_date", "meal", "state")}
                     for c in context.get("entries", ()))
+    pending_entries = tuple({k: c[k] for k in ("ref", "description", "effective_date", "meal", "state")}
+                            for c in context.get("pending_entries", ()))
     return ParserRequest(source_text=context["source_text"], local_date=context["local_date"],
                          time_zone=context["time_zone"], candidates=public,
                          pending_candidates=pending,
                          pending_questions=context.get("pending_questions", {}),
+                         pending_entries=pending_entries,
                          entries=entries,
                          has_reply=context.get("has_reply", False))
 
@@ -186,7 +190,7 @@ def identity_words(text):
     return result
 
 
-def _entry_target(target, context):
+def _entry_matches(target, context):
     entries = list(context.get("entry_records", context.get("entries", ())))
     if target.kind == "candidate":
         matching = [entry for entry in entries if entry["ref"] == target.candidate_ref]
@@ -197,7 +201,14 @@ def _entry_target(target, context):
         wanted = normalized(target.description)
         matching = [entry for entry in entries if normalized(entry["description"]) == wanted]
     else:
-        return None, "entry_target_unsupported"
+        return [], "entry_target_unsupported"
+    return matching, None
+
+
+def _entry_target(target, context):
+    matching, target_reason = _entry_matches(target, context)
+    if target_reason is not None:
+        return None, target_reason
     if not matching:
         return None, "entry_target_not_found"
     if len(matching) != 1:
@@ -223,8 +234,11 @@ def _correction_quantity(text, quantity):
 def _entry_command(actor, origin, context, record, kind, *, replacement=None,
                    restore_from_revision_id=None, reason=None):
     position = context.get("operation_position", 0)
-    source = {"origin_update_id": str(origin), "evidence_update_ids": [str(origin)],
-              "pending_action_id": None}
+    evidence_ids = context.get("evidence_update_ids", [origin])
+    source = {"origin_update_id": str(origin),
+              "evidence_update_ids": [str(item) for item in evidence_ids],
+              "pending_action_id": (None if context.get("pending_action_id") is None
+                                     else str(context["pending_action_id"]))}
     base = {"schema_version": "1.0", "user_id": str(actor),
             "operation_id": str(operation_id_for(origin, position)),
             "context_revision": context["context_revision"], "source": source}
@@ -246,9 +260,15 @@ def _entry_command(actor, origin, context, record, kind, *, replacement=None,
 def resolve_entry_action(actor: UUID, origin: UUID, context: dict, action) -> Resolution:
     if action.depends_on or action.unresolved:
         return Resolution("unresolved", "proposal_unresolved")
-    record, target_reason = _entry_target(action.target, context)
+    matches, match_reason = _entry_matches(action.target, context)
+    if match_reason is not None:
+        return Resolution("unresolved", match_reason)
+    if len(matches) > 1:
+        pending_questions = {entry["ref"]: {"q1": "selection"} for entry in matches}
+        return Resolution("unresolved", "entry_target_ambiguous", pending_questions=pending_questions)
+    record = matches[0] if matches else None
     if record is None:
-        return Resolution("unresolved", target_reason)
+        return Resolution("unresolved", "entry_target_not_found")
     if isinstance(action, UndoFood):
         restore_revision = record.get("undo_revision_id")
         if restore_revision is None:
@@ -266,26 +286,34 @@ def resolve_entry_action(actor: UUID, origin: UUID, context: dict, action) -> Re
                           command_position=context.get("operation_position", 0))
     if not isinstance(action, CorrectFood):
         return Resolution("unsupported", "entry_action_not_implemented")
-    if not isinstance(action.change, SetQuantity):
+    if not isinstance(action.change, (SetQuantity, MoveDate, SetMeal)):
         return Resolution("unsupported", "correction_change_not_implemented")
     components = record.get("components", [])
-    if len(components) != 1:
-        return Resolution("unsupported", "correction_multiple_components")
-    quantity, quantity_reason = _correction_quantity(context["source_text"], action.change.quantity)
-    if quantity is None:
-        return Resolution("unresolved", quantity_reason)
-    component = dict(components[0])
-    current_quantity = component["quantity"]
-    expected_unit = "g" if current_quantity["kind"] == "mass" else "ml"
-    if quantity.unit != expected_unit:
-        return Resolution("unresolved", "unit_basis_mismatch")
-    component["quantity"] = ({"kind": "mass", "edible_g": quantity.amount, "gross_g": None,
-                                "inedible_g": None, "weight_basis": current_quantity["weight_basis"]}
-                               if expected_unit == "g" else
-                               {"kind": "volume", "ml": quantity.amount,
-                                "weight_basis": current_quantity["weight_basis"]})
     replacement = dict(record["food"])
-    replacement["components"] = [component]
+    if isinstance(action.change, SetQuantity):
+        if len(components) != 1:
+            return Resolution("unsupported", "correction_multiple_components")
+        quantity, quantity_reason = _correction_quantity(context["source_text"], action.change.quantity)
+        if quantity is None:
+            return Resolution("unresolved", quantity_reason)
+        component = dict(components[0])
+        current_quantity = component["quantity"]
+        expected_unit = "g" if current_quantity["kind"] == "mass" else "ml"
+        if quantity.unit != expected_unit:
+            return Resolution("unresolved", "unit_basis_mismatch")
+        component["quantity"] = ({"kind": "mass", "edible_g": quantity.amount, "gross_g": None,
+                                    "inedible_g": None, "weight_basis": current_quantity["weight_basis"]}
+                                   if expected_unit == "g" else
+                                   {"kind": "volume", "ml": quantity.amount,
+                                    "weight_basis": current_quantity["weight_basis"]})
+        replacement["components"] = [component]
+    elif isinstance(action.change, MoveDate):
+        target_date = effective_date(context, action.change.date_hint.text)
+        if target_date is None:
+            return Resolution("unresolved", "date_unresolved")
+        replacement["effective_date"] = target_date.isoformat()
+    elif isinstance(action.change, SetMeal):
+        replacement["meal"] = action.change.meal
     command = _entry_command(actor, origin, context, record, "correct_food_entry",
                              replacement=replacement, reason=action.evidence)
     return Resolution("ready", "correction_command_prepared", command,
@@ -294,8 +322,9 @@ def resolve_entry_action(actor: UUID, origin: UUID, context: dict, action) -> Re
 
 def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> Resolution:
     candidate_kinds = {c["ref"]: "product" for c in context["candidates"]}
-    candidate_kinds.update({c["ref"]: "pending" for c in context.get("pending_candidates", ())})
     candidate_kinds.update({c["ref"]: "entry" for c in context.get("entries", ())})
+    candidate_kinds.update({c["ref"]: {"pending", "product"} for c in context.get("pending_candidates", ())})
+    candidate_kinds.update({c["ref"]: {"pending", "entry"} for c in context.get("pending_entries", ())})
     validate_parser_context(output, candidate_kinds, context.get("pending_questions", {}),
                             source_text=context["source_text"], has_reply=context["has_reply"])
     if len(output.actions) != 1:
@@ -315,8 +344,21 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
         if not 0 <= pending_position < len(original_output.actions):
             return Resolution("unsupported", "pending_action_not_implemented")
         original_action = original_output.actions[pending_position]
-        if not isinstance(original_action, AddFood):
+        if not isinstance(original_action, (AddFood, CorrectFood, DeleteFood, UndoFood)):
             return Resolution("unsupported", "pending_action_not_implemented")
+        if isinstance(original_action, (CorrectFood, DeleteFood, UndoFood)):
+            selections = [answer.value.selection for answer in action.answers
+                          if isinstance(answer.value, CandidateAnswer)]
+            if len(selections) != 1 or selections[0].candidate_kind != "entry":
+                return Resolution("unresolved", "clarification_answer_incomplete",
+                                  pending_questions=context["pending_questions"])
+            selected = selections[0]
+            if selected.candidate_ref not in context["pending_questions"]:
+                return Resolution("unresolved", "clarification_context_missing")
+            target = {"kind": "candidate", "candidate_ref": selected.candidate_ref,
+                      "candidate_kind": "entry"}
+            original_action = type(original_action).model_validate({
+                **original_action.model_dump(mode="json"), "target": target})
         original = ParserOutput(schema_version=original_output.schema_version, actions=[original_action])
         # The answer is evidence for the original action. Backend resolution
         # re-runs against the original message plus the answer, preserving the
@@ -328,15 +370,17 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
         merged["forwarded"] = False
         merged["pending_questions"] = {}
         merged["pending_candidates"] = []
+        merged["pending_entries"] = []
         merged["pending_identity_confirmed"] = True
         merged["operation_position"] = pending_position
         merged["evidence_update_ids"] = [UUID(pending["origin_update_id"]), origin]
         merged["pending_action_id"] = UUID(pending["job_id"])
-        nutrition_answers = [answer.value for answer in action.answers if isinstance(answer.value, NutritionAnswer)]
-        if not nutrition_answers or nutrition_answers[0].supplied_nutrition.fat_g is None:
-            return Resolution("unresolved", "clarification_answer_incomplete",
-                              pending_food_date=date.fromisoformat(pending["context"]["local_date"]),
-                              pending_questions=context["pending_questions"])
+        if isinstance(original_action, AddFood):
+            nutrition_answers = [answer.value for answer in action.answers if isinstance(answer.value, NutritionAnswer)]
+            if not nutrition_answers or nutrition_answers[0].supplied_nutrition.fat_g is None:
+                return Resolution("unresolved", "clarification_answer_incomplete",
+                                  pending_food_date=date.fromisoformat(pending["context"]["local_date"]),
+                                  pending_questions=context["pending_questions"])
         return resolve(actor, UUID(pending["origin_update_id"]), merged, original)
     if isinstance(action, (CorrectFood, DeleteFood, UndoFood)):
         return resolve_entry_action(actor, origin, context, action)

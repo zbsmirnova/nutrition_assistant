@@ -250,6 +250,75 @@ class ConversationWorkerTests(unittest.TestCase):
         self.assertEqual(self.count(db.food_entry_revisions), 2)
         self.assertEqual(self.count(db.prepared_operations), 2)
 
+    def test_ambiguous_target_can_be_selected_and_corrected_once(self):
+        self.assertEqual(self.worker.run_one(self.actor, ControlledParser(), origin=self.source(1))["status"], "applied")
+        self.assertEqual(self.worker.run_one(self.actor, ControlledParser(), origin=self.source(2))["status"], "applied")
+        text = "Исправь Synthetic product A на 80 г"
+        original = self.source(3, text=text)
+        proposal = {"schema_version": "1.0", "actions": [{
+            "kind": "correct_food", "action_id": "a1", "evidence": text,
+            "depends_on": [], "unresolved": [],
+            "target": {"kind": "description", "description": PRODUCT_NAME},
+            "change": {"kind": "set_quantity", "quantity": {"amount": "80", "unit": "g"}},
+        }]}
+        initial = self.worker.run_one(self.actor, ControlledParser(proposal), origin=original)
+        self.assertEqual((initial["status"], initial["reason"]), ("unresolved", "entry_target_ambiguous"))
+        with self.engine.begin() as connection:
+            job = connection.execute(sa.select(db.conversation_jobs).where(
+                db.conversation_jobs.c.origin_update_id == original)).mappings().one()
+            self.assertEqual(set(job["pending_questions"]), {"c2", "c3"})
+            original_message_id = connection.execute(sa.select(db.inbox_updates.c.telegram_message_id).where(
+                db.inbox_updates.c.id == original)).scalar_one()
+        reply = self.source(4, text="2", reply_to_message_id=original_message_id)
+        answer = {"schema_version": "1.0", "actions": [{
+            "kind": "answer_clarification", "action_id": "a1", "evidence": "2",
+            "depends_on": [], "unresolved": [],
+            "pending": {"kind": "candidate", "candidate_ref": "c2", "candidate_kind": "pending"},
+            "answers": [{"question_ref": "q1", "value": {"kind": "selection",
+                "selection": {"kind": "candidate", "candidate_ref": "c3", "candidate_kind": "entry"}}}],
+        }]}
+        parser = ControlledParser(answer)
+        result = self.worker.run_one(self.actor, parser, origin=reply)
+        self.assertEqual(result["status"], "applied")
+        self.assertEqual(parser.requests[0].pending_entries[0]["ref"], "c2")
+        self.assertEqual(self.count(db.food_entry_revisions), 3)
+        self.assertEqual(self.service.get_day(self.actor, date(2026, 9, 22)).nutrition.kcal.amount.value, "216")
+        with self.engine.begin() as connection:
+            quantities = connection.execute(sa.select(db.food_components.c.edible_g).order_by(db.food_components.c.created_at)).scalars().all()
+        self.assertEqual([str(value) for value in quantities], ["100.000000", "100.000000", "80.000000"])
+        self.assertEqual(self.worker.run_one(self.actor, parser, origin=reply)["status"], "applied")
+        self.assertEqual(self.count(db.food_entry_revisions), 3)
+
+    def test_correction_can_move_date_and_change_meal(self):
+        original = self.source(1)
+        self.assertEqual(self.worker.run_one(self.actor, ControlledParser(), origin=original)["status"], "applied")
+        with self.engine.begin() as connection:
+            message_id = connection.execute(sa.select(db.inbox_updates.c.telegram_message_id).where(
+                db.inbox_updates.c.id == original)).scalar_one()
+        move_text = "Перенеси на 2026-09-23"
+        move = self.source(2, text=move_text, reply_to_message_id=message_id)
+        move_output = {"schema_version": "1.0", "actions": [{
+            "kind": "correct_food", "action_id": "a1", "evidence": move_text,
+            "depends_on": [], "unresolved": [], "target": {"kind": "reply"},
+            "change": {"kind": "move_date", "date_hint": {"text": "2026-09-23"}},
+        }]}
+        self.assertEqual(self.worker.run_one(self.actor, ControlledParser(move_output), origin=move)["status"], "applied")
+        self.assertEqual(self.service.get_day(self.actor, date(2026, 9, 22)).entry_count, 0)
+        self.assertEqual(self.service.get_day(self.actor, date(2026, 9, 23)).entry_count, 1)
+        meal_text = "Запиши как ужин"
+        meal = self.source(3, text=meal_text, reply_to_message_id=message_id)
+        meal_output = {"schema_version": "1.0", "actions": [{
+            "kind": "correct_food", "action_id": "a1", "evidence": meal_text,
+            "depends_on": [], "unresolved": [], "target": {"kind": "reply"},
+            "change": {"kind": "set_meal", "meal": "dinner"},
+        }]}
+        meal_result = self.worker.run_one(self.actor, ControlledParser(meal_output), origin=meal)
+        self.assertEqual(meal_result["status"], "applied", meal_result)
+        with self.engine.begin() as connection:
+            self.assertEqual(connection.execute(sa.select(db.food_entry_revisions.c.meal).where(
+                db.food_entry_revisions.c.id == sa.select(db.food_entries.c.current_revision_id).where(
+                    db.food_entries.c.user_id == self.actor).scalar_subquery())).scalar_one(), "dinner")
+
     def test_forward_and_reply_inputs_wait_without_calling_parser(self):
         parser = ControlledParser()
         for number, change in enumerate([{"forwarded": True}, {"reply_to_message_id": 88}], 1):

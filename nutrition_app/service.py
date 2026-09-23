@@ -126,8 +126,10 @@ class FoodService:
         elif isinstance(command.command, CorrectFoodEntry) and any(
                 not isinstance(c, ProductComponent) for c in command.command.replacement.components):
             raise Unsupported("This slice supports pinned product components only")
-        elif command.source.pending_action_id is not None or evidence != [command.source.origin_update_id]:
-            raise Unsupported("Corrections cannot depend on a pending clarification in this slice")
+        elif command.source.pending_action_id is None and evidence != [command.source.origin_update_id]:
+            raise Unsupported("Additional correction evidence requires a pending clarification")
+        elif command.source.pending_action_id is not None and len(evidence) < 2:
+            raise Unsupported("A clarification command requires answer evidence")
         if command.operation_id != operation_id_for(command.source.origin_update_id, position):
             raise ApplicationError("Operation identity must match its original message and position")
 

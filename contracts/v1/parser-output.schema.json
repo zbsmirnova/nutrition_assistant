@@ -676,6 +676,7 @@
               "move_date": "#/$defs/MoveDate",
               "replace_food": "#/$defs/ReplaceFood",
               "set_inedible_weight": "#/$defs/SetInedibleWeight",
+              "set_meal": "#/$defs/SetMeal",
               "set_quantity": "#/$defs/SetQuantity"
             },
             "propertyName": "kind"
@@ -689,6 +690,9 @@
             },
             {
               "$ref": "#/$defs/MoveDate"
+            },
+            {
+              "$ref": "#/$defs/SetMeal"
             },
             {
               "$ref": "#/$defs/ReplaceFood"
@@ -2028,6 +2032,33 @@
         "quantity"
       ],
       "title": "SetInedibleWeight",
+      "type": "object"
+    },
+    "SetMeal": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "set_meal",
+          "title": "Kind",
+          "type": "string"
+        },
+        "meal": {
+          "enum": [
+            "breakfast",
+            "lunch",
+            "dinner",
+            "snack",
+            "unspecified"
+          ],
+          "title": "Meal",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "meal"
+      ],
+      "title": "SetMeal",
       "type": "object"
     },
     "SetQuantity": {
