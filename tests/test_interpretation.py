@@ -6,6 +6,7 @@ from uuid import UUID
 
 from nutrition_contracts.parser import ParserOutput
 from nutrition_app.conversation_demo import PRODUCT_NAME, TEXT, fixture
+from nutrition_app.conversation import ConversationWorker
 from nutrition_app.interpretation import (CONTEXT_VERSION, RESOLVER_VERSION, ParserUnavailable,
                                          SyntheticParser, parser_request, resolve)
 
@@ -101,6 +102,31 @@ class InterpretationTests(unittest.TestCase):
                 result = resolve(ACTOR, ORIGIN, context(text), proposal(text))
                 self.assertEqual(result.reason, "quantity_not_exact")
                 self.assertIsNone(result.command)
+
+    def test_ambiguous_gross_or_bone_weight_waits_for_usable_weight(self):
+        text = "Съела около 150 г курицы с костями"
+        source = context(text)
+        source["candidates"][0].update(name="Курица", food_kind="general", declared_fat_percent=None)
+        result = resolve(ACTOR, ORIGIN, source, proposal(text, quantity={"amount": "150", "unit": "g"}))
+        self.assertEqual((result.status, result.reason), ("unresolved", "weight_basis_unresolved"))
+        self.assertEqual(result.pending_questions, {"c1": {"q1": "quantity"}})
+
+    def test_exact_quantity_reply_can_resume_original_approximation(self):
+        text = "Съела около 150 г Курицы"
+        source = context(text)
+        source["candidates"][0].update(name="Курица", food_kind="general", declared_fat_percent=None)
+        resumed = dict(source, source_text=text + "\n120 г", quantity_clarification_answered=True,
+                       clarification_text="120 г", pending_identity_confirmed=True)
+        result = resolve(ACTOR, ORIGIN, resumed, proposal(text, quantity={"amount": "120", "unit": "g"}))
+        self.assertEqual(result.status, "ready")
+        self.assertEqual(result.command.command.food.components[0].quantity.edible_g, "120")
+
+    def test_worker_explains_exact_weight_boundary(self):
+        message = ConversationWorker._clarification(
+            {"candidates": [{"ref": "c1", "name": "Курица"}], "recipes": []},
+            "weight_basis_unresolved", {"c1": {"q1": "quantity"}})
+        self.assertIn("съедобный вес", message)
+        self.assertIn("не включаю", message)
 
     def test_unknown_catalog_classification_or_fat_is_not_invented(self):
         for field in ("food_kind", "declared_fat_percent"):

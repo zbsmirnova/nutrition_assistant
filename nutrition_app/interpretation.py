@@ -23,7 +23,7 @@ from .service import digest, operation_id_for
 
 
 CONTEXT_VERSION = "single-food-context-v5"
-RESOLVER_VERSION = "single-food-resolver-v8"
+RESOLVER_VERSION = "single-food-resolver-v9"
 MAX_CANDIDATES = 64
 
 
@@ -203,9 +203,38 @@ NON_CONSUMPTION = re.compile(r"\b(?:планир\w*|собираюсь|буду|
                              r"калорий|рецепт\w*|сохран\w*|исправ\w*|вместо|"
                              r"или|либо|or|plan\w*|tomorrow|recipe|instead|not)\b|[?]", re.I)
 APPROXIMATE = re.compile(r"\b(?:примерно|около|приблизительно|где-то|roughly|about|approximately)\b|[~≈]", re.I)
+# A reversed colloquial construction such as "граммов 120" does not provide
+# a stable quantity span for the parser contract. Keep it pending rather than
+# treating a nearby number as an exact portion.
+COLLOQUIAL_QUANTITY = re.compile(r"\b(?:грамм(?:ов|а)?|килограмм(?:ов|а)?)\s+[0-9]", re.I)
+# Gross/inedible wording requires the user to state the usable weight. The
+# explicit "без костей/кожи" form supplies a usable basis and is therefore
+# allowed to continue to the normal catalog checks.
+INEDIBLE_WEIGHT = re.compile(r"\b(?:брутто|gross)\b|\b(?:с|with)\s+(?:кост\w*|кож\w*|bone\w*|skin\w*)\b|"
+                             r"\b(?:вес|weight)\s+(?:вместе\s+с|with)\s+(?:кост\w*|кож\w*|bone\w*|skin\w*)\b", re.I)
 RAW_WORD = re.compile(r"\b(?:сыр(?:ой|ая|ое|ые|ого|ую|ых|ом)|raw|uncooked)\b", re.I)
 COOKED_WORD = re.compile(r"\b(?:варен\w*|отварн\w*|жарен\w*|запеченн\w*|приготовлен\w*|готов(?:ый|ая|ое|ые|ого|ую|ых|ом)|"
                          r"cooked|boiled|fried|baked)\b", re.I)
+
+
+def quantity_guard_reason(text: str) -> str | None:
+    """Return the deterministic MVP disposition for a non-exact weight."""
+    if (APPROXIMATE.search(text) or COLLOQUIAL_QUANTITY.search(text)
+            or INEDIBLE_WEIGHT.search(text)):
+        if INEDIBLE_WEIGHT.search(text):
+            return "weight_basis_unresolved"
+        return "quantity_not_exact"
+    return None
+
+
+def quantity_measurement_text(context: dict) -> str:
+    """Use a user's exact quantity reply for lexical quantity validation.
+
+    The original message remains evidence and is retained in the pending job,
+    but its approximation/bone wording must not make an exact follow-up answer
+    fail the same guard a second time.
+    """
+    return context.get("clarification_text", context["source_text"])
 
 
 def identity_words(text):
@@ -450,6 +479,9 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
         merged["operation_position"] = pending_position
         merged["evidence_update_ids"] = [UUID(pending["origin_update_id"]), origin]
         merged["pending_action_id"] = UUID(pending["job_id"])
+        merged["quantity_clarification_answered"] = bool(quantity_answers)
+        if quantity_answers:
+            merged["clarification_text"] = answer_text
         if isinstance(original_action, AddFood) and not (selections or text_answers or quantity_answers):
             if not nutrition_answers or nutrition_answers[0].supplied_nutrition.fat_g is None:
                 return Resolution("unresolved", "clarification_answer_incomplete",
@@ -464,8 +496,15 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
     pending_ref = action.food.candidate_ref if action.food.kind == "candidate" else None
 
     def defer(reason, questions=None):
-        if questions is None and reason == "dairy_fat_missing" and pending_ref is not None:
-            questions = {pending_ref: {"q1": "nutrition"}}
+        if questions is None and pending_ref is not None:
+            question_kind = {
+                "dairy_fat_missing": "nutrition",
+                "quantity_unresolved": "quantity",
+                "quantity_not_exact": "quantity",
+                "weight_basis_unresolved": "quantity",
+            }.get(reason)
+            if question_kind is not None:
+                questions = {pending_ref: {"q1": question_kind}}
         return Resolution("unresolved", reason, pending_food_date=target_date, pending_questions=questions)
 
     if action.depends_on or action.unresolved:
@@ -504,15 +543,18 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
             return defer("recipe_unresolved")
         pending_ref = recipe["ref"]
         quantity = action.quantity
-        matches = list(QUANTITY.finditer(context["source_text"]))
+        measurement_text = quantity_measurement_text(context)
+        matches = list(QUANTITY.finditer(measurement_text))
         if quantity.amount is None or quantity.unit != "g" or len(matches) != 1:
             return defer("quantity_unresolved", {pending_ref: {"q1": "quantity"}})
         lexical = AMOUNT_UNIT.fullmatch(matches[0].group())
         if (Decimal(lexical.group(1).replace(",", ".")) != Decimal(quantity.amount)
                 or UNITS[lexical.group(2).casefold()] != "g"):
             return defer("quantity_evidence_conflict")
-        if APPROXIMATE.search(context["source_text"]):
-            return defer("quantity_not_exact")
+        if not context.get("quantity_clarification_answered"):
+            guard_reason = quantity_guard_reason(context["source_text"])
+            if guard_reason is not None:
+                return defer(guard_reason)
         evidence_ids = context.get("evidence_update_ids", [origin])
         pending_action_id = context.get("pending_action_id")
         payload = {"schema_version": "1.0", "user_id": str(actor),
@@ -560,15 +602,17 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
             (COOKED_WORD.search(folded) and product["weight_basis"] != "cooked")):
         return defer("weight_basis_evidence_conflict")
     quantity = action.quantity
-    matches = list(QUANTITY.finditer(text))
+    measurement_text = quantity_measurement_text(context)
+    matches = list(QUANTITY.finditer(measurement_text))
     if quantity.amount is None or quantity.unit is None or len(matches) != 1:
         return defer("quantity_unresolved")
-    prefix = text[:matches[0].start()]
-    if (APPROXIMATE.search(text)
-            or re.search(r"[0-9]\s*(?:[-–—−×*x]|до|to)\s*$", prefix, re.I)
-            or re.search(r"(?:[<>≤≥±]|\b(?:до|от|менее|более|меньше|больше|минимум|максимум|"
-                         r"up to|at least|at most|less than|more than|under|over))\s*$", prefix, re.I)):
-        return defer("quantity_not_exact")
+    prefix = measurement_text[:matches[0].start()]
+    if not context.get("quantity_clarification_answered"):
+        if (quantity_guard_reason(text) is not None
+                or re.search(r"[0-9]\s*(?:[-–—−×*x]|до|to)\s*$", prefix, re.I)
+                or re.search(r"(?:[<>≤≥±]|\b(?:до|от|менее|более|меньше|больше|минимум|максимум|"
+                             r"up to|at least|at most|less than|more than|under|over))\s*$", prefix, re.I)):
+            return defer(quantity_guard_reason(text) or "quantity_not_exact")
     lexical = AMOUNT_UNIT.fullmatch(matches[0].group())
     if (Decimal(lexical.group(1).replace(",", ".")) != Decimal(quantity.amount)
             or UNITS[lexical.group(2).casefold()] != quantity.unit):

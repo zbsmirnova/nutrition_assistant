@@ -56,11 +56,19 @@ class ConversationWorker:
             if choices:
                 return "Какой сохранённый рецепт записать?\n" + "\n".join(choices) + \
                     "\nОтветьте номером или напишите более точное название рецепта."
-        if reason == "quantity_unresolved":
+        if reason in {"quantity_unresolved", "quantity_not_exact", "weight_basis_unresolved"}:
             ref = next(iter(pending_questions), None)
             recipe = next((item for item in context.get("recipes", ()) if item["ref"] == ref), None)
-            name = "этого рецепта" if recipe is None else f"«{recipe['name']}»"
-            return f"Сколько граммов {name} вы съели? Укажите точный вес в граммах."
+            if recipe is not None:
+                name = f"рецепта «{recipe['name']}»"
+            else:
+                candidate = next((item for item in context.get("candidates", ()) if item["ref"] == ref), None)
+                name = "этого продукта" if candidate is None else f"«{candidate['name']}»"
+            if reason == "weight_basis_unresolved":
+                return (f"Уточните съедобный вес {name} без костей и кожи или напишите, какую оценку "
+                        "использовать. Пока не включаю приблизительный вес в итог.")
+            return (f"Укажите точный съеденный вес {name} в граммах или подтвердите оценку. "
+                    "Приблизительный вес пока не включаю в итог.")
         return None
 
     @staticmethod
