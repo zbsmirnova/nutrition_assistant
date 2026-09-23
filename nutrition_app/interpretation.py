@@ -176,6 +176,19 @@ def effective_date(context: dict, hint: str | None) -> date | None:
     return None
 
 
+def explicit_date_hint_matches(source_text: str, hint: str | None) -> bool:
+    """Return whether a non-null model date hint quotes one source date marker."""
+    if hint is None:
+        return True
+    source = normalized(source_text)
+    numeric_spans = [(m.start(), m.end()) for pattern in (QUANTITY, PERCENT)
+                     for m in pattern.finditer(source)]
+    markers = [m.group() for m in DATE_WORDS.finditer(source)
+               if not any(start <= m.start() and m.end() <= end for start, end in numeric_spans)]
+    token = normalized(hint)
+    return len(markers) == 1 and markers[0] == token and token in source
+
+
 QUANTITY = re.compile(r"(?<![\w.,+\-−])[0-9]+(?:[.,][0-9]+)?\s*(?:килограмм(?:а|ов)?|грамм(?:а|ов)?|"
                       r"миллилитр(?:а|ов)?|литр(?:а|ов)?|кг|мл|kg|ml|г|g|л|l)(?!\w)", re.I)
 AMOUNT_UNIT = re.compile(r"([0-9]+(?:[.,][0-9]+)?)\s*(.*)")

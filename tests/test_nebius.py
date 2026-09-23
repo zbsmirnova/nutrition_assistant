@@ -162,6 +162,19 @@ class NebiusProtocolTests(unittest.TestCase):
         for case in cases:
             with self.subTest(case=case), self.assertRaises(ParserRejected):client(case).parse(request())
 
+    def test_model_quality_rejects_short_evidence_and_invented_date_hint(self):
+        bad = fixture()["output"]
+        bad["actions"][0]["evidence"] = TEXT[0]
+        bad["actions"][0]["date_hint"] = {"text": "2"}
+        with self.assertRaises(ParserRejected):
+            client(response(bad)).parse(request())
+
+    def test_model_quality_accepts_an_explicit_date_hint(self):
+        text = "Вчера " + TEXT
+        dated = fixture(text)["output"]
+        dated["actions"][0]["date_hint"] = {"text": "Вчера"}
+        self.assertTrue(client(response(dated)).parse(request(text)))
+
     def test_request_and_response_limits_fail_without_unbounded_reads(self):
         calls = []
         parser = NebiusParser(NebiusConfig("test-secret", "example/model"),

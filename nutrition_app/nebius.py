@@ -16,7 +16,8 @@ from nutrition_contracts.parser import ParserOutput, validate_parser_context
 
 from .errors import ApplicationError
 from .interpretation import (MAX_CANDIDATES, ParserRejected, ParserRequest,
-                             ParserUnavailable, parser_request, resolve)
+                             ParserUnavailable, explicit_date_hint_matches,
+                             parser_request, resolve)
 from .service import digest
 
 
@@ -27,6 +28,7 @@ MAX_BYTES = 256 * 1024
 MAX_RETRY_AFTER = 86400
 REQUEST_POLICY = {"max_tokens": 4096, "temperature": 0, "n": 1, "stream": False}
 PROMPT = Path(__file__).with_name("nebius_prompt.txt").read_text(encoding="utf-8")
+SHORT_REPLY_ACTIONS = {"answer_clarification", "cancel_clarification"}
 
 
 class NebiusConfigurationError(ApplicationError):
@@ -134,6 +136,30 @@ class NebiusParser:
         finally:
             connection.close()
 
+    @staticmethod
+    def _validate_quality(output: ParserOutput, request: ParserRequest) -> None:
+        """Reject structurally valid provider proposals with unusable evidence."""
+        for action in output.actions:
+            # Clarification replies may be short (for example, ``5%``). Domain
+            # actions need enough literal evidence to identify what was acted on.
+            if action.kind not in SHORT_REPLY_ACTIONS and len(action.evidence.strip()) < 3:
+                raise ValueError("source-backed evidence is too short")
+
+        def visit(value: object) -> None:
+            if isinstance(value, dict):
+                date_hint = value.get("date_hint")
+                if isinstance(date_hint, dict):
+                    text = date_hint.get("text")
+                    if text is not None and not explicit_date_hint_matches(request.source_text, text):
+                        raise ValueError("date hint is not explicit source evidence")
+                for child in value.values():
+                    visit(child)
+            elif isinstance(value, list):
+                for child in value:
+                    visit(child)
+
+        visit(output.model_dump(mode="json"))
+
     def parse(self, request: ParserRequest) -> str:
         try:
             body = self._payload(request)
@@ -183,6 +209,7 @@ class NebiusParser:
             candidate_kinds.update({c["ref"]: {"pending", "entry"} for c in request.pending_entries})
             validate_parser_context(output, candidate_kinds, request.pending_questions,
                                     source_text=request.source_text, has_reply=request.has_reply)
+            self._validate_quality(output, request)
         except Exception:
             raise ParserRejected("Invalid, incomplete or refused Nebius interpretation") from None
         return output.model_dump_json()

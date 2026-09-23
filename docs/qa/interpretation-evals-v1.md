@@ -1,6 +1,6 @@
 # Russian interpretation evaluation v1
 
-Status: instrument complete and self-tested offline; six live batches recorded 2026-09-23 as exploratory developer evidence (not independent QA). The evaluator was hardened at `5ecc774` before the latest four batches. Thresholds approved by the product owner.
+Status: instrument complete and self-tested offline; six live batches recorded 2026-09-23 as exploratory developer evidence (not independent QA). The evaluator was hardened at `5ecc774` before the latest four batches. Candidate prompt v3 and a provider runtime quality guard are prepared; the next live A/B run is pending. Thresholds approved by the product owner.
 Owner: product owner approves rubric/thresholds; lead assistant/QA maintains the instrument and records runs.
 
 ## What this validates
@@ -97,6 +97,12 @@ The user A/B-tested [prompt_candidate_v2.txt](air-file://fai6b8iclscp0tss0s3r/Us
 
 Candidate v2 improves the intended uncertainty behavior and quantity handling compared with the strict production batches: clarification recall rises from 0.00 to 0.33–0.67, and quantity extraction rises from 0.75–0.78 to 0.89–1.00. It does not improve evidence or date hints, and it reduces exact candidate selection because the model often emits one-character food names instead of the supplied c-tokens. The candidate prompt is not ready for promotion.
 
+## Candidate prompt v3 and provider guard — prepared 2026-09-23
+
+[prompt_candidate_v3.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/evals/prompt_candidate_v3.txt?type=file&root=%252F) adds explicit instructions that source-backed evidence must be a contiguous excerpt of at least three characters, `date_hint.text` must be `null` without a literal date phrase, and a resolved product/recipe must use the exact supplied c-token. Short clarification replies such as `5%` remain allowed as evidence.
+
+The Nebius adapter now rejects structurally valid provider output with short evidence or a non-source date hint before it reaches the resolver. Candidate references remain scoped by the existing context validator; unresolved name fallback remains available for cases where no supplied candidate establishes identity. Focused and full offline checks pass on the implementation revision. No live v3 evaluation has run yet.
+
 ## Findings
 
 The seven returned proposals preserved consumption intent and included an expected candidate, but the aggregate result is below the draft quality bars. Failures are concentrated in uncertainty handling and action discipline:
@@ -111,7 +117,7 @@ The clarification and action-discipline failures are prompt-alignment hypotheses
 
 ## Prompt iteration plan
 
-Candidate prompt [prompt_candidate_v2.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/evals/prompt_candidate_v2.txt?type=file&root=%252F) targets missing/ambiguous fields, dropped items, and ratio splitting. It improves clarification and quantities but still needs a v3 revision that explicitly requires evidence excerpts of at least three characters, sets `date_hint.text` to `null` unless a literal date phrase appears, and uses the supplied c-token exactly for resolved candidates. Do not promote v2.
+Candidate prompt [prompt_candidate_v2.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/evals/prompt_candidate_v2.txt?type=file&root=%252F) remains a historical comparison. Do not promote v2. Run v3 against the production prompt only after capturing the new parser fingerprint and revision, then compare clarification recall, quantity extraction, evidence/date validity, exact candidate selection, and parser rejection counts.
 
 ## Limits and next work
 
