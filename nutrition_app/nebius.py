@@ -73,14 +73,17 @@ def retry_after_seconds(headers):
 class NebiusParser:
     """One request per parse; retry policy belongs to the durable worker."""
 
-    def __init__(self, config: NebiusConfig, *, request=None):
+    def __init__(self, config: NebiusConfig, *, request=None, prompt=None):
         self._config = config
+        # An explicit prompt override supports offline prompt A/B evaluation; the
+        # default keeps the production prompt and the parser fingerprint unchanged.
+        self._prompt = PROMPT if prompt is None else prompt
         self._schema = ParserOutput.model_json_schema()
         self._response_format = {"type": "json_schema", "json_schema": {
             "name": "nutrition_parser_output", "schema": self._schema, "strict": True}}
         self._request = request or self._https
         self.version = "nebius:" + digest({"adapter": "nebius-chat-v3", "model": config.model,
-            "prompt": PROMPT, "schema": self._schema, "policy": REQUEST_POLICY,
+            "prompt": self._prompt, "schema": self._schema, "policy": REQUEST_POLICY,
             "host": HOST, "endpoint": ENDPOINT, "timeout": TIMEOUT_SECONDS,
             "max_bytes": MAX_BYTES, "response_format": self._response_format})
 
@@ -109,7 +112,7 @@ class NebiusParser:
                                                for candidate in request.pending_candidates]
             context["pending_questions"] = request.pending_questions
         payload = {"model": self._config.model, **REQUEST_POLICY,
-            "messages": [{"role": "system", "content": PROMPT + "\nJSON Schema:\n" + json.dumps(self._schema)},
+            "messages": [{"role": "system", "content": self._prompt + "\nJSON Schema:\n" + json.dumps(self._schema)},
                          {"role": "user", "content": json.dumps(context, ensure_ascii=False)}],
             "response_format": self._response_format}
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")

@@ -35,10 +35,11 @@ CASES = Path(__file__).with_name("interpretation_v1.json")
 # --------------------------------------------------------------------------- parsers
 
 
-def build_nebius_parser():
+def build_nebius_parser(prompt_path: str | None = None):
     from nutrition_app.nebius import NebiusConfig, NebiusParser
 
-    return NebiusParser(NebiusConfig.from_environment())
+    prompt = Path(prompt_path).read_text(encoding="utf-8") if prompt_path else None
+    return NebiusParser(NebiusConfig.from_environment(), prompt=prompt)
 
 
 class StubParser:
@@ -144,7 +145,9 @@ def score_case(case: dict, output: ParserOutput) -> dict:
         "checks": checks,
         "passed": all(checks.values()),
         "n_add_food": len(add_food),
+        "clarification_mode": mode,
         "clarification_raised": has_clar,
+        "clarification_paths": sorted(clar_paths),
         "selected_refs": sorted(selected),
     }
 
@@ -152,10 +155,10 @@ def score_case(case: dict, output: ParserOutput) -> dict:
 # --------------------------------------------------------------------------- driver
 
 
-def run(parser_name: str, only: str | None) -> dict:
+def run(parser_name: str, only: str | None, prompt_path: str | None = None) -> dict:
     corpus = json.loads(CASES.read_text(encoding="utf-8"))
     cases = [c for c in corpus["cases"] if only is None or c["id"] == only]
-    parser = StubParser(cases) if parser_name == "stub" else build_nebius_parser()
+    parser = StubParser(cases) if parser_name == "stub" else build_nebius_parser(prompt_path)
 
     results = []
     for case in cases:
@@ -172,9 +175,12 @@ def run(parser_name: str, only: str | None) -> dict:
             entry.update(error=type(exc).__name__, message=str(exc), passed=False, checks={})
         else:
             entry.update(score_case(case, output))
+            # Raw proposal captured for diagnosis (which fields the model missed/split).
+            entry["output"] = output.model_dump(mode="json")
         results.append(entry)
 
-    return {"parser": parser.version, "thresholds": corpus["draft_thresholds"], "results": results,
+    return {"parser": parser.version, "prompt": prompt_path or "production (nebius_prompt.txt)",
+            "thresholds": corpus["draft_thresholds"], "results": results,
             "summary": summarize(results)}
 
 
@@ -189,12 +195,21 @@ def summarize(results: list[dict]) -> dict:
             return "n/a"
         return f"{sum(1 for r in applicable if r['checks'][check]) / len(applicable):.2f} ({len(applicable)})"
 
+    def clar_rate(mode: str, want_raised: bool) -> str:
+        cases = [r for r in scored if r.get("clarification_mode") == mode]
+        if not cases:
+            return "n/a"
+        return f"{sum(1 for r in cases if r['clarification_raised'] == want_raised) / len(cases):.2f} ({len(cases)})"
+
     return {
         "cases": n,
         "case_pass_rate": f"{passed / n:.2f}" if n else "n/a",
         "consumed": rate("consumed"),
         "add_food_count": rate("add_food_count"),
+        # Blended clarification metric hides the failure mode; recall/specificity separate it.
         "clarification_accuracy": rate("clarification"),
+        "clarification_recall": clar_rate("required", True),
+        "clarification_specificity": clar_rate("forbidden", False),
         "quantity_extraction": rate("quantities"),
         "candidate_selection": rate("candidate_selection"),
         "max_add_food_respected": rate("max_add_food"),
@@ -203,7 +218,7 @@ def summarize(results: list[dict]) -> dict:
 
 
 def format_report(report: dict) -> str:
-    lines = [f"Parser: {report['parser']}", ""]
+    lines = [f"Parser: {report['parser']}", f"Prompt: {report['prompt']}", ""]
     lines.append(f"{'case':<12} {'pass':<5} {'#food':<6} {'clar?':<6} checks / notes")
     lines.append("-" * 78)
     for r in report["results"]:
@@ -220,7 +235,8 @@ def format_report(report: dict) -> str:
               f"  case pass rate        {s['case_pass_rate']}",
               f"  consumed intent       {s['consumed']}",
               f"  add_food count        {s['add_food_count']}",
-              f"  clarification acc.    {s['clarification_accuracy']}",
+              f"  clarification recall  {s['clarification_recall']}   (required cases that asked)",
+              f"  clarification specif. {s['clarification_specificity']}   (clean cases kept silent)",
               f"  quantity extraction   {s['quantity_extraction']}",
               f"  candidate selection   {s['candidate_selection']}",
               f"  max_add_food respected {s['max_add_food_respected']}",
@@ -236,10 +252,12 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description="Batch Russian interpretation evaluation (hypothesis #1).")
     ap.add_argument("--parser", choices=["nebius", "stub"], default="nebius")
     ap.add_argument("--case", dest="only", default=None, help="Run one case id, e.g. INTAKE-003")
+    ap.add_argument("--prompt", default=None,
+                    help="Path to a candidate system prompt for A/B (nebius only); default uses production")
     ap.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
     args = ap.parse_args(argv)
 
-    report = run(args.parser, args.only)
+    report = run(args.parser, args.only, args.prompt)
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=2))
     else:
