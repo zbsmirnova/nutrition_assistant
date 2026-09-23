@@ -1,7 +1,7 @@
 # D030 — Combined completion/activity check-in behavior
 
 Kind: product
-Status: accepted for W018
+Status: accepted for W018; scheduled-fallback portion superseded for MVP by D031.
 Recorded: 2026-09-23.
 Decision owner: product owner (answers to Q06), recorded by the lead assistant.
 
@@ -10,15 +10,15 @@ Decision owner: product owner (answers to Q06), recorded by the lead assistant.
 The combined completion/activity check-in behaves as follows:
 
 - Dinner trigger: when a meal is recognized as dinner, the check-in is offered on the dinner food acknowledgment itself — one outgoing message that carries both the acknowledgment and the offer, not a separate follow-up.
-- Fallback timing: if no dinner is recorded for the local day, the check-in is offered at 21:00 local time. If that moment passed while the service was offline, the fallback is skipped for that day rather than sent late.
+- Fallback timing: this behavior is superseded for MVP by D031; no scheduled fallback is sent.
 - Offer actions: exactly three — "Everything logged", "Add steps", and "Later".
 - "Later": dismiss the offer for that day with no automatic reschedule and no second prompt.
 - Activity capture: until Apple Health integration exists, "Add steps" asks for the day's steps in-flow and records them as an ordinary daily-steps observation (set or increment) reusing W017.
-- Suppression: after conversational closure or an explicit completion, no further completion button is offered. A 21:00 fallback followed by a later dinner does not create a second logical offer. Late food additions after closure keep the day complete without a new check-in.
+- Suppression: after conversational closure or an explicit completion, no further completion button is offered. Late food additions after closure keep the day complete without a new check-in.
 
 ## Alternatives and consequences
 
-Bundling the offer into the dinner acknowledgment keeps a single outgoing message and avoids a duplicate reminder, matching the data-model outbox note. Skipping a missed 21:00 fallback (rather than catching up late) avoids a stale next-day prompt at the cost of no late-evening nudge after an outage. "Later" without rescheduling matches the proposed Q06 default and keeps the flow non-nagging. These choices resolve the user-behavior parts of Q06; the delivery mechanics (inline keyboard, callback handling, one-logical-offer idempotency across retries/races, and the local-time scheduler with DST) remain a technical decision for the W018 implementation slice.
+Bundling the offer into the dinner acknowledgment keeps a single outgoing message and avoids a duplicate reminder, matching the data-model outbox note. Excluding scheduled reminders removes the scheduler, DST, outage catch-up, and scheduled-outbox concerns from MVP. "Later" without rescheduling keeps the flow non-nagging. These choices resolve the user-behavior parts of Q06; inline-keyboard and callback delivery mechanics remain technical work for W018.
 
 ## References
 

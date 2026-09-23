@@ -166,17 +166,19 @@ The generic observation shape has only two allowed v1 metrics. Do not silently a
 
 Correcting either measurement onto a different date uses the two daily slots in one operation, resolving any existing target value rather than blindly replacing or adding it. Undo and deletion are revision-based. Future import adapters must reconcile imported measurements with manual records; they must not create extra daily weight values or a separate series added to the manual steps.
 
-## 9. Check-ins, scheduled notifications, and report snapshots
+## 9. Check-ins and report snapshots
+
+MVP implements only a dinner-triggered check-in. Scheduled reminders, local-time rules, notification runs, DST occurrence handling, and scheduled-outbox delivery are future scope under D031; the logical tables below retain them as a later extension rather than current MVP requirements.
 
 | Table | Important columns | Keys and rules |
 | --- | --- | --- |
-| `daily_check_ins` | `food_day_id`, `trigger_kind` (`dinner` or `fallback`), `offer_status`, `offered_at NULL`, `dismissed_at NULL`, `telegram_message_id NULL` | Unique `(user_id, food_day_id)`. The day itself is unique by local date. Track offer delivery separately from food completeness and missing activity. |
-| `notification_rules` | `kind`, `enabled`, `local_time`, `weekday NULL`, `version_no` | Configure the 21:00 fallback and optional weekly report. Unique `(user_id, kind)` in v1. Use the user's configured time zone to resolve due occurrences. |
-| `notification_runs` | `rule_id`, `rule_version_no`, `occurrence_key`, `scheduled_for_utc`, `subject_local_date`, `status`, `daily_check_in_id NULL`, `report_snapshot_id NULL` | Unique `(user_id, rule_id, occurrence_key)`. An occurrence key represents the intended local-date/period occurrence, not a worker attempt. Do not include the rule version in uniqueness in a way that resends the same daily offer after an edit. |
-| `outbox_messages` | `message_key`, `telegram_account_id`, `subject_local_date NULL`, `inbox_update_id NULL`, `pending_action_id NULL`, `daily_check_in_id NULL`, `notification_run_id NULL`, `applied_operation_id NULL`, `payload jsonb`, `status`, `attempt_count`, `next_attempt_at`, `telegram_message_id NULL` | Unique `(user_id, message_key)`. Supports clarification questions, ordinary replies, and scheduled messages. A dinner acknowledgment containing a check-in is one outgoing message, not an acknowledgment plus a separate repeated offer. |
+| `daily_check_ins` | `food_day_id`, `trigger_kind` (`dinner`), `offer_status`, `offered_at NULL`, `dismissed_at NULL`, `telegram_message_id NULL` | Unique `(user_id, food_day_id)`. The day itself is unique by local date. Track offer delivery separately from food completeness and missing activity. |
+| `notification_rules` | `kind`, `enabled`, `local_time`, `weekday NULL`, `version_no` | Future only: configure scheduled reminders or an optional weekly report. Not an MVP table. |
+| `notification_runs` | `rule_id`, `rule_version_no`, `occurrence_key`, `scheduled_for_utc`, `subject_local_date`, `status`, `daily_check_in_id NULL`, `report_snapshot_id NULL` | Future only: unique `(user_id, rule_id, occurrence_key)` for intended local-date/period occurrences. Not an MVP table. |
+| `outbox_messages` | `message_key`, `telegram_account_id`, `subject_local_date NULL`, `inbox_update_id NULL`, `pending_action_id NULL`, `daily_check_in_id NULL`, `notification_run_id NULL`, `applied_operation_id NULL`, `payload jsonb`, `status`, `attempt_count`, `next_attempt_at`, `telegram_message_id NULL` | Unique `(user_id, message_key)`. MVP supports clarification questions, ordinary replies, and dinner acknowledgments with check-in keyboards. Scheduled messages remain future scope. |
 | `report_snapshots` | `period_start`, `period_end`, `generated_at`, `report_rules_version`, `source_watermarks jsonb`, `payload jsonb` | Immutable derived report, not canonical food data. Period end is exclusive. Watermarks record the food-day and observation revisions used; payload contains totals and coverage already authorized for that user. |
 
-Create a food-day row for a fallback check-in even if no food is recorded; an empty day row is not evidence of zero food or completeness. A daily-check-in row similarly says only that an offer was planned or shown.
+Create a food-day row for a dinner-triggered check-in only after the dinner food operation is committed; an empty day row is not evidence of zero food or completeness. A daily-check-in row similarly says only that an offer was planned or shown.
 
 Offer states cover planned, sent, dismissed, and suppressed; the outbox separately records uncertain or failed deliveries. Persist a unique offer before sending. Re-check food confirmation and missing steps immediately before generating/sending the relevant actions. Superseded offers are cancelled, and old callbacks validate current state and their bound date. Completing food may remove the completion action while preserving an activity-only action if needed.
 
@@ -230,8 +232,8 @@ M1 index and deferred-constraint definitions are frozen in its migrations and ex
 | Steps 8,200, then 9,000 | Two revisions of one daily slot; displayed total is 9,000. |
 | Close food day with no steps | Confirmation stored; steps remain missing; activity-only action is allowed. |
 | Add a forgotten snack after closure | New entry/revisions and revised totals; food day stays complete with no additional completion prompt. |
-| Close day before fallback, or in the dinner message | No completion button is offered after successful closure. |
-| Fallback at 21:00, dinner at 22:00 | One daily-check-in row and one logical offer, not a new reminder. |
+| Close day before dinner, or in the dinner message | No completion button is offered after successful closure. |
+| Dinner logged after an earlier dinner message | One daily-check-in row and one logical offer, not a new offer. |
 | Reply to yesterday's steps prompt after midnight | Update yesterday's daily observation unless the reply explicitly specifies another date. |
 | Product ID from another user appears in model output | Tenant validation/composite foreign keys reject it before mutation. |
 | Process crashes before/after commit | Either no mutation or the committed mutation and response intent; retry cannot add a second meal. |

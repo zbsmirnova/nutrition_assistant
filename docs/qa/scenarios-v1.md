@@ -22,11 +22,11 @@ The 20 existing authored contract fixtures cover part of this inventory; they do
 11. Product or recipe update: previously logged food retains the version used at the time.
 12. A correction arrives while another is being parsed: version checks prevent stale overwrites.
 13. A user attempts to reference another user's entry: authorization rejects the command.
-14. A reminder is scheduled across a daylight-saving change: create one intended occurrence in the user's local time.
+14. Future reminder scope (out of MVP): a reminder scheduled across a daylight-saving change would create one intended occurrence in the user's local time.
 15. “A bowl of soup” with no known portion: ask for the quantity, preserve a pending action, and leave totals unchanged until answered.
-16. Dinner is logged at 19:00: show one completion/activity check-in; do not issue another at 21:00.
-17. No dinner is logged by 21:00: show the fallback check-in. Dinner at 22:00 must not create a second offer.
-18. “Close the day” arrives before dinner or the fallback: confirm food completeness, suppress the completion button, and include only an optional activity action if steps are missing.
+16. Dinner is logged at 19:00: show one completion/activity check-in; no scheduled reminder is issued later.
+17. No dinner is logged: do not show an automatic check-in in MVP. A later dinner may create the one dinner-triggered offer.
+18. “Close the day” arrives before dinner: confirm food completeness, suppress the completion button, and include only an optional activity action if steps are missing.
 19. “Dinner was ...; close the day” in one message: validate and apply the batch, then reply without offering a redundant completion button.
 20. The user closes food logging without steps, then supplies steps later: save activity independently and keep food completeness unchanged.
 21. A next-day reply to yesterday's activity prompt: apply it to yesterday unless the user explicitly chooses another date.

@@ -7,7 +7,7 @@ Owner: product owner for product choices; lead assistant for maintenance.
 
 Build a personal Telegram assistant that makes food, recipes, body weight, and daily steps easy to record in ordinary Russian conversation. Give the user understandable nutrition totals, correctable records, and useful history without moralizing. Start with personal use while designing ownership boundaries for possible future users; the access mechanism is part of the architecture design.
 
-The original architecture brief is historical input. Later explicit decisions in the product discussion govern where they differ: continuous food saving, optional completion, 21:00 fallback, the simplified recipe model, one daily weight/steps value, and training in v2.
+The original architecture brief is historical input. Later explicit decisions in the product discussion govern where they differ: continuous food saving, dinner-triggered optional completion, no scheduled MVP reminders, the simplified recipe model, one daily weight/steps value, and training in v2.
 
 ## Goals
 
@@ -46,7 +46,7 @@ These IDs are stable references for specifications, work briefs, and QA. Product
 | RECIPE-003 | Product/recipe updates must not silently change historical meals. Preserve the source/version and calculation basis used by each meal. |
 | OBS-001 | Keep one current body-weight value per user/local date. Later values replace it with history, rather than creating multiple current readings or an average. |
 | OBS-002 | Keep one current steps total per user/local date. Later absolute totals replace it; only an explicit increment adds steps, with a known starting value. Missing steps and an explicitly supplied zero differ. |
-| DAY-001 | Offer the combined completion/activity check-in after dinner, or at 21:00 local time if no dinner is recorded. Do not offer another completion button after conversational closure or a second logical check-in after a fallback followed by late dinner. |
+| DAY-001 | Offer the combined completion/activity check-in after a successfully logged dinner. Do not send scheduled MVP reminders. Do not offer another completion button after conversational closure or a second logical check-in for the same local day. |
 | DAY-002 | Support “Everything logged”, “Add steps”, and “Later”. Missing steps do not prevent food completion. A closure acknowledgment can invite missing activity without another completion action. |
 | DAY-003 | Late food additions update totals while preserving day completeness; no new completion confirmation or check-in is required. |
 | CALC-001 | The LLM proposes interpretations. The backend owns identity, authorization, reference resolution, calculations, and durable mutations. |
@@ -56,7 +56,7 @@ These IDs are stable references for specifications, work briefs, and QA. Product
 | DATA-003 | Scope every personal read, mutation, and reference to its authenticated owner, including recipes, sources, revisions, and pending actions. |
 | UX-001 | Keep replies useful and nonjudgmental. Do not moralize food, prescribe compensation, or treat exercise as permission to eat. |
 
-Europe/Berlin is the initial configured time zone, not a hard-coded UTC offset. Preserve the date targeted by a message or clarification; detailed resolution and scheduler behavior belong in the conversation specification.
+Europe/Berlin is the initial configured time zone, not a hard-coded UTC offset. Preserve the date targeted by a message or clarification; detailed resolution and any future scheduled behavior belong in the conversation specification.
 
 ## Boundaries and changes
 

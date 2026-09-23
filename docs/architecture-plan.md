@@ -49,7 +49,7 @@ A complete-day average describes only those selected days. Do not present it as 
 
 ### Check-in boundary
 
-The accepted product choice and its rationale are recorded in [0001-continuous-food-saving.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0001-continuous-food-saving.md?type=file&root=%252F). The full dinner/21:00 interaction and proposed delivery defaults now live in section 9 of [conversation-contract-v1.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/conversation-contract-v1.md?type=file&root=%252F). Notification state is separate from food completeness; both trigger paths share one logical daily offer.
+The accepted product choice and its rationale are recorded in [0001-continuous-food-saving.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0001-continuous-food-saving.md?type=file&root=%252F). The dinner-triggered interaction and proposed delivery defaults now live in section 9 of [conversation-contract-v1.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/conversation-contract-v1.md?type=file&root=%252F). Scheduled reminders are outside MVP; the dinner offer has one logical daily identity separate from food completeness.
 
 ## 3. Interpretation boundary
 
@@ -117,7 +117,7 @@ The accepted M1 execution decision is [0002-command-execution.md](air-file://fai
 - Deduplicate transport deliveries by bot identity plus Telegram update ID. A Telegram message identity includes its chat; message edits are new source revisions, not duplicate additions.
 - Assign each validated operation a stable key derived from its inbox item and operation position. Reprocessing must return the prior outcome rather than apply another mutation.
 - Deduplicate scheduled runs using user, notification rule, and scheduled occurrence. Deduplicate notification creation separately from delivery.
-- The dinner-triggered and 21:00 fallback completion offers additionally share a single `(user_id, local_date, daily_check_in)` identity. Track offered/delivered/dismissed/suppressed state separately from food completeness. Completing the day through either interface suppresses the completion action.
+- The dinner-triggered completion offer has a single `(user_id, local_date, daily_check_in)` identity. Track offered/delivered/dismissed/suppressed state separately from food completeness. Completing the day through the dinner interface suppresses the completion action. Scheduled fallback offers are outside MVP.
 - M1 serializes short mutations with a PostgreSQL user-row lock and revalidates explicit dates, quantity bases, and pinned immutable references. Fully resolved additions commute across context revisions; state-dependent corrections require their own expected-version handling in M2. The earlier user-processing lease/fencing proposal is not implemented or needed for this synchronous slice.
 - A clarification waiting for the user must not hold a database lock or block that user's entire inbox. A later answer revalidates its target versions before application.
 - Do not deduplicate distinct user messages only because their text matches: two identical coffees can represent two actual servings. Offer undo for accidental repeated user submissions.
