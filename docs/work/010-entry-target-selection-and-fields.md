@@ -1,6 +1,6 @@
 # W010 — Entry target selection and correction fields
 
-Status: in progress.
+Status: done.
 Milestone: M2.
 Owner: lead assistant, architect/developer.
 Updated: 2026-09-23.
@@ -25,9 +25,13 @@ Extend W009's bounded food-entry targeting with durable numbered disambiguation 
 - [x] Persist pending entry candidates and validate selection answers.
 - [x] Permit trusted correction resumption with original plus answer evidence.
 - [x] Add integration coverage for ambiguous selection, date move, meal change, and replay.
-- [ ] Run PostgreSQL integration and retained QA suites; record exact revision.
-- [ ] Commit the completed implementation and evidence slices.
+- [x] Run PostgreSQL integration and retained QA suites; record exact revision.
+- [x] Commit the completed implementation and evidence slices.
 
 ## Boundaries
 
 This slice does not implement arbitrary target search, multi-component correction, message edits, live Telegram rendering of choice buttons, or live Nebius quality. Numbered choices are represented in durable pending context; transport presentation remains a later integration concern.
+
+## QA result and completion
+
+Developer verification passes: 96 offline tests, 70 PostgreSQL integration tests, 32 retained QA tests, and `git diff --check`. Evidence is in [010-entry-target-selection-and-fields-developer.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/010-entry-target-selection-and-fields-developer.md?type=file&root=%252F). No independent W010 review, live Nebius, or real Telegram behavior is claimed.
