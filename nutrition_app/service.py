@@ -14,11 +14,12 @@ from sqlalchemy.engine import Connection, Engine
 
 from nutrition_contracts.commands import (
     AddConsumedFood, CalculatedRecipeNutrition, CommandEnvelope, CorrectFoodEntry, DefineRecipe,
-    DeleteFoodEntry, ProductComponent, RecipeDefinition, ReviseRecipe, RestoreFoodEntry,
-    RecipeComponent, ResolvedIngredientSource, UnknownIngredientSource,
+    DeleteFoodEntry, IncrementDailySteps, ProductComponent, RecipeDefinition, ReviseRecipe, RestoreFoodEntry,
+    RecipeComponent, ResolvedIngredientSource, SetDailySteps, SetDailyWeight, UnknownIngredientSource,
 )
 from nutrition_contracts.common import Contract, Count, NutritionSnapshot, PositiveCount, Text
-from nutrition_contracts.results import Applied, DailySummary, FoodEntrySummary, MutationReceipt, OutcomeEnvelope, RecipeProfile
+from nutrition_contracts.results import (Applied, DailySummary, FoodEntrySummary, MutationReceipt, NoChange,
+                                         OutcomeEnvelope, RecipeProfile, StepsSnapshot, WeightSnapshot)
 
 from .errors import ApplicationError, Conflict, NotFound, Unauthorized, Unsupported
 from .nutrition import (CALCULATION_VERSION, RECIPE_CALCULATION_VERSION, day_nutrition, entry_nutrition,
@@ -114,8 +115,9 @@ class FoodService:
     @staticmethod
     def _validate_supported(command: CommandEnvelope, position: int = 0) -> None:
         if not isinstance(command.command, (AddConsumedFood, CorrectFoodEntry, DeleteFoodEntry, RestoreFoodEntry,
-                                            DefineRecipe, ReviseRecipe)):
-            raise Unsupported("This slice supports resolved food and recipe definition commands only")
+                                            DefineRecipe, ReviseRecipe, SetDailyWeight, SetDailySteps,
+                                            IncrementDailySteps)):
+            raise Unsupported("This slice supports resolved food, recipe, and daily observation commands only")
         evidence = command.source.evidence_update_ids
         if evidence[0] != command.source.origin_update_id or len(set(evidence)) != len(evidence):
             raise ApplicationError("Evidence must begin with the original source and contain no duplicates")
@@ -139,6 +141,9 @@ class FoodService:
         elif isinstance(command.command, (DefineRecipe, ReviseRecipe)):
             if command.source.pending_action_id is not None or evidence != [command.source.origin_update_id]:
                 raise Unsupported("Recipe persistence does not depend on pending clarification in this slice")
+        elif isinstance(command.command, (SetDailyWeight, SetDailySteps, IncrementDailySteps)):
+            if command.source.pending_action_id is not None or evidence != [command.source.origin_update_id]:
+                raise Unsupported("Daily observations do not depend on pending clarification in this slice")
         elif command.source.pending_action_id is None and evidence != [command.source.origin_update_id]:
             raise Unsupported("Additional correction evidence requires a pending clarification")
         elif command.source.pending_action_id is not None and len(evidence) < 2:
@@ -601,6 +606,104 @@ class FoodService:
                                    self._recipe_profile_from_definition(command.recipe_id, version_id,
                                                                         command.replacement, profile))
 
+    @staticmethod
+    def _current_observation(connection, actor, metric, series_date):
+        query = sa.select(
+            db.observations.c.id.label("observation_id"),
+            db.observations.c.current_revision_id,
+            db.observation_revisions.c.id.label("revision_id"),
+            db.observation_revisions.c.revision_no,
+            db.observation_revisions.c.value,
+            db.observation_revisions.c.state,
+        ).select_from(
+            db.observations.join(db.observation_revisions, sa.and_(
+                db.observations.c.user_id == db.observation_revisions.c.user_id,
+                db.observations.c.id == db.observation_revisions.c.observation_id,
+                db.observations.c.current_revision_id == db.observation_revisions.c.id))
+        ).where(db.observations.c.user_id == actor, db.observations.c.metric == metric,
+                db.observations.c.series_date == series_date)
+        return connection.execute(query).mappings().one_or_none()
+
+    def _write_observation_revision(self, connection, actor, envelope, metric, current, *,
+                                    value, unit, origin_kind):
+        series_date = envelope.command.effective_date
+        if current is None:
+            observation_id, revision_id, revision_no = uuid4(), uuid4(), 1
+            connection.execute(db.observations.insert().values(
+                id=observation_id, user_id=actor, metric=metric, series_date=series_date,
+                current_revision_id=revision_id))
+        else:
+            observation_id = current["observation_id"]
+            revision_id, revision_no = uuid4(), current["revision_no"] + 1
+        connection.execute(db.observation_revisions.insert().values(
+            id=revision_id, user_id=actor, observation_id=observation_id, revision_no=revision_no,
+            metric=metric, applied_operation_id=envelope.operation_id, value=value, unit=unit,
+            observed_at=None, local_date=series_date, time_zone=envelope.command.time_zone,
+            state="active", origin_kind=origin_kind))
+        if current is not None:
+            connection.execute(db.observations.update().where(
+                db.observations.c.user_id == actor, db.observations.c.id == observation_id
+            ).values(current_revision_id=revision_id))
+        return observation_id, revision_id
+
+    def _observation_result(self, envelope, entity_kind, observation_id, revision_id, snapshot):
+        series_date = envelope.command.effective_date
+        return OutcomeEnvelope(result=Applied(schema_version="1.0", operation_id=envelope.operation_id,
+            outcome="applied", mutations=[MutationReceipt(entity_kind=entity_kind, entity_id=observation_id,
+                revision_id=revision_id, effective_date=series_date)],
+            food_entries=[], observations=[snapshot], daily_summaries=[], recipe=None))
+
+    @staticmethod
+    def _guard_set_revision(current, expected):
+        """A set command must state the exact current value it replaces, or none."""
+        if current is None:
+            if expected is not None:
+                raise Conflict("No existing daily value to replace")
+        elif current["revision_id"] != expected:
+            raise Conflict("Daily observation revision has changed")
+
+    def _set_weight(self, connection, actor, envelope):
+        command: SetDailyWeight = envelope.command
+        current = self._current_observation(connection, actor, "weight", command.effective_date)
+        self._guard_set_revision(current, command.expected_revision_id)
+        value = Decimal(command.value_kg)
+        if current is not None and current["state"] == "active" and current["value"] == value:
+            return OutcomeEnvelope(result=NoChange(schema_version="1.0", operation_id=envelope.operation_id,
+                outcome="no_change", reason="same_value", daily_summaries=[]))
+        observation_id, revision_id = self._write_observation_revision(
+            connection, actor, envelope, "weight", current, value=value, unit="kg", origin_kind="manual")
+        snapshot = WeightSnapshot(kind="daily_weight", observation_id=observation_id, revision_id=revision_id,
+            effective_date=command.effective_date, value_kg=command.value_kg)
+        return self._observation_result(envelope, "daily_weight", observation_id, revision_id, snapshot)
+
+    def _set_steps(self, connection, actor, envelope):
+        command: SetDailySteps = envelope.command
+        current = self._current_observation(connection, actor, "daily_steps", command.effective_date)
+        self._guard_set_revision(current, command.expected_revision_id)
+        value = Decimal(command.steps)
+        if current is not None and current["state"] == "active" and current["value"] == value:
+            return OutcomeEnvelope(result=NoChange(schema_version="1.0", operation_id=envelope.operation_id,
+                outcome="no_change", reason="same_value", daily_summaries=[]))
+        observation_id, revision_id = self._write_observation_revision(
+            connection, actor, envelope, "daily_steps", current, value=value, unit="steps", origin_kind="manual")
+        snapshot = StepsSnapshot(kind="daily_steps", observation_id=observation_id, revision_id=revision_id,
+            effective_date=command.effective_date, steps=command.steps)
+        return self._observation_result(envelope, "daily_steps", observation_id, revision_id, snapshot)
+
+    def _increment_steps(self, connection, actor, envelope):
+        command: IncrementDailySteps = envelope.command
+        current = self._current_observation(connection, actor, "daily_steps", command.effective_date)
+        if current is None or current["state"] != "active" or current["value"] is None:
+            raise Conflict("An increment requires a known starting steps total")
+        if current["revision_id"] != command.expected_revision_id:
+            raise Conflict("Daily observation revision has changed")
+        value = current["value"] + Decimal(command.steps)
+        observation_id, revision_id = self._write_observation_revision(
+            connection, actor, envelope, "daily_steps", current, value=value, unit="steps", origin_kind="increment")
+        snapshot = StepsSnapshot(kind="daily_steps", observation_id=observation_id, revision_id=revision_id,
+            effective_date=command.effective_date, steps=int(value))
+        return self._observation_result(envelope, "daily_steps", observation_id, revision_id, snapshot)
+
     def _mutate(self, connection, actor, command):
         if isinstance(command.command, AddConsumedFood):
             return self._add(connection, actor, command)
@@ -614,7 +717,13 @@ class FoodService:
             return self._define_recipe(connection, actor, command)
         if isinstance(command.command, ReviseRecipe):
             return self._revise_recipe(connection, actor, command)
-        raise Unsupported("This slice supports resolved food and recipe definition commands only")
+        if isinstance(command.command, SetDailyWeight):
+            return self._set_weight(connection, actor, command)
+        if isinstance(command.command, SetDailySteps):
+            return self._set_steps(connection, actor, command)
+        if isinstance(command.command, IncrementDailySteps):
+            return self._increment_steps(connection, actor, command)
+        raise Unsupported("This slice supports resolved food, recipe, and daily observation commands only")
 
     def get_recipe(self, actor: UUID, recipe_id: UUID) -> RecipeProfile:
         with self.engine.begin() as connection:
@@ -675,3 +784,20 @@ class FoodService:
                 effective_date=rows[0]["local_date"], description=rows[0]["entry_description"],
                 nutrition=entry_nutrition([from_columns(row) for row in rows]), change="added",
                 estimated=any(row["quantity_provenance"] == "user_approved_estimate" for row in rows))
+
+    def get_observation(self, actor: UUID, metric: str, effective_date: date):
+        """Return the current active weight or steps snapshot for a date, or None."""
+        if metric not in {"weight", "daily_steps"}:
+            raise ApplicationError("Unknown observation metric")
+        with self.engine.begin() as connection:
+            self._user(connection, actor, read=True)
+            current = self._current_observation(connection, actor, metric, effective_date)
+            if current is None or current["state"] != "active":
+                return None
+            if metric == "weight":
+                return WeightSnapshot(kind="daily_weight", observation_id=current["observation_id"],
+                    revision_id=current["revision_id"], effective_date=effective_date,
+                    value_kg=format(current["value"].normalize(), "f"))
+            return StepsSnapshot(kind="daily_steps", observation_id=current["observation_id"],
+                revision_id=current["revision_id"], effective_date=effective_date,
+                steps=int(current["value"]))

@@ -7,7 +7,8 @@ from uuid import UUID, uuid4
 import sqlalchemy as sa
 from sqlalchemy.engine import Engine
 
-from nutrition_contracts.commands import AddConsumedFood, CommandEnvelope, CommandSource, FoodState, ProductComponent
+from nutrition_contracts.commands import (AddConsumedFood, CommandEnvelope, CommandSource, FoodState,
+                                          IncrementDailySteps, ProductComponent, SetDailySteps, SetDailyWeight)
 from nutrition_contracts.common import Mass, NutrientValue, NutritionSnapshot
 
 from . import schema as db
@@ -82,6 +83,34 @@ def food_command(seed: Seed, source_id: UUID, *, grams="250", effective_date=DEM
             components=[ProductComponent(kind="product", description="Synthetic product A",
                 product_version_id=version_id or seed.version_id,
                 quantity=Mass(kind="mass", edible_g=grams, gross_g=None, inedible_g=None, weight_basis="as_sold"))])))
+
+
+def _envelope(seed: Seed, source_id: UUID, command, *, context_revision=0) -> CommandEnvelope:
+    return CommandEnvelope(schema_version="1.0", user_id=seed.user_id, operation_id=operation_id_for(source_id),
+        context_revision=context_revision, source=CommandSource(origin_update_id=source_id,
+            evidence_update_ids=[source_id], pending_action_id=None), command=command)
+
+
+def weight_command(seed: Seed, source_id: UUID, *, value_kg="76.3", effective_date=DEMO_DATE,
+                   expected_revision_id=None, context_revision=0, time_zone="Europe/Berlin") -> CommandEnvelope:
+    return _envelope(seed, source_id, SetDailyWeight(kind="set_daily_weight", effective_date=effective_date,
+        time_zone=time_zone, value_kg=value_kg, expected_revision_id=expected_revision_id),
+        context_revision=context_revision)
+
+
+def steps_command(seed: Seed, source_id: UUID, *, steps=8200, effective_date=DEMO_DATE,
+                  expected_revision_id=None, context_revision=0, time_zone="Europe/Berlin") -> CommandEnvelope:
+    return _envelope(seed, source_id, SetDailySteps(kind="set_daily_steps", effective_date=effective_date,
+        time_zone=time_zone, steps=steps, expected_revision_id=expected_revision_id),
+        context_revision=context_revision)
+
+
+def increment_steps_command(seed: Seed, source_id: UUID, *, steps, expected_revision_id,
+                            effective_date=DEMO_DATE, context_revision=0,
+                            time_zone="Europe/Berlin") -> CommandEnvelope:
+    return _envelope(seed, source_id, IncrementDailySteps(kind="increment_daily_steps", effective_date=effective_date,
+        time_zone=time_zone, steps=steps, expected_revision_id=expected_revision_id),
+        context_revision=context_revision)
 
 
 def run_demo(engine: Engine):

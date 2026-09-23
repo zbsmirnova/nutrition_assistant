@@ -57,3 +57,25 @@ def render_food_result(payload: dict) -> str:
     if len(text.encode("utf-16-le")) // 2 > 4000:
         raise ValueError("Response exceeds the safe message limit")
     return text
+
+
+def render_observation_result(payload: dict) -> str:
+    result = OutcomeEnvelope.model_validate_json(json.dumps(payload)).result
+    if result.outcome == "no_change" and getattr(result, "reason", None) == "same_value":
+        return "Это значение уже записано на этот день. Ничего не изменилось."
+    if (result.outcome != "applied" or len(result.observations) != 1
+            or result.food_entries or result.recipe is not None or result.daily_summaries):
+        raise ValueError("Only daily observation outcomes are supported")
+    observation = result.observations[0]
+    day = observation.effective_date.strftime("%d.%m.%Y")
+    if observation.kind == "daily_weight":
+        return f"Записан вес за {day}: {number(observation.value_kg)} кг."
+    return f"Записано шагов за {day}: {observation.steps}."
+
+
+def render_result(payload: dict) -> str:
+    """Render any supported committed outcome into a Russian confirmation."""
+    try:
+        return render_observation_result(payload)
+    except ValueError:
+        return render_food_result(payload)

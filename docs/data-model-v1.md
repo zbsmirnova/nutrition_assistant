@@ -211,7 +211,7 @@ Initial indexes, in addition to unique constraints:
 - Outbox: `(status, next_attempt_at, created_at)` for dispatch; check-in and notification-run references.
 - Reports: `(user_id, period_start, period_end, generated_at)`.
 
-M1 index and deferred-constraint definitions are frozen in its migrations and exercised on local PostgreSQL. W011 adds the recipe identity/version/ingredient tables and indexes; W012 migration 0007 adds explicit product/recipe food-component sources. W013 adds no migration; it uses current recipe pointers and opaque worker context. Pending actions, observations, and reports remain later work.
+M1 index and deferred-constraint definitions are frozen in its migrations and exercised on local PostgreSQL. W011 adds the recipe identity/version/ingredient tables and indexes; W012 migration 0007 adds explicit product/recipe food-component sources. W013 adds no migration; it uses current recipe pointers and opaque worker context. W017 migration 0009 adds the `observations` and `observation_revisions` tables (section 8) with per-metric value/unit checks, revision-ownership keys, a deferred current-revision pointer, and a date-range index, under D029. Pending actions, live-day observation summaries, and reports remain later work.
 
 ## 11. Walkthroughs to validate in implementation
 

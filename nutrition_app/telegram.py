@@ -15,7 +15,7 @@ from sqlalchemy.dialects.postgresql import insert
 from . import schema as db
 from .errors import ApplicationError, Conflict
 from .outbox import Delivery, DeliveryRejected, RetryLater
-from .rendering import render_food_result
+from .rendering import render_result
 from .service import FoodService, IncomingMessage
 
 
@@ -230,7 +230,7 @@ class TelegramSender:
         if delivery.bot_id != self.api.bot_id:
             raise DeliveryRejected("Delivery belongs to a different bot")
         try:
-            text = render_food_result(delivery.payload)
+            text = render_result(delivery.payload)
         except (ValidationError, ValueError, TypeError):
             raise DeliveryRejected("Unsupported response payload") from None
         try:

@@ -238,6 +238,48 @@ food_components = owned("food_components",
     sa.CheckConstraint("inedible_g IS NULL OR inedible_g >= 0", name="inedible"),
     sa.CheckConstraint("gross_g IS NULL OR inedible_g IS NULL OR gross_g = edible_g + inedible_g", name="mass_balance"))
 
+observations = owned("observations",
+    sa.Column("metric", sa.Text, nullable=False),
+    sa.Column("series_date", sa.Date, nullable=False),
+    sa.Column("current_revision_id", UUID(as_uuid=True), nullable=False),
+    sa.UniqueConstraint("user_id", "metric", "series_date", name="uq_observation_slot"),
+    sa.UniqueConstraint("user_id", "id", "metric", name="uq_observation_metric"),
+    sa.CheckConstraint("metric IN ('weight','daily_steps')", name="metric"))
+
+observation_revisions = owned("observation_revisions",
+    sa.Column("observation_id", UUID(as_uuid=True), nullable=False),
+    sa.Column("revision_no", sa.Integer, nullable=False),
+    sa.Column("metric", sa.Text, nullable=False),
+    sa.Column("applied_operation_id", UUID(as_uuid=True), nullable=False),
+    sa.Column("value", sa.Numeric(18, 6)),
+    sa.Column("unit", sa.Text, nullable=False),
+    sa.Column("observed_at", sa.DateTime(timezone=True)),
+    sa.Column("local_date", sa.Date, nullable=False),
+    sa.Column("time_zone", sa.Text, nullable=False),
+    sa.Column("state", sa.Text, nullable=False, server_default="active"),
+    sa.Column("origin_kind", sa.Text, nullable=False, server_default="manual"),
+    sa.ForeignKeyConstraint(["user_id", "observation_id", "metric"],
+                           ["observations.user_id", "observations.id", "observations.metric"]),
+    sa.ForeignKeyConstraint(["user_id", "applied_operation_id"],
+                           ["applied_operations.user_id", "applied_operations.id"],
+                           deferrable=True, initially="DEFERRED"),
+    sa.UniqueConstraint("user_id", "observation_id", "revision_no", name="uq_observation_revision_number"),
+    sa.UniqueConstraint("user_id", "observation_id", "id", name="uq_observation_revision_parent"),
+    sa.CheckConstraint("revision_no > 0", name="positive_revision"),
+    sa.CheckConstraint("state IN ('active','deleted')", name="state"),
+    sa.CheckConstraint("origin_kind IN ('manual','increment')", name="origin_kind"),
+    sa.CheckConstraint("metric IN ('weight','daily_steps')", name="metric"),
+    sa.CheckConstraint("unit IN ('kg','steps')", name="unit"),
+    sa.CheckConstraint(
+        "(state = 'deleted' AND value IS NULL) OR "
+        "(state = 'active' AND metric = 'weight' AND value IS NOT NULL AND value > 0 AND unit = 'kg') OR "
+        "(state = 'active' AND metric = 'daily_steps' AND value IS NOT NULL AND value >= 0 "
+        "AND value = trunc(value) AND unit = 'steps')", name="value_shape"))
+observations.append_constraint(sa.ForeignKeyConstraint(
+    ["user_id", "id", "current_revision_id"],
+    ["observation_revisions.user_id", "observation_revisions.observation_id", "observation_revisions.id"],
+    name="fk_observation_current_revision", use_alter=True, deferrable=True, initially="DEFERRED"))
+
 outbox = owned("outbox",
     sa.Column("operation_id", UUID(as_uuid=True), nullable=False),
     sa.Column("telegram_account_id", UUID(as_uuid=True), nullable=False),
@@ -264,6 +306,8 @@ sa.Index("ix_prepared_origin", prepared_operations.c.user_id, prepared_operation
 sa.Index("ix_outbox_dispatch", outbox.c.status, outbox.c.created_at)
 sa.Index("ix_recipe_versions_parent", recipe_versions.c.user_id, recipe_versions.c.recipe_id)
 sa.Index("ix_recipe_ingredients_version", recipe_ingredients.c.user_id, recipe_ingredients.c.recipe_version_id)
+sa.Index("ix_observation_revisions_local_date", observation_revisions.c.user_id,
+         observation_revisions.c.local_date, observation_revisions.c.observed_at)
 
 telegram_poll_cursors = sa.Table("telegram_poll_cursors", metadata,
     sa.Column("bot_id", sa.BigInteger, primary_key=True),
