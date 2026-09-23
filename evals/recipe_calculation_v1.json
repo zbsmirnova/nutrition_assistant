@@ -1,0 +1,60 @@
+{
+  "format_version": "1.0",
+  "title": "Russian recipe calculation evaluation draft",
+  "status": "authored from user-provided cases; recipe runtime is future work",
+  "rules": [
+    "A recipe calculation or definition is not evidence of consumption.",
+    "Retain initial ingredient amounts and units, the calculation yield/basis, ingredient source versions, and uncertainty.",
+    "Use a nearby general catalog product only as a plausibility check; it never replaces the recipe's calculated nutrition."
+  ],
+  "cases": [
+    {
+      "id": "RECIPE-CALC-001",
+      "message": "Тунец в собственном соку, 2 банки по 150 г без жидкости (итого 300 г); Frischkäse 100 г; маринованные корнишоны ~50 г",
+      "fixtures": {
+        "labels_per_100g": {
+          "tuna": {"kcal": "107", "protein_g": "25", "fat_g_upper_exclusive": "0.5", "carbs_g": "0.6"},
+          "frischkase": {"kcal": "241", "protein_g": "5.4", "fat_g": "23", "carbs_g": "3"},
+          "cornichons": {"kcal": "60", "protein_g": "1.4", "fat_g": "0.2", "carbs_g": "12"}
+        }
+      },
+      "expect": {
+        "intent": "recipe_calculation",
+        "initial_ingredients": ["tuna 300 g drained", "Frischkäse 100 g", "cornichons approximately 50 g"],
+        "estimated_ingredients": ["cornichons 50 g"],
+        "provisional_yield_g": "450",
+        "recipe_total": {"kcal": "592", "protein_g": "81.1", "fat_g": "23.1 to <24.6", "carbs_g": "10.8"},
+        "nutrition_per_100g": {"kcal": "about 132", "protein_g": "about 18.0", "fat_g": "5.1 to <5.5", "carbs_g": "about 2.4"},
+        "must_preserve": ["tuna fat upper bound rather than a fabricated exact fat value", "cornichon estimate and uncertainty", "label provenance"],
+        "must_not": ["log the dish as eaten", "represent the cornichon amount as weighed"]
+      }
+    },
+    {
+      "id": "RECIPE-CALC-002",
+      "message": "Красная чечевица сухая — 150 г; болгарский перец — 170 г; помидоры — 170 г; вода — 380 г; специи без значимой калорийности.",
+      "expect": {
+        "intent": "recipe_calculation",
+        "initial_ingredients": ["dry red lentils 150 g", "bell pepper 170 g", "tomatoes 170 g", "water 380 g", "negligible-calorie spices"],
+        "provisional_yield_g": "870",
+        "recipe_total": {"kcal": "about 600", "protein_g": "about 39 to 40"},
+        "nutrition_per_100g": {"kcal": "about 69", "protein_g": "about 4.5 to 4.6"},
+        "uncertainty": "Actual nutrition per 100 g can be higher after water evaporates during cooking.",
+        "must_not": ["treat 150 g dry lentils as cooked lentils", "log the pot as eaten"]
+      }
+    },
+    {
+      "id": "RECIPE-CALC-003",
+      "message": "Овсяные хлопья 93 г; сахар 0,5 ч. л. (~2 г); вода 375 мл.",
+      "fixtures": {"known_conversion": "water 375 ml equals 375 g for the provisional yield calculation"},
+      "expect": {
+        "intent": "recipe_calculation",
+        "initial_ingredients": ["oat flakes 93 g", "sugar approximately 2 g", "water 375 ml"],
+        "provisional_yield_g": "about 470",
+        "recipe_total": {"kcal": "about 358"},
+        "nutrition_per_100g": {"kcal": "about 76", "basis": "conditional value before water evaporation"},
+        "catalog_plausibility_check": "Compare with the closest general catalog product for plain cooked oatmeal/porridge and report whether the result is plausible.",
+        "must_not": ["replace the calculated recipe profile with the generic product value", "log the mixture as eaten"]
+      }
+    }
+  ]
+}
