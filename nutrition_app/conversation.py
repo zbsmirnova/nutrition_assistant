@@ -65,12 +65,23 @@ class ConversationWorker:
             versions.c.user_id == products.c.user_id, versions.c.product_id == products.c.id,
             versions.c.id == products.c.current_version_id))).where(products.c.user_id == user["id"])
             .order_by(versions.c.name, versions.c.id).limit(MAX_CANDIDATES + 1)).mappings().all()
+        recipe_rows = connection.execute(sa.select(
+            db.recipe_versions.c.id.label("version_id"),
+            db.recipe_versions.c.recipe_id,
+            db.recipe_versions.c.name,
+        ).select_from(db.recipes.join(db.recipe_versions, sa.and_(
+            db.recipes.c.user_id == db.recipe_versions.c.user_id,
+            db.recipes.c.current_version_id == db.recipe_versions.c.id,
+        ))).where(db.recipes.c.user_id == user["id"])
+            .order_by(db.recipe_versions.c.name, db.recipe_versions.c.id).limit(MAX_CANDIDATES + 1)).mappings().all()
+        catalog_overflow = len(rows) > MAX_CANDIDATES or len(rows) + len(recipe_rows) > MAX_CANDIDATES
         context = {"context_version": CONTEXT_VERSION, "resolver_version": RESOLVER_VERSION,
                    "parser_version": parser_version, "schema_version": "1.0", "context_revision": user["context_revision"],
                    "source_text": source["text"], "time_zone": source["source_time_zone"],
                    "local_date": source["source_sent_at"].astimezone(ZoneInfo(source["source_time_zone"])).date().isoformat(),
                    "has_reply": source["reply_to_message_id"] is not None, "forwarded": source["forwarded"],
-                   "catalog_overflow": len(rows) > MAX_CANDIDATES, "candidates": [],
+                   "catalog_overflow": catalog_overflow, "candidates": [], "recipes": [],
+                   "recipe_records": [],
                    "pending_candidates": [], "pending_entries": [], "pending_questions": {}, "pending": None,
                    "entries": [], "reply_entry_ref": None}
         if not context["catalog_overflow"]:
@@ -79,6 +90,12 @@ class ConversationWorker:
                 "food_kind": row["food_kind"], "declared_fat_percent":
                     None if row["declared_fat_percent"] is None else str(row["declared_fat_percent"])}
                 for i, row in enumerate(rows, 1)]
+            recipe_start = len(context["candidates"]) + 1
+            context["recipes"] = [{"ref": f"c{i}", "name": row["name"]}
+                                   for i, row in enumerate(recipe_rows, recipe_start)]
+            context["recipe_records"] = [{"ref": f"c{i}", "recipe_id": str(row["recipe_id"]),
+                                           "version_id": str(row["version_id"]), "name": row["name"]}
+                                          for i, row in enumerate(recipe_rows, recipe_start)]
         entry_rows = connection.execute(sa.select(
             db.food_entries.c.id.label("entry_id"),
             db.food_entry_revisions.c.id.label("revision_id"),
@@ -150,7 +167,7 @@ class ConversationWorker:
                                "meal": record["meal"], "description": record["description"],
                                "components": record["components"]}
         entry_records = list(entry_map.values())
-        for index, record in enumerate(entry_records, len(rows) + 1):
+        for index, record in enumerate(entry_records, len(rows) + len(recipe_rows) + 1):
             record["ref"] = f"c{index}"
             context["entries"].append({"ref": record["ref"], "description": record["description"],
                                         "effective_date": record["effective_date"], "meal": record["meal"],

@@ -24,7 +24,10 @@ from nutrition_app.db import ROOT, migrate
 from nutrition_app.demo import food_command, message, seed_product, seed_user
 from nutrition_app.errors import NotFound
 from nutrition_app.interpretation import SyntheticParser
-from nutrition_app.service import FoodService
+from nutrition_app.service import FoodService, operation_id_for
+from nutrition_contracts.commands import (CommandEnvelope, CommandSource, DefineRecipe, ProvidedRecipeNutrition,
+                                          RecipeDefinition, RecipeIngredient, UnknownIngredientSource)
+from nutrition_contracts.common import NutrientValue, NutritionSnapshot, SourceQuantity
 
 
 class ControlledParser:
@@ -67,6 +70,69 @@ class ConversationWorkerTests(unittest.TestCase):
                 db.conversation_jobs.c.status == "processing").values(lease_until=sa.func.now() - timedelta(seconds=1)))
             connection.execute(db.conversation_jobs.update().where(db.conversation_jobs.c.user_id == self.actor,
                 db.conversation_jobs.c.status == "retry").values(next_attempt_at=sa.func.now() - timedelta(seconds=1)))
+
+    def define_recipe(self, number, name="мой суп"):
+        origin = self.source(number, text="Сохрани рецепт")
+        recipe = RecipeDefinition(name=name, cooking_instructions="Варить.", ingredients=[
+            RecipeIngredient(name_as_entered="овсяные хлопья", original_quantity=SourceQuantity(amount="93", unit="g"),
+                             weight_basis="raw", source=UnknownIngredientSource(kind="unknown", reason="fixture")),
+        ], nutrition=ProvidedRecipeNutrition(kind="provided", data_source_id=self.seed.source_id,
+                                             per_100_g=NutritionSnapshot(**{
+                                                 key: NutrientValue(value=value, lower=None, upper=None)
+                                                 for key, value in {"kcal": "76", "protein_g": "2", "fat_g": "1", "carbs_g": "14"}.items()})))
+        with self.engine.connect() as connection:
+            context_revision = connection.execute(sa.select(db.users.c.context_revision).where(
+                db.users.c.id == self.actor)).scalar_one()
+        command = CommandEnvelope(schema_version="1.0", user_id=self.actor,
+            operation_id=operation_id_for(origin), context_revision=context_revision,
+            source=CommandSource(origin_update_id=origin, evidence_update_ids=[origin], pending_action_id=None),
+            command=DefineRecipe(kind="define_recipe", recipe=recipe))
+        return self.service.apply(self.actor, command).result.recipe
+
+    def recipe_output(self, text, food, *, candidate_ref="c2"):
+        return {"schema_version": "1.0", "actions": [{
+            "kind": "add_food", "action_id": "a1", "evidence": text,
+            "depends_on": [], "unresolved": [], "food": food,
+            "quantity": {"amount": "250", "unit": "g"}, "weight_basis": None,
+            "date_hint": {"text": None}, "meal": "lunch"}]}
+
+    def test_saved_recipe_is_an_opaque_candidate_and_logs_eaten_grams(self):
+        recipe = self.define_recipe(1)
+        text = "Съела 250 г мой суп"
+        origin = self.source(2, text=text)
+        output = self.recipe_output(text, {"kind": "candidate", "candidate_kind": "recipe",
+                                           "candidate_ref": "c2"})
+        parser = ControlledParser(output)
+        result = self.worker.run_one(self.actor, parser, origin=origin)
+        self.assertEqual(result["status"], "applied")
+        self.assertEqual(parser.requests[0].recipes, ({"ref": "c2", "name": "мой суп"},))
+        self.assertNotIn("version_id", repr(parser.requests[0].recipes))
+        self.assertEqual(result["outcome"]["result"]["food_entries"][0]["nutrition"]["kcal"]["value"], "190")
+        with self.engine.connect() as connection:
+            row = connection.execute(sa.select(db.food_components).where(
+                db.food_components.c.user_id == self.actor)).mappings().one()
+        self.assertEqual(row["component_kind"], "recipe")
+        self.assertEqual(row["recipe_version_id"], recipe.version_id)
+        self.assertEqual(str(row["edible_g"]), "250.000000")
+
+    def test_unique_named_recipe_resolves_without_a_model_database_id(self):
+        self.define_recipe(1)
+        text = "Съела 250 г мой суп"
+        origin = self.source(2, text=text)
+        parser = ControlledParser(self.recipe_output(text, {"kind": "name", "name": "мой суп"}))
+        result = self.worker.run_one(self.actor, parser, origin=origin)
+        self.assertEqual(result["status"], "applied")
+        self.assertEqual(self.count(db.food_entries), 1)
+
+    def test_ambiguous_named_recipe_stays_unresolved(self):
+        self.define_recipe(1)
+        self.define_recipe(2)
+        text = "Съела 250 г мой суп"
+        origin = self.source(3, text=text)
+        result = self.worker.run_one(self.actor, ControlledParser(
+            self.recipe_output(text, {"kind": "name", "name": "мой суп"})), origin=origin)
+        self.assertEqual((result["status"], result["reason"]), ("unresolved", "food_target_ambiguous"))
+        self.assertEqual(self.count(db.food_entries), 0)
 
     def test_clear_message_saves_expected_nutrition_and_replays_once(self):
         origin = self.source()

@@ -92,6 +92,9 @@ class NebiusParser:
         context = {"source_text": request.source_text, "local_date": request.local_date,
                    "time_zone": request.time_zone,
                    "candidates": [{key: candidate[key] for key in keys} for candidate in request.candidates]}
+        if request.recipes:
+            context["recipes"] = [{key: candidate[key] for key in ("ref", "name")}
+                                   for candidate in request.recipes]
         if request.entries:
             context["entries"] = [{key: candidate[key] for key in ("ref", "description", "effective_date", "meal", "state")}
                                    for candidate in request.entries]
@@ -167,6 +170,7 @@ class NebiusParser:
             # Local schema/graph validation remains mandatory even with structured output.
             output = ParserOutput.model_validate_json(content)
             candidate_kinds = {c["ref"]: "product" for c in request.candidates}
+            candidate_kinds.update({c["ref"]: "recipe" for c in request.recipes})
             candidate_kinds.update({c["ref"]: "entry" for c in request.entries})
             candidate_kinds.update({c["ref"]: {"pending", "product"} for c in request.pending_candidates})
             candidate_kinds.update({c["ref"]: {"pending", "entry"} for c in request.pending_entries})

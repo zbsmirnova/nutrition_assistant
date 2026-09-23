@@ -21,8 +21,8 @@ from .errors import ApplicationError
 from .service import digest, operation_id_for
 
 
-CONTEXT_VERSION = "single-food-context-v3"
-RESOLVER_VERSION = "single-food-resolver-v6"
+CONTEXT_VERSION = "single-food-context-v4"
+RESOLVER_VERSION = "single-food-resolver-v7"
 MAX_CANDIDATES = 64
 
 
@@ -32,6 +32,7 @@ class ParserRequest:
     local_date: str
     time_zone: str
     candidates: tuple[dict, ...] = field(repr=False)
+    recipes: tuple[dict, ...] = field(default_factory=tuple, repr=False)
     pending_candidates: tuple[dict, ...] = field(default_factory=tuple, repr=False)
     pending_questions: dict[str, dict[str, str]] = field(default_factory=dict, repr=False)
     pending_entries: tuple[dict, ...] = field(default_factory=tuple, repr=False)
@@ -94,8 +95,11 @@ def parser_request(context: dict) -> ParserRequest:
                     for c in context.get("entries", ()))
     pending_entries = tuple({k: c[k] for k in ("ref", "description", "effective_date", "meal", "state")}
                             for c in context.get("pending_entries", ()))
+    recipes = tuple({k: c[k] for k in ("ref", "name")}
+                    for c in context.get("recipes", ()))
     return ParserRequest(source_text=context["source_text"], local_date=context["local_date"],
                          time_zone=context["time_zone"], candidates=public,
+                         recipes=recipes,
                          pending_candidates=pending,
                          pending_questions=context.get("pending_questions", {}),
                          pending_entries=pending_entries,
@@ -322,6 +326,7 @@ def resolve_entry_action(actor: UUID, origin: UUID, context: dict, action) -> Re
 
 def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> Resolution:
     candidate_kinds = {c["ref"]: "product" for c in context["candidates"]}
+    candidate_kinds.update({c["ref"]: "recipe" for c in context.get("recipes", ())})
     candidate_kinds.update({c["ref"]: "entry" for c in context.get("entries", ())})
     candidate_kinds.update({c["ref"]: {"pending", "product"} for c in context.get("pending_candidates", ())})
     candidate_kinds.update({c["ref"]: {"pending", "entry"} for c in context.get("pending_entries", ())})
@@ -404,16 +409,53 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
     if target_date is None:
         return defer("date_unresolved")
     candidates = context["candidates"]
+    recipes = context.get("recipes", ())
+    recipe_records = context.get("recipe_records", ())
     if action.food.kind == "candidate":
-        matching = [c for c in candidates if c["ref"] == action.food.candidate_ref]
+        matching_products = [c for c in candidates if c["ref"] == action.food.candidate_ref]
+        matching_recipes = [c for c in recipes if c["ref"] == action.food.candidate_ref]
     elif action.food.kind == "name":
-        matching = [c for c in candidates if normalized(c["name"]) == normalized(action.food.name)]
+        matching_products = [c for c in candidates if normalized(c["name"]) == normalized(action.food.name)]
+        matching_recipes = [c for c in recipes if normalized(c["name"]) == normalized(action.food.name)]
     else:
         return Resolution("unsupported", "dependent_food_source")
-    if len(matching) != 1:
-        return defer("product_unresolved")
-    pending_ref = matching[0]["ref"]
-    product = matching[0]
+    if len(matching_products) + len(matching_recipes) != 1:
+        if not matching_products and not matching_recipes:
+            return defer("product_unresolved")
+        return defer("food_target_ambiguous")
+    if matching_recipes:
+        recipe = matching_recipes[0]
+        if (action.food.kind == "name"
+                and sum(normalized(c["name"]) == normalized(recipe["name"]) for c in recipes) != 1):
+            return defer("recipe_ambiguous")
+        recipe_record = next((record for record in recipe_records if record["ref"] == recipe["ref"]), None)
+        if recipe_record is None:
+            return defer("recipe_unresolved")
+        quantity = action.quantity
+        matches = list(QUANTITY.finditer(context["source_text"]))
+        if quantity.amount is None or quantity.unit != "g" or len(matches) != 1:
+            return defer("quantity_unresolved")
+        lexical = AMOUNT_UNIT.fullmatch(matches[0].group())
+        if (Decimal(lexical.group(1).replace(",", ".")) != Decimal(quantity.amount)
+                or UNITS[lexical.group(2).casefold()] != "g"):
+            return defer("quantity_evidence_conflict")
+        if APPROXIMATE.search(context["source_text"]):
+            return defer("quantity_not_exact")
+        evidence_ids = context.get("evidence_update_ids", [origin])
+        pending_action_id = context.get("pending_action_id")
+        payload = {"schema_version": "1.0", "user_id": str(actor),
+                   "operation_id": str(operation_id_for(origin, context.get("operation_position", 0))),
+                   "context_revision": context["context_revision"],
+                   "source": {"origin_update_id": str(origin), "evidence_update_ids": [str(item) for item in evidence_ids],
+                              "pending_action_id": None if pending_action_id is None else str(pending_action_id)},
+                   "command": {"kind": "add_consumed_food", "food": {
+                       "effective_date": target_date.isoformat(), "time_zone": context["time_zone"], "meal": action.meal,
+                       "description": recipe["name"], "components": [{"kind": "recipe", "description": recipe["name"],
+                           "recipe_version_id": recipe_record["version_id"], "eaten_grams": quantity.amount}]}}}
+        return Resolution("ready", "recipe_command_prepared", CommandEnvelope.model_validate_json(json.dumps(payload)),
+                          command_position=context.get("operation_position", 0))
+    pending_ref = matching_products[0]["ref"]
+    product = matching_products[0]
     # Duplicate indistinguishable names are ambiguity even if the model picked a token.
     if sum(normalized(c["name"]) == normalized(product["name"]) for c in candidates) != 1:
         return defer("product_ambiguous")
