@@ -113,6 +113,8 @@ The user ran `INTAKE-001` with parser fingerprint `nebius:59378dac5158660ec5a32b
 
 The user ran `INTAKE-001` with v4 and again received `ParserRejected: Nebius proposal failed local schema validation`. The compact prompt therefore did not resolve the failure for `Qwen/Qwen3-30B-A3B-Instruct-2507`; no full v4 batch was run. The next experiment is a single case against another model ID confirmed by the provider's model list.
 
+Decision D025 now supersedes the earlier quantity expectation for explicit ratios: `INTAKE-001` expects 57.5 g egg plus 57.5 g egg white, and `INTAKE-008` expects 60 g potato plus 60 g sweet potato. Earlier live scorecards remain historical evidence under the superseded rubric and are not directly comparable on those quantity checks.
+
 ## Alternative model single-case probes — 2026-09-23
 
 The user ran the same v4 prompt and `INTAKE-001` against three candidate IDs:

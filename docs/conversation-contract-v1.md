@@ -50,6 +50,8 @@ Example catalog fixture: “мой суп” has 70 kcal, 4 g protein, 2 g fat, 
 
 The backend selects the current matching recipe version and scales each known nutrient by 2.5. It saves the entry, source-version reference, computed snapshot, and response intent before saying it was added. Append “За день: ...” with the current backend-calculated kcal/protein/fat/carbohydrate totals. The examples show the action-specific line; every normal saved/corrected-food response also includes that daily summary. Show the relevant local date when modifying a previous day.
 
+When the source names components and gives an explicit ratio plus total mass, normalize the total into component masses before resolution. “Яичница: яйцо + белок 1:1, 115 г” therefore becomes 57.5 g egg and 57.5 g egg white. The parser preserves the ratio and component evidence; the backend recalculates and validates the split and its sum. Do not distribute a total without an explicit determinate ratio, or when the amount is approximate or ranged.
+
 Unknown nutrients remain unknown in both entry and daily summaries. A saved recipe can contain known calories and unknown carbohydrates. The bot must not fill the missing field from an energy balance or display it as zero.
 
 Default dates use the source message's local date. An explicit “yesterday” overrides it. Unknown meal type can remain unspecified rather than prompting solely to classify breakfast/lunch/dinner; explicitly identified dinner enables the accepted check-in behavior.

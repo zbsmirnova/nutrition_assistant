@@ -54,8 +54,9 @@ class StubParser:
     version = "stub:interpretation-eval-v1"
 
     SPECS = {
-        # Mostly right: four components, source quantities, coffee left out (gap).
-        "INTAKE-001": [("c1", "115", []), ("c2", "115", []), ("c3", "52", []), ("c4", "7", []), ("c5", "45", [])],
+        # Mostly right: explicit 1:1 egg/white split plus three other components;
+        # coffee is left out (known context gap).
+        "INTAKE-001": [("c1", "57.5", []), ("c2", "57.5", []), ("c3", "52", []), ("c4", "7", []), ("c5", "45", [])],
         # Clean single product: correct.
         "INTAKE-002": [("c1", "10", [])],
         # Lunch: extracts items and asks about the chicken (correct clarification).
@@ -70,7 +71,7 @@ class StubParser:
         "INTAKE-007": [("c1", "20", [])],
         # Potato+sweet potato total + explicit oil; DELIBERATE FAULT: adds a 4th
         # hidden oil item to exercise the max_add_food guard failing.
-        "INTAKE-008": [("c1", "120", []), ("c2", "120", []), ("c3", "3", []), ("name:масло скрытое", "5", [])],
+        "INTAKE-008": [("c1", "60", []), ("c2", "60", []), ("c3", "3", []), ("name:масло скрытое", "5", [])],
         # Chicken with bone: DELIBERATE FAULT: saves 150 g with no clarification, to
         # exercise a missed-clarification failure.
         "INTAKE-009": [("c1", "150", [])],

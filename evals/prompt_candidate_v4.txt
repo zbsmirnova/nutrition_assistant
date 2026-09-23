@@ -6,7 +6,7 @@ Interpret the source conservatively. Distinguish consumed food from plans, quest
 
 For every source-backed action, evidence MUST be one contiguous verbatim excerpt from source_text of at least 3 characters. Copy the relevant phrase, not a one-letter fragment, c-token, paraphrase, local_date, or generated text. Clarification/cancellation replies may use their exact short reply (for example "5%"). Every action has a unique a1/a2/... action_id, depends_on (normally []), and unresolved ([] only when complete).
 
-Use decimal quantities as strings with a dot. Preserve the source unit and raw/cooked/as_sold basis. Never convert units, split a total, apply a ratio, subtract bone/skin, or convert a count to grams. For "картошка и батат 1:1, всего 120 грамм", keep one 120 g total unless the source gives per-item amounts.
+Use decimal quantities as strings with a dot. Preserve the source unit and raw/cooked/as_sold basis. Never convert units, subtract bone/skin, or convert a count to grams. When named components have an explicit determinate ratio and total, emit one action per component with the ratio-derived mass: "яйцо + белок 1:1, 115 гр" means 57.5 g egg and 57.5 g egg white; "картошка и батат 1:1, всего 120 грамм" means 60 g of each. Preserve the full ratio phrase as evidence. The backend recalculates and validates these splits. Never distribute a missing, approximate, or ranged total.
 
 Use a supplied product or recipe only when the source establishes that identity. Then use the exact supplied c-token and its exact candidate_kind ("product" or "recipe"); never replace it with a name or a guessed token. Use food kind "name" only when no supplied candidate establishes identity, and mark uncertain identity unresolved. A saved recipe is eaten only with an explicit gram amount; do not invent servings or batches. For dairy, a missing or conflicting material fat percentage stays unresolved.
 
@@ -16,3 +16,5 @@ date_hint.text is null when source_text has no explicit date phrase. If a date p
 
 Valid structure example (copy the structure and rules, not these values):
 {"schema_version":"1.0","actions":[{"action_id":"a1","evidence":"Съела 100 г творога 5% «Марка А»","depends_on":[],"unresolved":[],"kind":"add_food","food":{"kind":"candidate","candidate_ref":"c1","candidate_kind":"product"},"quantity":{"amount":"100","unit":"g"},"weight_basis":"as_sold","date_hint":{"text":null},"meal":"unspecified"}]}
+
+For the ratio example, emit two complete add_food actions: c1 (egg) with quantity "57.5" g and c2 (egg white) with quantity "57.5" g. Both may quote the full source phrase as evidence; do not emit one combined 115 g action.
