@@ -14,7 +14,7 @@ The 20 existing authored contract fixtures cover part of this inventory; they do
 3. “It was 80 g, not 100”: revise the referenced entry; ambiguous targets prompt a question.
 4. “The chicken included 33 g of bones”: preserve gross weight and revise edible weight and totals.
 5. “Maybe pizza tonight”: no consumed-food entry.
-6. “Yesterday I also ate an apple”: backdate it and update history/report calculations. If yesterday was complete, keep it complete without another closure or check-in.
+6. “Yesterday I also ate an apple”: backdate it and update history/report calculations. Continuous MVP food saving does not require a closure or check-in.
 7. “8,200 steps today”, then “9,000 steps today”: final daily total is 9,000.
 8. Only breakfast logged: history contains breakfast; the weekly report does not call it confirmed full-day intake.
 9. Provider timeout, then worker restart: retain the pending message and apply any eventual mutation once.
@@ -22,17 +22,17 @@ The 20 existing authored contract fixtures cover part of this inventory; they do
 11. Product or recipe update: previously logged food retains the version used at the time.
 12. A correction arrives while another is being parsed: version checks prevent stale overwrites.
 13. A user attempts to reference another user's entry: authorization rejects the command.
-14. Future reminder scope (out of MVP): a reminder scheduled across a daylight-saving change would create one intended occurrence in the user's local time.
+14. Post-MVP W018: a reminder scheduled across a daylight-saving change would create one intended occurrence in the user's local time.
 15. “A bowl of soup” with no known portion: ask for the quantity, preserve a pending action, and leave totals unchanged until answered.
-16. Dinner is logged at 19:00: show one completion/activity check-in; no scheduled reminder is issued later.
-17. No dinner is logged: do not show an automatic check-in in MVP. A later dinner may create the one dinner-triggered offer.
-18. “Close the day” arrives before dinner: confirm food completeness, suppress the completion button, and include only an optional activity action if steps are missing.
-19. “Dinner was ...; close the day” in one message: validate and apply the batch, then reply without offering a redundant completion button.
-20. The user closes food logging without steps, then supplies steps later: save activity independently and keep food completeness unchanged.
-21. A next-day reply to yesterday's activity prompt: apply it to yesterday unless the user explicitly chooses another date.
+16. Post-MVP W018: dinner is logged at 19:00 and one combined dinner/activity check-in is offered; the shared reminder path cannot create a duplicate later.
+17. MVP: no dinner is logged and no automatic check-in is shown. Post-MVP W018 may offer one reminder occurrence.
+18. MVP: “Close the day” is not a command and does not change food persistence. Post-MVP W018 may define closure semantics.
+19. MVP: “Dinner was ...; close the day” saves independently clear food actions and leaves any future check-in behavior out of scope. Post-MVP W018 will define the combined flow.
+20. MVP: steps are saved independently at any time. Post-MVP W018 may request them from a check-in without coupling them to food completeness.
+21. Post-MVP W018: a next-day reply to yesterday's activity prompt applies it to yesterday unless the user explicitly chooses another date.
 22. A saved recipe is logged without eaten grams: ask for grams before adding it to totals. Creating the per-100-g profile itself creates no food entry.
 23. Recipe nutrition or a product label is explicitly revised: new selections use the new version, while prior food entries retain their old version and calculation.
-24. A close-day command races with check-in delivery: cancel an unsent offer or deactivate the stale completion action; no duplicate state change is possible.
+24. Post-MVP W018: a future closure action races with check-in delivery; cancel an unsent offer or deactivate the stale completion action, with no duplicate state change.
 25. “Weight 76.3 today”, then “Weight 76.1 today”: the day's sole current value is 76.1 kg, with 76.3 retained only in revision history.
 26. A clear soup quantity and unknown bread quantity in one message: save soup, ask about bread, and exclude bread from totals. Answering later adds only bread.
 27. A recipe with arbitrary ingredient amounts and cooking instructions: clarify needed sources/finished weight, calculate nutrition per 100 g, and retain the initial amounts and instructions for reuse.

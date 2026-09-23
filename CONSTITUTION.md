@@ -7,7 +7,7 @@ Owner: product owner for product choices; lead assistant for maintenance.
 
 Build a personal Telegram assistant that makes food, recipes, body weight, and daily steps easy to record in ordinary Russian conversation. Give the user understandable nutrition totals, correctable records, and useful history without moralizing. Start with personal use while designing ownership boundaries for possible future users; the access mechanism is part of the architecture design.
 
-The original architecture brief is historical input. Later explicit decisions in the product discussion govern where they differ: continuous food saving, dinner-triggered optional completion, no scheduled MVP reminders, the simplified recipe model, one daily weight/steps value, and training in v2.
+The original architecture brief is historical input. Later explicit decisions in the product discussion govern where they differ: continuous food saving, independent MVP steps logging, deferred close-day/check-in behavior, the simplified recipe model, one daily weight/steps value, and training in v2.
 
 ## Goals
 
@@ -22,7 +22,7 @@ No numerical usability, accuracy, cost, or latency target has been agreed. Live-
 
 ## Scope
 
-Accepted v1 domains: food logging and corrections, recipes, one daily body weight, one daily steps total, and the optional combined completion/activity check-in. Personal products and manual nutrition values support food logging. The release roadmap includes history/reporting and operational readiness; report scheduling and export/deletion requirements still have open product details.
+Accepted MVP domains: food logging and corrections, recipes, one daily body weight, and one daily steps total. The combined completion/activity check-in and reminders are post-MVP W018 work. Personal products and manual nutrition values support food logging. The release roadmap includes history/reporting and operational readiness; report scheduling and export/deletion requirements still have open product details.
 
 Training/workout tracking belongs in v2. Other measurements, menstrual-cycle context, additional activity metrics, Apple Health integration, external catalog/barcode conveniences, habit suggestions, historical imports, and public multi-user access are future work with timing to be decided.
 
@@ -46,9 +46,9 @@ These IDs are stable references for specifications, work briefs, and QA. Product
 | RECIPE-003 | Product/recipe updates must not silently change historical meals. Preserve the source/version and calculation basis used by each meal. |
 | OBS-001 | Keep one current body-weight value per user/local date. Later values replace it with history, rather than creating multiple current readings or an average. |
 | OBS-002 | Keep one current steps total per user/local date. Later absolute totals replace it; only an explicit increment adds steps, with a known starting value. Missing steps and an explicitly supplied zero differ. |
-| DAY-001 | Offer the combined completion/activity check-in after a successfully logged dinner. Do not send scheduled MVP reminders. Do not offer another completion button after conversational closure or a second logical check-in for the same local day. |
-| DAY-002 | Support “Everything logged”, “Add steps”, and “Later”. Missing steps do not prevent food completion. A closure acknowledgment can invite missing activity without another completion action. |
-| DAY-003 | Late food additions update totals while preserving day completeness; no new completion confirmation or check-in is required. |
+| DAY-001 | Post-MVP W018: offer the combined completion/activity check-in according to the accepted dinner/reminder behavior. It is not an MVP requirement. |
+| DAY-002 | Post-MVP W018: support the accepted completion/activity actions and closure semantics. MVP records steps independently and has no close-day action. |
+| DAY-003 | Post-MVP W018: late food additions preserve any later-defined day-completeness state without requiring another check-in. MVP food totals update continuously. |
 | CALC-001 | The LLM proposes interpretations. The backend owns identity, authorization, reference resolution, calculations, and durable mutations. |
 | CALC-002 | Unknown nutrients are not zero. Preserve source quality, units, edible/raw/cooked basis, and available bounds. Do not infer missing fat or carbohydrate solely from total calories. |
 | DATA-001 | Preserve traceability and ordinary correction history under an agreed retention policy. Revisions are not an exemption from account erasure. |

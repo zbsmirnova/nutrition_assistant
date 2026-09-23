@@ -1,45 +1,47 @@
-# W018 — Combined completion/activity check-in
+# W018 — Combined dinner/activity check-in and reminders
 
-Status: ready.
-Milestone: M5 (depends on M4 observations, done in W017).
+Status: planned (post-MVP).
+Milestone: M5 (post-MVP; depends on M4 observations, completed in W017).
 Owner: lead assistant, architect/developer.
 Updated: 2026-09-23.
-Decision: D030 and D031 (dinner-triggered behavior and MVP scope), under DAY-001 and D001; callback mechanics remain technical work.
+Decision: D032 supersedes the earlier MVP check-in scope in D030/D031; DAY-001–DAY-003 remain future requirements.
 
 ## Outcome and scope
 
-Offer a single combined completion/activity check-in with the dinner acknowledgment and act on the user's choice. By D030 and D031, there is no scheduled fallback or automatic reminder when dinner is absent. The buttons are "Everything logged", "Add steps", and "Later"; "Later" dismisses; "Add steps" asks for steps in-flow and records a daily-steps observation via W017; and the completion action is suppressed after conversational closure or explicit completion. Late food after closure never creates a second logical offer.
+Add one optional post-MVP daily interaction that can be triggered by a recognized dinner message or by an enabled local-time reminder. The two triggers share one durable daily-check-in identity and one suppression/closure state. The interaction may acknowledge dinner, ask for steps, and offer a user-controlled completion action. The exact closure semantics are part of this slice; MVP has no close-day command, completion button, dinner trigger, scheduled reminder, or callback transport.
+
+Food remains continuously persisted as each accepted operation arrives. Steps remain an independent daily observation through W017. A late food message updates food totals and does not create a second check-in. Unknown restaurant nutrition remains pending until the user supplies an approved portion and a separately defined nutrition source.
 
 ## Requirements and decisions
 
-DAY-001; D001 (optional completion); D030/D031 (dinner-triggered behavior and MVP scope); section 9 of the data model (`daily_check_ins` and ordinary outbox). W017/D029 provide the steps observation the "Add steps" path reuses.
+D032; DAY-001–DAY-003; D001 for optional completion; W017/D029 for the daily steps observation. W019 is merged into this brief: dinner-triggered and scheduled reminder behavior must be designed and implemented together so they cannot diverge in identity, suppression, or callback handling.
 
-Dependencies that are technical decisions for this slice (not yet built):
+Technical decisions required before implementation:
 
-- Telegram transport must gain inline-keyboard sends and `callback_query` ingress with `answerCallbackQuery`; the current transport only sends plain text and ignores non-text updates.
-- Dinner-triggered offers need one durable daily-check-in identity and must be idempotent across worker retries and concurrent dinner messages.
-
-These mechanics are unresolved technical design and should be recorded in a follow-up technical decision before implementation; the user-facing behavior and MVP scope are settled by D030/D031.
+- Telegram delivery needs inline-keyboard sends, callback-query ingress, server-side opaque action binding, and stale/foreign callback validation.
+- Dinner and reminder triggers need one idempotent `(user, local date)` check-in identity. Whichever trigger commits first suppresses the other.
+- The scheduler needs a database-backed occurrence key, IANA time-zone conversion, explicit DST behavior, outage/missed-occurrence policy, and a durable delivery path. PostgreSQL advisory locking and a scheduled outbox are proposals, not accepted decisions.
+- Closure must be a domain state separate from food persistence. The implementation must define whether and how a future completion action affects reports, missing steps, pending food, and later edits.
 
 ## Acceptance criteria
 
 | ID | Observable result |
 | --- | --- |
-| W018-A01 | A recognized dinner produces one outgoing message combining the acknowledgment and the check-in offer with the three actions. |
-| W018-A02 | With no dinner, no automatic check-in or scheduled reminder is created in MVP. |
-| W018-A03 | "Everything logged" marks the day complete; "Add steps" records the day's steps as an observation; "Later" dismisses without reschedule. |
-| W018-A04 | One dinner-triggered logical offer per local day across retries and races; later dinner messages do not create a second offer. |
-| W018-A05 | After closure or completion the completion action is suppressed; late food additions keep the day complete with no new check-in. |
-| W018-A06 | Old or superseded callbacks validate current state and their bound local date; ambiguous sends are visible and not blindly duplicated. |
+| W018-A01 | An enabled dinner trigger or scheduled reminder creates at most one post-MVP check-in for a user's local date. |
+| W018-A02 | The two trigger paths share one durable identity and suppress duplicate offers across retries, races, late dinner, and process restarts. |
+| W018-A03 | The interaction can acknowledge the current log, request or record the day's steps, and apply the accepted closure behavior without changing food-entry persistence. |
+| W018-A04 | A late food addition updates totals and does not create another check-in; pending/unknown food remains visible and outside totals. |
+| W018-A05 | Callback actions are bound to user, local date, check-in state, and action version; stale, foreign, duplicate, and uncertain callbacks are safe. |
+| W018-A06 | Scheduler occurrence, DST, outage, retry, and uncertain-send behavior is covered by retained tests and documented operationally. |
 
 ## Implementation checklist
 
-Not started. Ordering proposal: (1) technical decision for callback transport and dinner-offer persistence; (2) migration for `daily_check_ins` and callback/action state; (3) offer lifecycle service (attach/dismiss/complete/suppress) with idempotency; (4) callback ingress and inline-keyboard delivery; (5) PostgreSQL tests for stale callbacks, retries, and one-logical-offer races. Scheduled reminders, scheduler, DST, and scheduled-outbox delivery are deferred by D031 to [W019](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/019-scheduled-check-in-reminders.md?type=file&root=%252F).
+Not started. First record the combined callback/scheduler/outbox technical decision. Then implement the shared check-in/closure state, callback transport, scheduler occurrence planner, durable delivery integration, and PostgreSQL/Telegram protocol tests. Do not start W018 by adding a close-day command to the MVP worker.
 
 ## Developer handoff
 
-Not implemented in this session. W017 (its M4 dependency) is complete and committed. Product behavior and MVP scope are fixed by D030/D031; the remaining blocker is the technical design for callbacks and dinner-offer persistence before coding.
+W017 provides the independent daily steps write path. No W018 runtime is implemented. The previous W019 brief is retained as a historical proposal and is merged into this work item.
 
 ## QA result and completion
 
-Not run — implementation not started. Definition of done: all acceptance criteria observable through retained tests on local PostgreSQL, with real Telegram callback behavior explicitly scoped or noted as unverified.
+Not run — implementation not started. Definition of done: all acceptance criteria are observable through retained tests, with live Telegram delivery and scheduler operations explicitly verified or recorded as unverified.

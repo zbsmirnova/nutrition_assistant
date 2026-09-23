@@ -1,7 +1,7 @@
 # D030 — Combined completion/activity check-in behavior
 
 Kind: product
-Status: accepted for W018; scheduled-fallback portion superseded for MVP by D031.
+Status: historical; MVP scope superseded by D032.
 Recorded: 2026-09-23.
 Decision owner: product owner (answers to Q06), recorded by the lead assistant.
 

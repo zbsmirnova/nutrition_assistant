@@ -1,8 +1,8 @@
 # V1 database model
 
-Status: step 1 proposal revised after product review. Food revisions, pending clarification rules, recipe ingredients/instructions with per-100-g nutrition, one weight/steps value per day, and late-addition completeness are accepted; remaining implementation details are proposals. Typed contracts and the M1/W002/W003 physical subset now exist. The full logical model still includes later unimplemented domains; section 13 and its subsequent extensions identify implemented storage.
+Status: step 1 proposal revised after product review. Food revisions, pending clarification rules, recipe ingredients/instructions with per-100-g nutrition, and one weight/steps value per day are accepted. Continuous MVP persistence supersedes the earlier close-day/completeness assumption; check-in/completeness tables are post-MVP W018 extensions. Remaining implementation details are proposals. Typed contracts and the M1/W002/W003 physical subset now exist. The full logical model still includes later unimplemented domains; section 13 and its subsequent extensions identify implemented storage.
 
-Scope: food, products, recipes, weight, daily steps, clarifications, and the accepted combined check-in. Training tables are excluded from v1. Additional activity fields remain undecided. This document refines the architecture plan; it does not mark all technical choices as product-approved.
+Scope: food, products, recipes, weight, daily steps, clarifications, and the deferred post-MVP combined check-in model. Training tables are excluded from v1. Additional activity fields remain undecided. This document refines the architecture plan; it does not mark all technical choices as product-approved.
 
 Document ownership: [CONSTITUTION.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/CONSTITUTION.md?type=file&root=%252F) owns enduring requirements; [README.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/README.md?type=file&root=%252F) owns acceptance status and open questions. D002/D003 record the accepted M1 storage/execution choices; D006 records its numeric policy. This file owns the detailed logical schema and constraints.
 
@@ -110,9 +110,9 @@ Accepted in this discussion: adding a forgotten snack to a closed day keeps it c
 
 Proposed consistent defaults: deletion and date corrections also preserve any existing confirmation. Moving food to an unconfirmed destination day does not automatically confirm that destination. A completed day with no current entries and no explicit zero-food declaration is reported as empty/unknown intake, not included as a zero in averages. An explicit zero-food declaration ceases to describe zero intake once active food is added, even though the historical declaration remains in the audit trail.
 
-Pending clarification is independent of completeness. If an unresolved food action concerns a completed day, retain its complete flag and display the outstanding question; temporarily exclude that day from complete-and-resolved intake averages. When the action is resolved or cancelled, eligibility returns without a new closure. Unknown-date pending food actions must be clarified before accepting a new closure, rather than guessed onto a date. Report the count of completed days separately from the count usable for a particular nutrient average.
+The `completeness_state` and `day_confirmations` model is a post-MVP W018 extension. MVP food persistence does not require confirmation, and pending clarification is simply excluded from totals until resolved. If W018 introduces completion, it must define how pending food and report eligibility interact without blocking continuous writes.
 
-Notification suppression is separate: the existence of a prior confirmation records that the user already closed that date. Later food changes must not automatically send a second combined check-in. Removing data for privacy is a separate erasure operation, not an ordinary food deletion.
+Any future notification suppression is separate from food persistence: a prior W018 check-in state must not make later food writes fail or duplicate an offer. Removing data for privacy is a separate erasure operation, not an ordinary food deletion.
 
 ## 6. Products and nutrition facts
 
@@ -168,17 +168,17 @@ Correcting either measurement onto a different date uses the two daily slots in 
 
 ## 9. Check-ins and report snapshots
 
-MVP implements only a dinner-triggered check-in. Scheduled reminders, local-time rules, notification runs, DST occurrence handling, and scheduled-outbox delivery are future scope under D031 and [W019](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/019-scheduled-check-in-reminders.md?type=file&root=%252F); the logical tables below retain them as a later extension rather than current MVP requirements.
+All check-in and notification tables below are post-MVP W018. MVP records food, weight, and steps independently and has no close-day command, dinner-triggered offer, callback keyboard, scheduled reminder, or notification run. W019's former reminder proposal is merged into W018.
 
 | Table | Important columns | Keys and rules |
 | --- | --- | --- |
-| `daily_check_ins` | `food_day_id`, `trigger_kind` (`dinner`), `offer_status`, `offered_at NULL`, `dismissed_at NULL`, `telegram_message_id NULL` | Unique `(user_id, food_day_id)`. The day itself is unique by local date. Track offer delivery separately from food completeness and missing activity. |
+| `daily_check_ins` | `food_day_id`, `trigger_kind` (`dinner` or future scheduled kind), `offer_status`, `offered_at NULL`, `dismissed_at NULL`, `telegram_message_id NULL` | Post-MVP W018. Unique `(user_id, food_day_id)`. Track offer delivery separately from food persistence, completion, and missing activity. |
 | `notification_rules` | `kind`, `enabled`, `local_time`, `weekday NULL`, `version_no` | Future only: configure scheduled reminders or an optional weekly report. Not an MVP table. |
 | `notification_runs` | `rule_id`, `rule_version_no`, `occurrence_key`, `scheduled_for_utc`, `subject_local_date`, `status`, `daily_check_in_id NULL`, `report_snapshot_id NULL` | Future only: unique `(user_id, rule_id, occurrence_key)` for intended local-date/period occurrences. Not an MVP table. |
-| `outbox_messages` | `message_key`, `telegram_account_id`, `subject_local_date NULL`, `inbox_update_id NULL`, `pending_action_id NULL`, `daily_check_in_id NULL`, `notification_run_id NULL`, `applied_operation_id NULL`, `payload jsonb`, `status`, `attempt_count`, `next_attempt_at`, `telegram_message_id NULL` | Unique `(user_id, message_key)`. MVP supports clarification questions, ordinary replies, and dinner acknowledgments with check-in keyboards. Scheduled messages remain future scope. |
+| `outbox_messages` | `message_key`, `telegram_account_id`, `subject_local_date NULL`, `inbox_update_id NULL`, `pending_action_id NULL`, `daily_check_in_id NULL`, `notification_run_id NULL`, `applied_operation_id NULL`, `payload jsonb`, `status`, `attempt_count`, `next_attempt_at`, `telegram_message_id NULL` | Existing MVP path supports clarification questions and ordinary replies. Check-in keyboards and scheduled messages are future W018 extensions. |
 | `report_snapshots` | `period_start`, `period_end`, `generated_at`, `report_rules_version`, `source_watermarks jsonb`, `payload jsonb` | Immutable derived report, not canonical food data. Period end is exclusive. Watermarks record the food-day and observation revisions used; payload contains totals and coverage already authorized for that user. |
 
-Create a food-day row for a dinner-triggered check-in only after the dinner food operation is committed; an empty day row is not evidence of zero food or completeness. A daily-check-in row similarly says only that an offer was planned or shown.
+Food-day rows support continuous daily totals; an empty row is not evidence of zero food or completeness. Post-MVP W018 may create a daily-check-in row after a dinner operation or scheduled occurrence is committed; that row says only that an offer was planned or shown.
 
 Offer states cover planned, sent, dismissed, and suppressed; the outbox separately records uncertain or failed deliveries. Persist a unique offer before sending. Re-check food confirmation and missing steps immediately before generating/sending the relevant actions. Superseded offers are cancelled, and old callbacks validate current state and their bound date. Completing food may remove the completion action while preserving an activity-only action if needed.
 
@@ -198,7 +198,7 @@ Mutation transaction outline:
 2. Check whether the operation key was already applied.
 3. Insert the operation, immutable entity revisions, and immutable component/recipe-ingredient snapshots as applicable.
 4. Move current pointers using compare-and-set on expected previous pointers. Bump affected food-day revision counters. A date move touches both days.
-5. Write any confirmation/check-in changes and one durable response intent.
+5. Write any future W018 confirmation/check-in changes and one durable response intent.
 6. Mark input processing complete and commit. Roll back the entire mutation on conflict; resolve against fresh context before retrying.
 
 Do not call the LLM, external catalogs, or Telegram while holding this transaction. A pending question is committed as staging state and an outgoing question; it holds neither a database transaction nor a per-user lease while waiting for a reply.
@@ -230,10 +230,10 @@ M1 index and deferred-constraint definitions are frozen in its migrations and ex
 | Eat 250 g of a recipe at 70 kcal per 100 g | One food entry contains 175 kcal and references the immutable recipe version. |
 | Weight 76.3, then 76.1 on one day | One daily observation with two revisions; current value is 76.1 kg, not an average or a second weight entry. |
 | Steps 8,200, then 9,000 | Two revisions of one daily slot; displayed total is 9,000. |
-| Close food day with no steps | Confirmation stored; steps remain missing; activity-only action is allowed. |
-| Add a forgotten snack after closure | New entry/revisions and revised totals; food day stays complete with no additional completion prompt. |
-| Close day before dinner, or in the dinner message | No completion button is offered after successful closure. |
-| Dinner logged after an earlier dinner message | One daily-check-in row and one logical offer, not a new offer. |
+| Record steps independently of food | One revisable daily steps observation; food persistence is unaffected. |
+| Add a forgotten snack after any earlier food | New entry/revisions and revised totals; no close-day action or additional MVP check-in is required. |
+| Future W018 closure before dinner, or in the dinner message | Closure/check-in behavior is post-MVP and must be defined without blocking food writes. |
+| Future W018 dinner/reminder race | One daily-check-in row and one logical offer, not a new offer. |
 | Reply to yesterday's steps prompt after midnight | Update yesterday's daily observation unless the reply explicitly specifies another date. |
 | Product ID from another user appears in model output | Tenant validation/composite foreign keys reject it before mutation. |
 | Process crashes before/after commit | Either no mutation or the committed mutation and response intent; retry cannot add a second meal. |

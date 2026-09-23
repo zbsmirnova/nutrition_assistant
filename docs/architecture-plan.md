@@ -16,9 +16,9 @@ The source brief supplies historical context; later accepted decisions supersede
 
 ## 2. Accepted decision: continuous saving and optional completion
 
-Saving data, estimating its accuracy, and knowing whether a log is complete are three different concerns.
+Saving data, estimating its accuracy, and any future notion of a complete log are three different concerns.
 
-**Accepted:** save accepted food entries immediately. Provide an optional “Everything logged” action and recognize “close the day” as the equivalent conversational intent. Neither action saves previously unsaved entries or prevents future edits. An accepted close-day message suppresses the completion button for that date.
+**Accepted:** save accepted food entries immediately. MVP has no “Everything logged” action and does not recognize “close the day” as a domain command. Food and steps are recorded independently. A future post-MVP completion action may establish a separate day state, but it must not become a prerequisite for persistence.
 
 | Concern | Proposed behavior |
 | --- | --- |
@@ -41,15 +41,15 @@ stateDiagram-v2
     Unconfirmed --> Unconfirmed: Log or correct food
 ```
 
-The user has explicitly chosen to keep a day complete when adding forgotten food. New entries and numerical corrections revise totals without requiring closure again or another automatic check-in. Proposed consistent defaults also preserve existing completeness after deletion/date corrections, but moving food onto another date does not confirm that destination. Proposed closure default: new completion confirmations require unresolved food candidates to be clarified first. An already completed day with a pending food question retains its complete flag while reports label the unresolved data separately; resolving the question does not require re-closing. Do not add a persistent “reopened” state without a separate workflow need.
+Food additions and numerical corrections revise totals immediately. Any later completion state must remain separate from food persistence, and late additions must not require another check-in. The closure details, pending-food interaction, and report semantics are deferred to post-MVP W018; do not add a persistent “reopened” state without a separate workflow need.
 
-Automatic midnight closure is not used: a time boundary cannot establish logging completeness. A natural-language closure and a button press invoke the same domain command, so notification behavior does not depend on which interface was used.
+Automatic midnight closure is not used: a time boundary cannot establish logging completeness. Post-MVP W018 may define equivalent conversational and button actions, but no such command exists in MVP.
 
 A complete-day average describes only those selected days. Do not present it as a representative whole-week average when other days are missing or unconfirmed.
 
 ### Check-in boundary
 
-The accepted product choice and its rationale are recorded in [0001-continuous-food-saving.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0001-continuous-food-saving.md?type=file&root=%252F). The dinner-triggered interaction and proposed delivery defaults now live in section 9 of [conversation-contract-v1.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/conversation-contract-v1.md?type=file&root=%252F). Scheduled reminders are outside MVP and planned for [W019](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/019-scheduled-check-in-reminders.md?type=file&root=%252F); the dinner offer has one logical daily identity separate from food completeness.
+The accepted product choice and its rationale are recorded in [0001-continuous-food-saving.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0001-continuous-food-saving.md?type=file&root=%252F). The deferred dinner/reminder interaction and delivery defaults live in section 9 of [conversation-contract-v1.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/conversation-contract-v1.md?type=file&root=%252F) and [W018](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/018-combined-check-in.md?type=file&root=%252F). Any future offer has one logical daily identity separate from food persistence.
 
 ## 3. Interpretation boundary
 
@@ -117,7 +117,7 @@ The accepted M1 execution decision is [0002-command-execution.md](air-file://fai
 - Deduplicate transport deliveries by bot identity plus Telegram update ID. A Telegram message identity includes its chat; message edits are new source revisions, not duplicate additions.
 - Assign each validated operation a stable key derived from its inbox item and operation position. Reprocessing must return the prior outcome rather than apply another mutation.
 - Deduplicate scheduled runs using user, notification rule, and scheduled occurrence. Deduplicate notification creation separately from delivery.
-- The dinner-triggered completion offer has a single `(user_id, local_date, daily_check_in)` identity. Track offered/delivered/dismissed/suppressed state separately from food completeness. Completing the day through the dinner interface suppresses the completion action. Scheduled fallback offers are outside MVP.
+- Post-MVP W018's dinner/reminder offer has a single `(user_id, local_date, daily_check_in)` identity. Track offered/delivered/dismissed/suppressed state separately from food persistence. MVP creates no such offer.
 - M1 serializes short mutations with a PostgreSQL user-row lock and revalidates explicit dates, quantity bases, and pinned immutable references. Fully resolved additions commute across context revisions; state-dependent corrections require their own expected-version handling in M2. The earlier user-processing lease/fencing proposal is not implemented or needed for this synchronous slice.
 - A clarification waiting for the user must not hold a database lock or block that user's entire inbox. A later answer revalidates its target versions before application.
 - Do not deduplicate distinct user messages only because their text matches: two identical coffees can represent two actual servings. Offer undo for accidental repeated user submissions.
