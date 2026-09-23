@@ -105,7 +105,7 @@ The generated parser schema now requires at least three characters for source-ba
 
 ## Candidate prompt v3 — single-case rejection — 2026-09-23
 
-The user ran `INTAKE-001` with parser fingerprint `nebius:59378dac5158660ec5a32b4ec30a17b294fc8edcedd60cdb1b48a32d22e81153`. The call returned `ParserRejected: Invalid, incomplete or refused Nebius interpretation`, so no proposal was scored. That run occurred before the adapter's bounded validation-stage diagnostics were committed; the rejection stage was therefore unconfirmed. Rerun the same single case after the diagnostic change, then proceed to the full batch only if the response passes local schema and context validation.
+The user ran `INTAKE-001` with parser fingerprint `nebius:59378dac5158660ec5a32b4ec30a17b294fc8edcedd60cdb1b48a32d22e81153`. The call returned `ParserRejected: Nebius proposal failed local schema validation`, so no proposal was scored. This confirms that the model response reached the adapter but did not conform to the regenerated contract; the exact field remains redacted. The result is consistent with earlier one-character evidence fragments, but does not by itself prove that evidence was the sole schema violation. Do not spend a full batch until the prompt/model or contract diagnostic path is selected.
 
 ## Findings
 
