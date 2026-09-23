@@ -18,31 +18,33 @@ Approved draft thresholds: case-pass ≥ 0.70, clarification ≥ 0.80, quantity 
 
 ## First live run — 2026-09-23
 
-Executed by the session holding `NEBIUS_API_KEY`; this environment never received the secret. Parser fingerprint `nebius:d39eae6d…` (the exact `NUTRITION_LLM_MODEL` id was not captured in the JSON — record it on the next run). Nine live calls, temperature 0, one run per case. This is developer/exploratory evidence, not an independent QA verdict.
+Executed by the user's terminal holding `NEBIUS_API_KEY`; this environment never received the secret. Repository revision: `f983feb4f38510dd06fd26d5978af15b87a468cc`. Model: `Qwen/Qwen3-30B-A3B-Instruct-2507`. Parser fingerprint: `nebius:d39eae6d90b4b4d33b80a8ca09d4cee68b45718a274a9406dee5f92f4ef0fbf0`. Nine live calls were attempted at temperature 0; seven returned validated proposals and two returned `ParserUnavailable` (`INTAKE-007`, `INTAKE-008`). This is developer/exploratory evidence, not an independent QA verdict.
 
 | Dimension | Result | Threshold | Read |
 | --- | --- | --- | --- |
-| Errors (schema/context) | 0 / 9 | — | Live transport, structured-output schema wrapper, and context validation all work in practice |
-| Consumption intent | 1.00 (9) | — | No food log misread as chat/plan |
-| Candidate selection | 1.00 (9) | — | Correct product/recipe every case, incl. "Брезель"→"брецель" spelling tolerance |
-| No invented items (`max_add_food`) | 1.00 (5) | — | Never added hidden oil (INTAKE-008/009) |
-| add_food count | 0.89 (9) | — | One miss (INTAKE-004) |
-| Quantity extraction | 0.78 (9) | ≥ 0.90 | Below bar |
+| Errors | 2 / 9 | — | `ParserUnavailable` on INTAKE-007 and INTAKE-008; no schema/reference rejection was reported for the seven returned proposals |
+| Consumption intent | 1.00 (7) | — | All seven returned proposals treated the source as consumed food |
+| Candidate selection | 1.00 (7) | — | At least one expected candidate appeared in each scored proposal; this check does not penalize extra candidates |
+| No invented items (`max_add_food`) | 1.00 (3) | — | All three cases with a maximum-action rule respected it |
+| add_food count | 1.00 (7) | — | The count check passed even where the proposal contained semantically wrong extra actions |
+| Quantity extraction | 0.86 (7) | ≥ 0.90 | Below bar |
+| Clarification accuracy | 0.40 (5) | ≥ 0.80 | Below bar; the blended value hides the required-case failure |
 | Clarification recall | 0.00 (3) | — | **Never asked** on any case that should |
-| Clarification specificity | 1.00 (3) | — | Correctly silent on clean cases |
+| Clarification specificity | 1.00 (2) | — | Clean cases stayed silent |
 | **Case pass rate** | **0.33** | **≥ 0.70** | **Below bar** |
 
-Raw scorecard: `/tmp/interp_live.json` (transient; regenerate with the runner).
+Raw scorecard: user-provided `/tmp/interp_live.json` output (the local copy in this environment is not the source of record; regenerate with the runner).
 
 ## Findings
 
-Fundamentals are strong (intent, identity, no hallucinated items). Failures concentrate on a single behavioral axis — the model does not handle uncertainty the way the product requires:
+The seven returned proposals preserved consumption intent and included an expected candidate, but the aggregate result is below the draft quality bars. Failures are concentrated in uncertainty handling and action discipline:
 
-1. **No clarifications raised (recall 0/3).** INTAKE-003 (cafeteria/bone-vs-edible, sauce), INTAKE-005 (пат matches two saved recipes), and INTAKE-009 (gross meat weight needs edible weight) were all answered silently instead of marking a field unresolved. This threatens FOOD-002 and the "do not silently choose / do not assume portions" principles.
-2. **Silently drops an uncertain item.** INTAKE-004 dropped "одна ягодка физалиса" (no grams) rather than emitting the item with quantity unresolved.
-3. **Performs backend arithmetic (self-splitting).** INTAKE-001 and INTAKE-008 produced per-component grams by applying the stated "1:1" ratio instead of reporting the stated total (115 g / 120 g) and leaving the split to the backend — a CALC-001 division-of-labor breach, and the cause of both quantity-extraction misses.
+1. **No clarifications raised (recall 0/3).** INTAKE-003 (cafeteria/bone-vs-edible and sauce), INTAKE-005 (паштет matches two saved recipes), and INTAKE-009 (gross meat weight needs an edible basis) were all answered silently. This threatens FOOD-002 and the “do not silently choose / do not assume portions” principles.
+2. **INTAKE-001 is structurally unreliable despite valid JSON.** It returned six actions, one-character evidence spans, an invented date hint (`"2"`), and incorrect quantities instead of preserving the stated meal items and total quantities.
+3. **The two unavailable calls need a repeat.** INTAKE-007 and INTAKE-008 cannot distinguish a transient provider failure from a reproducible model/request issue. They must be rerun before interpreting those cases.
+4. **The evaluator is intentionally permissive in two places.** Candidate selection only requires an expected reference to appear, and `add_food_count` can pass while extra actions are semantically wrong. Evidence quality, date-hint quality, and extra candidates need stronger scoring before using this as a go/no-go gate.
 
-All three are prompt-alignment problems, not evidence of a model-capability ceiling.
+The clarification and action-discipline failures are prompt-alignment hypotheses, not evidence of a model-capability ceiling. The two provider errors are operational evidence only.
 
 ## Prompt iteration plan
 
@@ -50,6 +52,6 @@ Candidate prompt [prompt_candidate_v2.txt](air-file://fai6b8iclscp0tss0s3r/Users
 
 ## Limits and next work
 
-- n=9, one run, temperature 0 — no repeat-stability measurement yet; capture the model id on the next run.
+- n=9, one run, temperature 0, with two unavailable calls — no repeat-stability measurement yet.
 - Nine cases validate the instrument and give a first signal; they do not select a model or certify quality. Expand the corpus (corrections/undo, plans-vs-consumption, dates/history boundaries, observations) as a held-out set separate from prompt-development cases.
 - Two context/schema gaps surfaced, tracked as product decisions, not model failures: personal shortcuts ("кофе как обычно") belong in the DB and need a context slot; history references ("тот же что раньше") resolve by a 2–4 day lookback and need a context slot. These affect INTAKE-001/005 (coffee) and INTAKE-007 (cheese), currently carried as `known_gaps`. See Q04 and Q09 in [README.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/README.md?type=file&root=%252F).
