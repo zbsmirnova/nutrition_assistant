@@ -10,6 +10,7 @@ from .errors import ApplicationError, NumericOverflow
 
 NUTRIENTS = ("kcal", "protein_g", "fat_g", "carbs_g")
 CALCULATION_VERSION = "decimal-components-v1"
+RECIPE_CALCULATION_VERSION = "recipe-components-v1"
 QUANTUM = Decimal("0.000001")
 MAXIMUM = Decimal("999999999999.999999")
 
@@ -60,6 +61,46 @@ def entry_nutrition(snapshots: list[NutritionSnapshot]) -> NutritionSnapshot:
     for name in NUTRIENTS:
         known = [getattr(s, name) for s in snapshots if getattr(s, name) is not None]
         result[name] = add_known(known) if known and len(known) == len(snapshots) else None
+    return NutritionSnapshot(**result)
+
+
+def recipe_per_100_g(ingredients: list[tuple[NutritionSnapshot, Decimal]], finished_yield_g: Decimal) -> NutritionSnapshot:
+    """Calculate recipe nutrition from per-100-g sources and normalized edible grams.
+
+    ``finished_yield_g`` is a calculation basis, not a stored serving size. A
+    caller may pass the sum of ingredient masses for the conditional
+    ``ingredient_sum_no_evaporation`` policy, or a measured/approved cooked
+    yield. Unknown source nutrients remain unknown rather than being inferred.
+    Volume ingredients must be converted to grams by the caller using a pinned
+    source density before entering this function.
+    """
+    if not ingredients:
+        raise ApplicationError("A recipe requires at least one ingredient")
+    if not finished_yield_g.is_finite() or finished_yield_g <= 0:
+        raise ApplicationError("A positive, finite finished recipe yield is required")
+    if any(not quantity.is_finite() or quantity <= 0 for _, quantity in ingredients):
+        raise ApplicationError("Recipe ingredient quantities must be positive and finite")
+    result = {}
+    with localcontext() as context:
+        context.prec = 64
+        factor = Decimal(100) / finished_yield_g
+        for name in NUTRIENTS:
+            nutrients = [getattr(snapshot, name) for snapshot, _ in ingredients]
+            if any(nutrient is None for nutrient in nutrients):
+                result[name] = None
+                continue
+            values = [Decimal(nutrient.value) * quantity / Decimal(100)
+                      for nutrient, (_, quantity) in zip(nutrients, ingredients)]
+            all_bounded = all(nutrient.lower is not None for nutrient in nutrients)
+            lower = upper = None
+            if all_bounded:
+                lower_values = [Decimal(nutrient.lower) * quantity / Decimal(100)
+                                for nutrient, (_, quantity) in zip(nutrients, ingredients)]
+                upper_values = [Decimal(nutrient.upper) * quantity / Decimal(100)
+                                for nutrient, (_, quantity) in zip(nutrients, ingredients)]
+                lower = decimal_text(sum(lower_values) * factor)
+                upper = decimal_text(sum(upper_values) * factor)
+            result[name] = NutrientValue(value=decimal_text(sum(values) * factor), lower=lower, upper=upper)
     return NutritionSnapshot(**result)
 
 

@@ -5,7 +5,7 @@ import unittest
 
 from nutrition_contracts.common import NutrientValue, NutritionSnapshot
 from nutrition_app.errors import ApplicationError, NumericOverflow
-from nutrition_app.nutrition import day_nutrition, decimal_text, entry_nutrition, scale
+from nutrition_app.nutrition import day_nutrition, decimal_text, entry_nutrition, recipe_per_100_g, scale
 
 
 def snapshot(kcal="100", protein="4", fat="4", carbs="12"):
@@ -69,6 +69,49 @@ class NutritionTests(unittest.TestCase):
             scale(maximum, Decimal("200"))
         with self.assertRaises(NumericOverflow):
             day_nutrition([maximum, maximum])
+
+    def test_recipe_sum_yield_matches_oatmeal_expectation_and_general_reference(self):
+        oats = snapshot(kcal="376", protein="13.2", fat="6.5", carbs="67.7")
+        sugar = snapshot(kcal="400", protein="0", fat="0", carbs="100")
+        water = snapshot(kcal="0", protein="0", fat="0", carbs="0")
+        result = recipe_per_100_g([
+            (oats, Decimal("93")), (sugar, Decimal("2")), (water, Decimal("375"))], Decimal("470"))
+        self.assertEqual(result.kcal.value, "76.102128")
+        self.assertEqual(result.protein_g.value, "2.611915")
+        self.assertEqual(result.fat_g.value, "1.28617")
+        self.assertEqual(result.carbs_g.value, "13.821489")
+        total_kcal = Decimal(result.kcal.value) * Decimal("470") / Decimal("100")
+        self.assertAlmostEqual(total_kcal, Decimal("357.68"), places=5)
+        # USDA close references: dry oats 379 kcal/100 g and granulated sugar
+        # 387 kcal/100 g produce 360.21 kcal for the same normalized inputs.
+        reference_total = Decimal("93") * Decimal("379") / Decimal("100") + Decimal("2") * Decimal("387") / Decimal("100")
+        self.assertLess(abs(total_kcal - reference_total), Decimal("3"))
+
+    def test_recipe_per_100_g_keeps_unknown_nutrients_unknown(self):
+        result = recipe_per_100_g([
+            (snapshot(fat=None), Decimal("100")),
+            (snapshot(), Decimal("100")),
+        ], Decimal("200"))
+        self.assertIsNone(result.fat_g)
+        self.assertEqual(result.kcal.value, "100")
+
+    def test_recipe_per_100_g_rejects_empty_or_invalid_yield(self):
+        source = [(snapshot(), Decimal("100"))]
+        with self.assertRaises(ApplicationError):
+            recipe_per_100_g([], Decimal("100"))
+        for yield_g in (Decimal("0"), Decimal("-1")):
+            with self.subTest(yield_g=yield_g), self.assertRaises(ApplicationError):
+                recipe_per_100_g(source, yield_g)
+
+    def test_recipe_keeps_full_precision_until_final_output(self):
+        source = snapshot(kcal="1.234567")
+        result = recipe_per_100_g([(source, Decimal("25"))], Decimal("25"))
+        self.assertEqual(result.kcal.value, "1.234567")
+        bounded = source.model_copy(update={
+            "kcal": NutrientValue(value="1", lower="0.999999", upper="1.000001")})
+        result = recipe_per_100_g([(bounded, Decimal("0.000001"))], Decimal("0.000001"))
+        self.assertEqual(result.kcal.model_dump(), {
+            "value": "1", "lower": "0.999999", "upper": "1.000001"})
 
     def test_persisted_component_rounding_is_used_for_day_totals(self):
         small = snapshot(kcal="0.000001")

@@ -1,0 +1,84 @@
+{
+  "id": "recipe.oatmeal_sum_yield.v1",
+  "name": "Овсяная каша на воде",
+  "ingredients": [
+    {
+      "name": "Овсяные хлопья",
+      "amount_g": "93",
+      "source": "general_catalog.oats_flakes.v1",
+      "nutrition_per_100_g": {
+        "kcal": "376",
+        "protein_g": "13.2",
+        "fat_g": "6.5",
+        "carbs_g": "67.7"
+      }
+    },
+    {
+      "name": "Сахар",
+      "amount_g": "2",
+      "source": "general_catalog.granulated_sugar.v1",
+      "nutrition_per_100_g": {
+        "kcal": "400",
+        "protein_g": "0",
+        "fat_g": "0",
+        "carbs_g": "100"
+      }
+    },
+    {
+      "name": "Вода",
+      "amount_g": "375",
+      "source": "general_catalog.water.v1",
+      "nutrition_per_100_g": {
+        "kcal": "0",
+        "protein_g": "0",
+        "fat_g": "0",
+        "carbs_g": "0"
+      },
+      "normalized_from": "375 ml at 1 g/ml"
+    }
+  ],
+  "yield": {
+    "finished_yield_g": "470",
+    "basis": "ingredient_sum_no_evaporation",
+    "conditional_note": "Approximate value; cooking evaporation is not measured."
+  },
+  "expected": {
+    "total": {
+      "kcal": "357.68",
+      "protein_g": "12.276",
+      "fat_g": "6.045",
+      "carbs_g": "64.961"
+    },
+    "per_100_g": {
+      "kcal": "76.102128",
+      "protein_g": "2.611915",
+      "fat_g": "1.28617",
+      "carbs_g": "13.821489"
+    },
+    "display": "около 358 ккал на ~470 г; 76 ккал/100 г"
+  },
+  "comparison": {
+    "database": "USDA FoodData Central",
+    "retrieved_on": "2026-09-23",
+    "dry_oats": {
+      "fdc_id": 173904,
+      "description": "Cereals, oats, regular and quick, not fortified, dry",
+      "kcal_per_100_g": "379",
+      "url": "https://fdc.nal.usda.gov/fdc-app.html#/food-details/173904/nutrients"
+    },
+    "granulated_sugar": {
+      "fdc_id": 169655,
+      "description": "Sugars, granulated",
+      "kcal_per_100_g": "387",
+      "url": "https://fdc.nal.usda.gov/fdc-app.html#/food-details/169655/nutrients"
+    },
+    "close_prepared_product": {
+      "fdc_id": 173905,
+      "description": "Cereals, oats, regular and quick, unenriched, cooked with water, without salt",
+      "kcal_per_100_g": "71",
+      "url": "https://fdc.nal.usda.gov/fdc-app.html#/food-details/173905/nutrients"
+    },
+    "reference_total_kcal": "360.21",
+    "validation": "The selected catalog snapshot is within 3 kcal of the dry-ingredient USDA calculation; the prepared-product comparison uses a different hydration ratio and product formulation. Evaporation alone would increase, not decrease, kcal/100 g."
+  }
+}

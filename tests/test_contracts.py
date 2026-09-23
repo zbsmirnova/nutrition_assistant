@@ -207,6 +207,13 @@ class ContractTests(unittest.TestCase):
         calculation["estimate_approval_update_id"] = data["source"]["evidence_update_ids"][-1]
         wire(CommandEnvelope, data)  # The backend must additionally verify actual consent in that message.
 
+    def test_ingredient_sum_yield_needs_no_cooked_weight_approval(self):
+        data = example("09_recipe_calculation_answer")["commands"][0]
+        calculation = data["command"]["recipe"]["nutrition"]
+        calculation["yield_basis"] = "ingredient_sum_no_evaporation"
+        calculation["estimate_approval_update_id"] = None
+        wire(CommandEnvelope, data)
+
     def test_original_update_is_required_in_evidence(self):
         data = example("03_clarification_after_midnight")["commands"][0]
         data["source"]["evidence_update_ids"] = data["source"]["evidence_update_ids"][1:]

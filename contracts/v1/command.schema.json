@@ -39,6 +39,7 @@
         "yield_basis": {
           "enum": [
             "measured",
+            "ingredient_sum_no_evaporation",
             "user_confirmed_estimate"
           ],
           "title": "Yield Basis",

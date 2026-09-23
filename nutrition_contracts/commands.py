@@ -127,7 +127,7 @@ class CalculatedRecipeNutrition(Contract):
 
     kind: Literal["calculate"]
     finished_yield_g: PositiveDecimal
-    yield_basis: Literal["measured", "user_confirmed_estimate"]
+    yield_basis: Literal["measured", "ingredient_sum_no_evaporation", "user_confirmed_estimate"]
     estimate_approval_update_id: UUID | None
     calculation_policy_version: Name
 
