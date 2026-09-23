@@ -81,7 +81,7 @@ The resolver currently supports one product with explicit g/ml quantity and supp
 
 ## Nebius provider setup
 
-The user selected Nebius Token Factory cloud inference and will supply an API key as a secret. Expose that secret to the application process as NEBIUS_API_KEY. The exact model ID will use NUTRITION_LLM_MODEL; model selection follows evaluation rather than an assumed default. The non-secret [.env.example](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/.env.example?type=file&root=%252F) records these names. The application does not automatically load .env files, and no live model call has been verified.
+The user selected Nebius Token Factory cloud inference and will supply an API key as a secret. Expose that secret to the application process as NEBIUS_API_KEY. The exact model ID will use NUTRITION_LLM_MODEL; model selection follows evaluation rather than an assumed default. The non-secret [.env.example](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/.env.example?type=file&root=%252F) records these names. The application does not automatically load .env files. The user has reported a live response that passed schema/reference validation but failed the expected food-action check; a successful live smoke result remains pending.
 
 Nebius's documented API base is https://api.tokenfactory.nebius.com/v1/. The worker and offline provider checks run without credentials. Supplying the secret will not automatically run inference, process stored messages, or deploy the application. The provider decision, official references, and remaining evaluation requirements are in [0009-nebius-cloud-provider.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0009-nebius-cloud-provider.md?type=file&root=%252F).
 
@@ -114,6 +114,8 @@ The read command deliberately displays no characters while you paste. Press Ente
 
 For HTTP 422, investigate request validation rather than re-entering the key. The initial adapter sent an invalid direct-schema shape; the current adapter uses the named schema wrapper required by Nebius's published API and explicitly enables its optional strict mode. That correction is checked against the provider's OpenAPI definitions, but successful inference with the configured model remains unverified. Retry the smoke command in the same configured terminal. The new request format changes parser identity for unfinished worker jobs; already frozen commands retain their existing recovery path.
 
+If the error says "Synthetic smoke response did not match the expected food action", the completion already passed schema/reference validation. The diagnostic includes validated action kinds, backend resolution/reason codes and safe unresolved-field names. Share that diagnostic; the check never prints raw model text or credentials. The smoke comparison treats equivalent decimal quantities such as 100 and 100.0 as equal. It still rejects different quantities, unresolved food and wrong actions.
+
 ### Processing an explicit inbox source
 
 For an explicit identified inbox source, the operator command is:
@@ -136,7 +138,7 @@ Transient failures retry through durable job state, with three total claims and 
 git diff --check
 ~~~
 
-The first command runs 83 checks: 32 contract, 9 arithmetic, 11 Telegram protocol/rendering, 13 controlled resolver, 16 Nebius protocol/CLI, and 2 intake-evaluation fixture checks. The integration command runs 59 tests against local PostgreSQL, including 15 worker and 6 Nebius-worker checks; the separate QA command runs 32 retained checks from M1, W002, W003, and W004. Developer verification and independent review are distinguished in the work briefs and QA reports. Each database test creates and removes its own randomly named schema. These commands do not reset development data or call Telegram/Nebius. An unavailable database fails the run; there is no silent skip or SQLite substitute.
+The first command runs 85 checks: 32 contract, 9 arithmetic, 11 Telegram protocol/rendering, 13 controlled resolver, 18 Nebius protocol/CLI, and 2 intake-evaluation fixture checks. The integration command runs 59 tests against local PostgreSQL, including 15 worker and 6 Nebius-worker checks; the separate QA command runs 32 retained checks from M1, W002, W003, and W004. Developer verification and independent review are distinguished in the work briefs and QA reports. Each database test creates and removes its own randomly named schema. These commands do not reset development data or call Telegram/Nebius. An unavailable database fails the run; there is no silent skip or SQLite substitute.
 
 Runtime dependencies are pinned in [requirements-runtime.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/requirements-runtime.txt?type=file&root=%252F), including [requirements-contracts.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/requirements-contracts.txt?type=file&root=%252F). For contract-only work, install the latter and run unittest discovery with the pattern test_contracts.py. No provider credentials are needed.
 

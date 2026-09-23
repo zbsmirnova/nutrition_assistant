@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from decimal import Decimal
 from email.utils import parsedate_to_datetime
 import http.client
 import json
@@ -173,23 +172,8 @@ def run_synthetic_smoke(parser: NebiusParser):
     output = ParserOutput.model_validate_json(parser.parse(parser_request(context)))
     result = resolve(UUID("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),
                      UUID("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"), context, output)
-    reason = result.reason if result.status != "ready" else None
-    if result.status == "ready":
-        food = result.command.command.food
-        if Decimal(food.components[0].quantity.edible_g) != Decimal("100"):
-            reason = "unexpected_quantity"
-        elif food.effective_date.isoformat() != "2026-09-22":
-            reason = "unexpected_date"
-    if reason is not None:
-        # Kinds are schema literals; status/reason are backend-defined codes.
-        # Model-provided paths are free text, so expose only known field names.
-        paths = {"food", "food.name", "food.candidate_ref", "food.candidate_kind", "quantity",
-                 "quantity.amount", "quantity.unit", "weight_basis", "date_hint", "date_hint.text", "meal"}
-        unresolved = sorted({item.path if item.path in paths else "other"
-                             for action in output.actions for item in action.unresolved})
-        kinds = sorted({action.kind for action in output.actions})
-        raise ParserRejected("Synthetic smoke response did not match the expected food action "
-            f"(schema_valid=true; actions={','.join(kinds)}; resolution={result.status}; reason={reason}; "
-            f"unresolved_fields={','.join(unresolved) or 'none'})")
+    if (result.status != "ready" or result.command.command.food.components[0].quantity.edible_g != "100"
+            or result.command.command.food.effective_date.isoformat() != "2026-09-22"):
+        raise ParserRejected("Synthetic smoke response did not match the expected food action")
     return {"provider": "nebius", "synthetic": True, "schema_valid": True, "expected_action_matched": True,
             "parser_version": parser.version}

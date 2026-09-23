@@ -26,9 +26,11 @@ The parser version hashes adapter policy, fixed endpoint, timeout/limits, model,
 
 ## Explicit execution and verification
 
-conversation-nebius requires an owner and inbox source; configuration alone performs no work. It emits sanitized worker status, not the saved food payload. Existing conversation-run remains synthetic. nebius-smoke sends one fixed synthetic food input and validates its expected action through the resolver without opening a database engine. It prints only validation flags and the parser fingerprint. A smoke pass would establish one request/schema example, not language quality or production readiness.
+conversation-nebius requires an owner and inbox source; configuration alone performs no work. It emits sanitized worker status, not the saved food payload. Existing conversation-run remains synthetic. nebius-smoke sends one fixed synthetic food input and validates its expected action through the resolver without opening a database engine. It prints validation flags and the parser fingerprint on success. A smoke pass would establish one request/schema example, not language quality or production readiness.
 
-W004's required verification is offline protocol/CLI testing and PostgreSQL integration with injected responses, followed by independent review. A live smoke run needs a configured key/model; no live result, chosen model, latency, cost, or broader Russian evaluation is claimed. Q09/Q10 retain those dependent choices and real-data lifecycle requirements. No removed evaluation corpus is recreated.
+Smoke follow-up on 2026-09-23: compare validated grams numerically with Decimal, so 100.0 and 100 represent the same expected quantity. A failed expectation reports schema-valid action kinds and backend resolution codes. Only known unresolved-field paths are printed; arbitrary paths become "other". No raw proposal or free text is exposed. These changes affect only the synthetic check, so the provider request and parser identity stay unchanged.
+
+W004's required verification is offline protocol/CLI testing and PostgreSQL integration with injected responses, followed by independent review. The user has reported a live response that passed schema/reference validation but failed the expected-action check; the work brief owns this evidence and its limits. No successful expected-action result, final model selection, latency, cost, or broader Russian evaluation is claimed. Q09/Q10 retain those dependent choices and real-data lifecycle requirements. No removed evaluation corpus is recreated.
 
 ## Sources and related artifacts
 

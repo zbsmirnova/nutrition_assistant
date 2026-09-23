@@ -1,0 +1,199 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index 4caeaf2..751bd23 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -60,7 +60,7 @@ When a contract model changes, regenerate schemas before those checks:
+ 
+ The existing suite checks generated-schema drift. For documentation-only changes, inspect links, document ownership/status consistency, and formatting; do not add implementation-mirroring tests or claim independent QA occurred.
+ 
+-The explicit integration and retained QA suites require local PostgreSQL and create/remove only their own random schemas. They fail when the database is unavailable. Default test discovery runs offline contract, arithmetic, protocol, and resolver checks. User-run synthetic Nebius smoke attempts have returned HTTP 401 and then 422; no successful live interpretation is verified. The adapter's response-format wrapper is now checked against an attributed provider OpenAPI fixture. Real Telegram checks remain unverified. A changed contract requires regeneration; a changed migration/transaction requires both PostgreSQL suites.
++The explicit integration and retained QA suites require local PostgreSQL and create/remove only their own random schemas. They fail when the database is unavailable. Default test discovery runs offline contract, arithmetic, protocol, and resolver checks. After HTTP 401/422 setup failures, the user reported a Nebius smoke response that passed local schema/reference validation but failed the expected-action check. No successful live food interpretation is verified; the W004 brief owns this evidence and diagnostic follow-ups. The adapter's response-format wrapper is checked against an attributed provider OpenAPI fixture. Real Telegram checks remain unverified. A changed contract requires regeneration; a changed migration/transaction requires both PostgreSQL suites.
+ 
+ ## Completion and handoff
+ 
+diff --git a/README.md b/README.md
+index 38c3851..f4f99cf 100644
+--- a/README.md
++++ b/README.md
+@@ -81,7 +81,7 @@ The resolver currently supports one product with explicit g/ml quantity and supp
+ 
+ ## Nebius provider setup
+ 
+-The user selected Nebius Token Factory cloud inference and will supply an API key as a secret. Expose that secret to the application process as NEBIUS_API_KEY. The exact model ID will use NUTRITION_LLM_MODEL; model selection follows evaluation rather than an assumed default. The non-secret [.env.example](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/.env.example?type=file&root=%252F) records these names. The application does not automatically load .env files, and no live model call has been verified.
++The user selected Nebius Token Factory cloud inference and will supply an API key as a secret. Expose that secret to the application process as NEBIUS_API_KEY. The exact model ID will use NUTRITION_LLM_MODEL; model selection follows evaluation rather than an assumed default. The non-secret [.env.example](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/.env.example?type=file&root=%252F) records these names. The application does not automatically load .env files. The user has reported a live response that passed schema/reference validation but failed the expected food-action check; a successful live smoke result remains pending.
+ 
+ Nebius's documented API base is https://api.tokenfactory.nebius.com/v1/. The worker and offline provider checks run without credentials. Supplying the secret will not automatically run inference, process stored messages, or deploy the application. The provider decision, official references, and remaining evaluation requirements are in [0009-nebius-cloud-provider.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0009-nebius-cloud-provider.md?type=file&root=%252F).
+ 
+@@ -114,6 +114,8 @@ The read command deliberately displays no characters while you paste. Press Ente
+ 
+ For HTTP 422, investigate request validation rather than re-entering the key. The initial adapter sent an invalid direct-schema shape; the current adapter uses the named schema wrapper required by Nebius's published API and explicitly enables its optional strict mode. That correction is checked against the provider's OpenAPI definitions, but successful inference with the configured model remains unverified. Retry the smoke command in the same configured terminal. The new request format changes parser identity for unfinished worker jobs; already frozen commands retain their existing recovery path.
+ 
++If the error says "Synthetic smoke response did not match the expected food action", the completion already passed schema/reference validation. The diagnostic includes validated action kinds, backend resolution/reason codes and safe unresolved-field names. Share that diagnostic; the check never prints raw model text or credentials. The smoke comparison treats equivalent decimal quantities such as 100 and 100.0 as equal. It still rejects different quantities, unresolved food and wrong actions.
++
+ ### Processing an explicit inbox source
+ 
+ For an explicit identified inbox source, the operator command is:
+@@ -136,7 +138,7 @@ Transient failures retry through durable job state, with three total claims and
+ git diff --check
+ ~~~
+ 
+-The first command runs 83 checks: 32 contract, 9 arithmetic, 11 Telegram protocol/rendering, 13 controlled resolver, 16 Nebius protocol/CLI, and 2 intake-evaluation fixture checks. The integration command runs 59 tests against local PostgreSQL, including 15 worker and 6 Nebius-worker checks; the separate QA command runs 32 retained checks from M1, W002, W003, and W004. Developer verification and independent review are distinguished in the work briefs and QA reports. Each database test creates and removes its own randomly named schema. These commands do not reset development data or call Telegram/Nebius. An unavailable database fails the run; there is no silent skip or SQLite substitute.
++The first command runs 85 checks: 32 contract, 9 arithmetic, 11 Telegram protocol/rendering, 13 controlled resolver, 18 Nebius protocol/CLI, and 2 intake-evaluation fixture checks. The integration command runs 59 tests against local PostgreSQL, including 15 worker and 6 Nebius-worker checks; the separate QA command runs 32 retained checks from M1, W002, W003, and W004. Developer verification and independent review are distinguished in the work briefs and QA reports. Each database test creates and removes its own randomly named schema. These commands do not reset development data or call Telegram/Nebius. An unavailable database fails the run; there is no silent skip or SQLite substitute.
+ 
+ Runtime dependencies are pinned in [requirements-runtime.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/requirements-runtime.txt?type=file&root=%252F), including [requirements-contracts.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/requirements-contracts.txt?type=file&root=%252F). For contract-only work, install the latter and run unittest discovery with the pattern test_contracts.py. No provider credentials are needed.
+ 
+diff --git a/docs/decisions/0012-nebius-adapter.md b/docs/decisions/0012-nebius-adapter.md
+index 487c667..8bb9a27 100644
+--- a/docs/decisions/0012-nebius-adapter.md
++++ b/docs/decisions/0012-nebius-adapter.md
+@@ -26,9 +26,11 @@ The parser version hashes adapter policy, fixed endpoint, timeout/limits, model,
+ 
+ ## Explicit execution and verification
+ 
+-conversation-nebius requires an owner and inbox source; configuration alone performs no work. It emits sanitized worker status, not the saved food payload. Existing conversation-run remains synthetic. nebius-smoke sends one fixed synthetic food input and validates its expected action through the resolver without opening a database engine. It prints only validation flags and the parser fingerprint. A smoke pass would establish one request/schema example, not language quality or production readiness.
++conversation-nebius requires an owner and inbox source; configuration alone performs no work. It emits sanitized worker status, not the saved food payload. Existing conversation-run remains synthetic. nebius-smoke sends one fixed synthetic food input and validates its expected action through the resolver without opening a database engine. It prints validation flags and the parser fingerprint on success. A smoke pass would establish one request/schema example, not language quality or production readiness.
+ 
+-W004's required verification is offline protocol/CLI testing and PostgreSQL integration with injected responses, followed by independent review. A live smoke run needs a configured key/model; no live result, chosen model, latency, cost, or broader Russian evaluation is claimed. Q09/Q10 retain those dependent choices and real-data lifecycle requirements. No removed evaluation corpus is recreated.
++Smoke follow-up on 2026-09-23: compare validated grams numerically with Decimal, so 100.0 and 100 represent the same expected quantity. A failed expectation reports schema-valid action kinds and backend resolution codes. Only known unresolved-field paths are printed; arbitrary paths become "other". No raw proposal or free text is exposed. These changes affect only the synthetic check, so the provider request and parser identity stay unchanged.
++
++W004's required verification is offline protocol/CLI testing and PostgreSQL integration with injected responses, followed by independent review. The user has reported a live response that passed schema/reference validation but failed the expected-action check; the work brief owns this evidence and its limits. No successful expected-action result, final model selection, latency, cost, or broader Russian evaluation is claimed. Q09/Q10 retain those dependent choices and real-data lifecycle requirements. No removed evaluation corpus is recreated.
+ 
+ ## Sources and related artifacts
+ 
+diff --git a/docs/roadmap.md b/docs/roadmap.md
+index de11c32..8b3eff1 100644
+--- a/docs/roadmap.md
++++ b/docs/roadmap.md
+@@ -1,6 +1,6 @@
+ # Delivery roadmap
+ 
+-Updated: 2026-09-22. Owner: lead assistant.
++Updated: 2026-09-23. Owner: lead assistant.
+ This file owns milestone status and order. Individual task status and acceptance criteria belong in their work briefs.
+ 
+ ## Current position
+@@ -27,7 +27,7 @@ Milestone statuses: planned, in progress, complete, blocked. The first implement
+ 
+ ## Implementation sequence now
+ 
+-1. Configure and smoke-check the selected Nebius model through W004’s explicit synthetic command, then measure Russian interpretation quality. The user supplies NEBIUS_API_KEY as a secret; keep NUTRITION_LLM_MODEL configurable and select it through measured Russian-language evaluation. Q09’s remaining request/evaluation choices and Q10’s data-lifecycle choices stay in the question register. Offline adapter verification is complete; live checks wait for the key and explicit model.
++1. Configure and smoke-check the selected Nebius model through W004’s explicit synthetic command, then measure Russian interpretation quality. The user supplies NEBIUS_API_KEY as a secret; keep NUTRITION_LLM_MODEL configurable and select it through measured Russian-language evaluation. Q09’s remaining request/evaluation choices and Q10’s data-lifecycle choices stay in the question register. Offline adapter verification is complete. The user has configured a key and candidate model and reported a live completion that passed schema/reference checks; resolving the synthetic smoke expectation and measuring interpretation quality remain next. The W004 brief owns the exact setup evidence.
+ 2. Extend to durable clarification/resumption and mixed-message partial saving, then same-entry correction/delete/undo through subsequent M2 tasks. W003’s bounded worker does not replace these accepted requirements.
+ 
+ Use [README.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/README.md?type=file&root=%252F) for unresolved questions and blockers. Use [strategy.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/strategy.md?type=file&root=%252F) for verification expectations.
+diff --git a/docs/work/004-nebius-adapter.md b/docs/work/004-nebius-adapter.md
+index 5728913..1f10284 100644
+--- a/docs/work/004-nebius-adapter.md
++++ b/docs/work/004-nebius-adapter.md
+@@ -69,3 +69,11 @@ Acceptance: (1) outgoing response_format validates against an attributed extract
+ Verification: the added provider-contract regression failed against the old request as expected, then passed after the correction. Developer runs passed 83 offline checks, six provider-worker PostgreSQL tests and five retained W004 checks. Independent QA passed three additional probes, 16 Nebius protocol/CLI tests and four retained protocol probes; it verified complete before/after request payloads against the downloaded full provider API contract and approved the retained assertion's path-only adaptation. No new live inference was performed by the assistant.
+ 
+ The [qa-schema-wrapper-report.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/004-schema-wrapper/qa-schema-wrapper-report.md?type=file&root=%252F) records exact source identity, attribution and limits. [source.patch](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/004-schema-wrapper/source.patch?type=file&root=%252F) plus base 86a77da4fd1c2426202228d876c9b1b457d90a84 reconstructs the reviewed snapshot. The original expected failure is retained in [before-output.txt.gz](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/004-schema-wrapper/before-output.txt.gz?type=file&root=%252F); its uncompressed SHA-256 is 3285fe4b8f820939d8f398522f4d73139b123aa5bd849283c4adff40576800e8. Passing developer logs are [offline-output.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/004-schema-wrapper/offline-output.txt?type=file&root=%252F), [worker-output.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/004-schema-wrapper/worker-output.txt?type=file&root=%252F) and [retained-output.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/004-schema-wrapper/retained-output.txt?type=file&root=%252F). Post-review edits clarify README wording, close this follow-up and package evidence; runtime, tests and fixture retain their reviewed hashes.
++
++## Smoke comparison and diagnostic follow-up — 2026-09-23
++
++Status: implementing. The user's next live smoke result was "Synthetic smoke response did not match the expected food action". On revision 2ebabbb805f095a05f8112865168decf18123dfc, that message means an HTTP 200 completion passed envelope, schema and context-reference validation, then failed the expected-action check. The actual model proposal was not shared, so its specific mismatch is unknown. This is limited user-reported live evidence, not a successful food interpretation or quality evaluation.
++
++Developer reproduction found a separate definite false rejection: the resolver accepts quantity strings 100, 100.0 and 100.000000 as equal, but the smoke test compared strings and rejected the latter two. Compare validated quantities using Decimal. Preserve the real resolver's checks for amount evidence, units, identity, date and pending work. On a mismatch, expose only validated action kinds, backend status/reason codes and a bounded set of known unresolved-field names; arbitrary paths become "other". Never print the raw proposal, model free text or credentials. Keep prompt, request, parser identity and worker behavior unchanged.
++
++Acceptance: equivalent decimal representations of 100 g pass; genuinely different quantities and unresolved/non-logging/unsupported outputs still fail; the CLI reports actionable reasons without secret or free-text disclosure and without database access or extra provider calls; appropriate offline regressions and independent review pass. A user-terminal rerun is still required to learn whether this numeric comparison caused the reported live failure.
+diff --git a/nutrition_app/nebius.py b/nutrition_app/nebius.py
+index 9f633a5..af985b4 100644
+--- a/nutrition_app/nebius.py
++++ b/nutrition_app/nebius.py
+@@ -2,6 +2,7 @@
+ 
+ from dataclasses import dataclass, field
+ from datetime import datetime, timezone
++from decimal import Decimal
+ from email.utils import parsedate_to_datetime
+ import http.client
+ import json
+@@ -172,8 +173,23 @@ def run_synthetic_smoke(parser: NebiusParser):
+     output = ParserOutput.model_validate_json(parser.parse(parser_request(context)))
+     result = resolve(UUID("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"),
+                      UUID("bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"), context, output)
+-    if (result.status != "ready" or result.command.command.food.components[0].quantity.edible_g != "100"
+-            or result.command.command.food.effective_date.isoformat() != "2026-09-22"):
+-        raise ParserRejected("Synthetic smoke response did not match the expected food action")
++    reason = result.reason if result.status != "ready" else None
++    if result.status == "ready":
++        food = result.command.command.food
++        if Decimal(food.components[0].quantity.edible_g) != Decimal("100"):
++            reason = "unexpected_quantity"
++        elif food.effective_date.isoformat() != "2026-09-22":
++            reason = "unexpected_date"
++    if reason is not None:
++        # Kinds are schema literals; status/reason are backend-defined codes.
++        # Model-provided paths are free text, so expose only known field names.
++        paths = {"food", "food.name", "food.candidate_ref", "food.candidate_kind", "quantity",
++                 "quantity.amount", "quantity.unit", "weight_basis", "date_hint", "date_hint.text", "meal"}
++        unresolved = sorted({item.path if item.path in paths else "other"
++                             for action in output.actions for item in action.unresolved})
++        kinds = sorted({action.kind for action in output.actions})
++        raise ParserRejected("Synthetic smoke response did not match the expected food action "
++            f"(schema_valid=true; actions={','.join(kinds)}; resolution={result.status}; reason={reason}; "
++            f"unresolved_fields={','.join(unresolved) or 'none'})")
+     return {"provider": "nebius", "synthetic": True, "schema_valid": True, "expected_action_matched": True,
+             "parser_version": parser.version}
+diff --git a/tests/test_nebius.py b/tests/test_nebius.py
+index 4fb0ab8..4b0083c 100644
+--- a/tests/test_nebius.py
++++ b/tests/test_nebius.py
+@@ -202,6 +202,56 @@ class NebiusProtocolTests(unittest.TestCase):
+             self.assertEqual(json.loads(output.getvalue())["error"], "nebius_configuration")
+             engine.assert_not_called();network.assert_not_called()
+ 
++    def test_smoke_accepts_equivalent_decimal_grams(self):
++        for amount in ("100", "100.0", "100.00", "100.000000"):
++            with self.subTest(amount=amount):
++                parser = client(response(fixture(amount=amount)["output"]))
++                self.assertTrue(run_synthetic_smoke(parser)["expected_action_matched"])
++
++    def test_smoke_mismatch_diagnostics_are_specific_and_redacted(self):
++        cases = []
++        for amount in ("99", "100.000001", "101"):
++            cases.append((fixture(amount=amount)["output"], "quantity_evidence_conflict", "none"))
++        for field, value, reason in (
++                ("weight_basis", None, "weight_basis_unresolved"),
++                ("date_hint", {"text": "sensitive-date"}, "date_unresolved"),
++                ("food", {"kind": "name", "name": "sensitive-name"}, "product_unresolved"),
++                ("quantity", {"amount": None, "unit": "g"}, "quantity_unresolved"),
++                ("unresolved", [{"path": "sensitive-path", "reason": "missing"},
++                                {"path": "weight_basis", "reason": "ambiguous"}], "proposal_unresolved")):
++            proposal = fixture()["output"]
++            proposal["actions"][0][field] = value
++            cases.append((proposal, reason, "other,weight_basis" if field == "unresolved" else "none"))
++        proposal = fixture()["output"]
++        second = deepcopy(proposal["actions"][0]);second["action_id"] = "a2"
++        proposal["actions"].append(second)
++        cases.append((proposal, "multiple_actions", "none"))
++        for proposal, reason, fields in cases:
++            with self.subTest(reason=reason), \
++                    patch.dict(os.environ, {"NEBIUS_API_KEY": "test-secret", "NUTRITION_LLM_MODEL": "example/model"}), \
++                    patch("sys.argv", ["nutrition_app", "nebius-smoke"]), \
++                    patch("nutrition_app.__main__.engine_for") as engine, \
++                    patch("nutrition_app.nebius.http.client.HTTPSConnection") as connection, \
++                    patch("sys.stdout", new_callable=io.StringIO) as stdout, \
++                    patch("sys.stderr", new_callable=io.StringIO) as stderr:
++                reply = connection.return_value.getresponse.return_value
++                reply.status = 200;reply.getheader.return_value = None
++                reply.read.return_value = json.dumps(response(proposal)).encode()
++                with self.assertRaises(SystemExit) as caught:
++                    main()
++                self.assertEqual(caught.exception.code, 1)
++                diagnostic = json.loads(stdout.getvalue())
++                self.assertEqual(set(diagnostic), {"error", "message"})
++                self.assertEqual(diagnostic["error"], "parser_rejected")
++                self.assertIn("schema_valid=true; actions=add_food;", diagnostic["message"])
++                self.assertIn(f"reason={reason}; unresolved_fields={fields}", diagnostic["message"])
++                for private in ("test-secret", TEXT, PRODUCT_NAME, "sensitive-date", "sensitive-name", "sensitive-path"):
++                    self.assertNotIn(private, stdout.getvalue() + stderr.getvalue())
++                self.assertEqual(stderr.getvalue(), "")
++                connection.return_value.request.assert_called_once()
++                connection.return_value.close.assert_called_once()
++                engine.assert_not_called()
++
+     def test_smoke_http_rejection_reports_status_without_provider_data(self):
+         for status in (301, 400, 401, 402, 403, 404, 422):
+             with self.subTest(status=status), \

@@ -1,0 +1,247 @@
+test_qa01_retry_after_http_whitespace_preserves_delay_and_limit (test_w004_independent.ProtocolQA.test_qa01_retry_after_http_whitespace_preserves_delay_and_limit) ... ok
+test_qa02_catalog_instructions_are_data_and_overflow_makes_no_request (test_w004_independent.ProtocolQA.test_qa02_catalog_instructions_are_data_and_overflow_makes_no_request) ... ok
+test_qa03_read_failure_closes_once_and_smoke_error_is_redacted (test_w004_independent.ProtocolQA.test_qa03_read_failure_closes_once_and_smoke_error_is_redacted) ... ok
+test_qa04_smoke_rejects_wrong_quantity_without_writes (test_w004_independent.ProtocolQA.test_qa04_smoke_rejects_wrong_quantity_without_writes) ... ok
+test_qa05_http_date_retry_survives_restart_and_key_rotation (test_w004_independent.RetryDatabaseQA.test_qa05_http_date_retry_survives_restart_and_key_rotation) ... ERROR
+test_qa05_http_date_retry_survives_restart_and_key_rotation (test_w004_independent.RetryDatabaseQA.test_qa05_http_date_retry_survives_restart_and_key_rotation) ... ERROR
+
+======================================================================
+ERROR: test_qa05_http_date_retry_survives_restart_and_key_rotation (test_w004_independent.RetryDatabaseQA.test_qa05_http_date_retry_survives_restart_and_key_rotation)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 144, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 3319, in raw_connection
+    return self.pool.connect()
+           ~~~~~~~~~~~~~~~~~^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 448, in connect
+    return _ConnectionFairy._checkout(self)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 1290, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 712, in checkout
+    rec = pool._do_get()
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/impl.py", line 178, in _do_get
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/util/langhelpers.py", line 122, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/impl.py", line 176, in _do_get
+    return self._create_connection()
+           ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 389, in _create_connection
+    return _ConnectionRecord(self)
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 674, in __init__
+    self.__connect()
+    ~~~~~~~~~~~~~~^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 900, in __connect
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/util/langhelpers.py", line 122, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 896, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/engine/create.py", line 667, in connect
+    return dialect.connect(*cargs_tup, **cparams)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/engine/default.py", line 630, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/psycopg/connection.py", line 126, in connect
+    raise last_ex.with_traceback(None)
+psycopg.OperationalError: connection is bad: connection to server at "127.0.0.1", port 55432 failed: Operation not permitted
+	Is the server running on that host and accepting TCP/IP connections?
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/tests/qa/test_w004_independent.py", line 105, in setUp
+    with self.admin.begin() as c:c.execute(sa.schema.CreateSchema(self.schema))
+         ~~~~~~~~~~~~~~~~^^
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 141, in __enter__
+    return next(self.gen)
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 3259, in begin
+    with self.connect() as conn:
+         ~~~~~~~~~~~~^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 3295, in connect
+    return self._connection_cls(self)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 146, in __init__
+    Connection._handle_dbapi_exception_noconnection(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        err, dialect, engine
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 2450, in _handle_dbapi_exception_noconnection
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 144, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 3319, in raw_connection
+    return self.pool.connect()
+           ~~~~~~~~~~~~~~~~~^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 448, in connect
+    return _ConnectionFairy._checkout(self)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 1290, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 712, in checkout
+    rec = pool._do_get()
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/impl.py", line 178, in _do_get
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/util/langhelpers.py", line 122, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/impl.py", line 176, in _do_get
+    return self._create_connection()
+           ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 389, in _create_connection
+    return _ConnectionRecord(self)
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 674, in __init__
+    self.__connect()
+    ~~~~~~~~~~~~~~^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 900, in __connect
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/util/langhelpers.py", line 122, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 896, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/engine/create.py", line 667, in connect
+    return dialect.connect(*cargs_tup, **cparams)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/engine/default.py", line 630, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/psycopg/connection.py", line 126, in connect
+    raise last_ex.with_traceback(None)
+sqlalchemy.exc.OperationalError: (psycopg.OperationalError) connection is bad: connection to server at "127.0.0.1", port 55432 failed: Operation not permitted
+	Is the server running on that host and accepting TCP/IP connections?
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+
+======================================================================
+ERROR: test_qa05_http_date_retry_survives_restart_and_key_rotation (test_w004_independent.RetryDatabaseQA.test_qa05_http_date_retry_survives_restart_and_key_rotation)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 144, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 3319, in raw_connection
+    return self.pool.connect()
+           ~~~~~~~~~~~~~~~~~^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 448, in connect
+    return _ConnectionFairy._checkout(self)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 1290, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 712, in checkout
+    rec = pool._do_get()
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/impl.py", line 178, in _do_get
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/util/langhelpers.py", line 122, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/impl.py", line 176, in _do_get
+    return self._create_connection()
+           ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 389, in _create_connection
+    return _ConnectionRecord(self)
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 674, in __init__
+    self.__connect()
+    ~~~~~~~~~~~~~~^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 900, in __connect
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/util/langhelpers.py", line 122, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 896, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/engine/create.py", line 667, in connect
+    return dialect.connect(*cargs_tup, **cparams)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/engine/default.py", line 630, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/psycopg/connection.py", line 126, in connect
+    raise last_ex.with_traceback(None)
+psycopg.OperationalError: connection is bad: connection to server at "127.0.0.1", port 55432 failed: Operation not permitted
+	Is the server running on that host and accepting TCP/IP connections?
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/tests/qa/test_w004_independent.py", line 111, in cleanup
+    with self.admin.begin() as c:c.execute(sa.schema.DropSchema(self.schema,cascade=True,if_exists=True))
+         ~~~~~~~~~~~~~~~~^^
+  File "/Library/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 141, in __enter__
+    return next(self.gen)
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 3259, in begin
+    with self.connect() as conn:
+         ~~~~~~~~~~~~^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 3295, in connect
+    return self._connection_cls(self)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 146, in __init__
+    Connection._handle_dbapi_exception_noconnection(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        err, dialect, engine
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 2450, in _handle_dbapi_exception_noconnection
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 144, in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/engine/base.py", line 3319, in raw_connection
+    return self.pool.connect()
+           ~~~~~~~~~~~~~~~~~^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 448, in connect
+    return _ConnectionFairy._checkout(self)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 1290, in _checkout
+    fairy = _ConnectionRecord.checkout(pool)
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 712, in checkout
+    rec = pool._do_get()
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/impl.py", line 178, in _do_get
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/util/langhelpers.py", line 122, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/impl.py", line 176, in _do_get
+    return self._create_connection()
+           ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 389, in _create_connection
+    return _ConnectionRecord(self)
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 674, in __init__
+    self.__connect()
+    ~~~~~~~~~~~~~~^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 900, in __connect
+    with util.safe_reraise():
+         ~~~~~~~~~~~~~~~~~^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/util/langhelpers.py", line 122, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/pool/base.py", line 896, in __connect
+    self.dbapi_connection = connection = pool._invoke_creator(self)
+                                         ~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/engine/create.py", line 667, in connect
+    return dialect.connect(*cargs_tup, **cparams)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/sqlalchemy/engine/default.py", line 630, in connect
+    return self.loaded_dbapi.connect(*cargs, **cparams)  # type: ignore[no-any-return]  # NOQA: E501
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/Users/Zinaida.Smirnova/air/nutrition_assistant/.venv/lib/python3.14/site-packages/psycopg/connection.py", line 126, in connect
+    raise last_ex.with_traceback(None)
+sqlalchemy.exc.OperationalError: (psycopg.OperationalError) connection is bad: connection to server at "127.0.0.1", port 55432 failed: Operation not permitted
+	Is the server running on that host and accepting TCP/IP connections?
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.141s
+
+FAILED (errors=2)

@@ -1,0 +1,15 @@
+Executor: independent QA
+Base: 2ebabbb805f095a05f8112865168decf18123dfc
+Patch SHA256: 044191e834cb2bc18a765b5ae187fba0982f239e7504268fd4b0a794058c2f02
+Command: ['/private/tmp/nutrition-smoke-review-clgupvep/.venv/bin/python', '-m', 'unittest', 'qa_smoke_expectation', '-v']
+
+test_qa01_exact_base_false_rejection_fixed_without_request_identity_change (qa_smoke_expectation.SmokeQA.test_qa01_exact_base_false_rejection_fixed_without_request_identity_change) ... ok
+test_qa02_wrong_unresolved_nonlogging_and_max_action_proposals_still_fail (qa_smoke_expectation.SmokeQA.test_qa02_wrong_unresolved_nonlogging_and_max_action_proposals_still_fail) ... ok
+test_qa03_cli_free_text_is_redacted_and_diagnostic_size_does_not_grow (qa_smoke_expectation.SmokeQA.test_qa03_cli_free_text_is_redacted_and_diagnostic_size_does_not_grow) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.217s
+
+OK
+
+Exit status: 0

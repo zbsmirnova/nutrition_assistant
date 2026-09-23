@@ -202,6 +202,56 @@ class NebiusProtocolTests(unittest.TestCase):
             self.assertEqual(json.loads(output.getvalue())["error"], "nebius_configuration")
             engine.assert_not_called();network.assert_not_called()
 
+    def test_smoke_accepts_equivalent_decimal_grams(self):
+        for amount in ("100", "100.0", "100.00", "100.000000"):
+            with self.subTest(amount=amount):
+                parser = client(response(fixture(amount=amount)["output"]))
+                self.assertTrue(run_synthetic_smoke(parser)["expected_action_matched"])
+
+    def test_smoke_mismatch_diagnostics_are_specific_and_redacted(self):
+        cases = []
+        for amount in ("99", "100.000001", "101"):
+            cases.append((fixture(amount=amount)["output"], "quantity_evidence_conflict", "none"))
+        for field, value, reason in (
+                ("weight_basis", None, "weight_basis_unresolved"),
+                ("date_hint", {"text": "sensitive-date"}, "date_unresolved"),
+                ("food", {"kind": "name", "name": "sensitive-name"}, "product_unresolved"),
+                ("quantity", {"amount": None, "unit": "g"}, "quantity_unresolved"),
+                ("unresolved", [{"path": "sensitive-path", "reason": "missing"},
+                                {"path": "weight_basis", "reason": "ambiguous"}], "proposal_unresolved")):
+            proposal = fixture()["output"]
+            proposal["actions"][0][field] = value
+            cases.append((proposal, reason, "other,weight_basis" if field == "unresolved" else "none"))
+        proposal = fixture()["output"]
+        second = deepcopy(proposal["actions"][0]);second["action_id"] = "a2"
+        proposal["actions"].append(second)
+        cases.append((proposal, "multiple_actions", "none"))
+        for proposal, reason, fields in cases:
+            with self.subTest(reason=reason), \
+                    patch.dict(os.environ, {"NEBIUS_API_KEY": "test-secret", "NUTRITION_LLM_MODEL": "example/model"}), \
+                    patch("sys.argv", ["nutrition_app", "nebius-smoke"]), \
+                    patch("nutrition_app.__main__.engine_for") as engine, \
+                    patch("nutrition_app.nebius.http.client.HTTPSConnection") as connection, \
+                    patch("sys.stdout", new_callable=io.StringIO) as stdout, \
+                    patch("sys.stderr", new_callable=io.StringIO) as stderr:
+                reply = connection.return_value.getresponse.return_value
+                reply.status = 200;reply.getheader.return_value = None
+                reply.read.return_value = json.dumps(response(proposal)).encode()
+                with self.assertRaises(SystemExit) as caught:
+                    main()
+                self.assertEqual(caught.exception.code, 1)
+                diagnostic = json.loads(stdout.getvalue())
+                self.assertEqual(set(diagnostic), {"error", "message"})
+                self.assertEqual(diagnostic["error"], "parser_rejected")
+                self.assertIn("schema_valid=true; actions=add_food;", diagnostic["message"])
+                self.assertIn(f"reason={reason}; unresolved_fields={fields}", diagnostic["message"])
+                for private in ("test-secret", TEXT, PRODUCT_NAME, "sensitive-date", "sensitive-name", "sensitive-path"):
+                    self.assertNotIn(private, stdout.getvalue() + stderr.getvalue())
+                self.assertEqual(stderr.getvalue(), "")
+                connection.return_value.request.assert_called_once()
+                connection.return_value.close.assert_called_once()
+                engine.assert_not_called()
+
     def test_smoke_http_rejection_reports_status_without_provider_data(self):
         for status in (301, 400, 401, 402, 403, 404, 422):
             with self.subTest(status=status), \

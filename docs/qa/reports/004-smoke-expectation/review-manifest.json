@@ -1,0 +1,15 @@
+{
+  "base": "2ebabbb805f095a05f8112865168decf18123dfc",
+  "snapshot": "/private/tmp/nutrition-smoke-review-clgupvep",
+  "patch": "/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/004-smoke-expectation/source.patch",
+  "patch_sha256": "044191e834cb2bc18a765b5ae187fba0982f239e7504268fd4b0a794058c2f02",
+  "files": {
+    "AGENTS.md": "0672331810a117d2f32d8edfccf5c5cf205ef35a89f1753ed635984699ed40bb",
+    "README.md": "6f7f7d42b7b1990f92b43ea46ead2027e199daba6e6d38f8a40a266c900be134",
+    "docs/decisions/0012-nebius-adapter.md": "78edb52469f4a31cc3ed2b9361e315c3cfeaf0844de4c83e3daf65b44f961cb8",
+    "docs/roadmap.md": "b5ac6320c7aef61c5831bd1603f06e5d0206dd05d4d255a275b792073dc2e7d4",
+    "docs/work/004-nebius-adapter.md": "7e7d096759c40f8461b56aeddf70440609b05ad64c2914155e839d8cad310bb9",
+    "nutrition_app/nebius.py": "0821ba445f9fe31e539dddf9119a2e9cbb901535e8aab859bdc2c0586905bcbc",
+    "tests/test_nebius.py": "4c9545c8e525aa3ba59cfd858365153e54ada14181bd260954861adc37d745a0"
+  }
+}

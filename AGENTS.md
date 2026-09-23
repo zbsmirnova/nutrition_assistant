@@ -60,7 +60,7 @@ When a contract model changes, regenerate schemas before those checks:
 
 The existing suite checks generated-schema drift. For documentation-only changes, inspect links, document ownership/status consistency, and formatting; do not add implementation-mirroring tests or claim independent QA occurred.
 
-The explicit integration and retained QA suites require local PostgreSQL and create/remove only their own random schemas. They fail when the database is unavailable. Default test discovery runs offline contract, arithmetic, protocol, and resolver checks. User-run synthetic Nebius smoke attempts have returned HTTP 401 and then 422; no successful live interpretation is verified. The adapter's response-format wrapper is now checked against an attributed provider OpenAPI fixture. Real Telegram checks remain unverified. A changed contract requires regeneration; a changed migration/transaction requires both PostgreSQL suites.
+The explicit integration and retained QA suites require local PostgreSQL and create/remove only their own random schemas. They fail when the database is unavailable. Default test discovery runs offline contract, arithmetic, protocol, and resolver checks. After HTTP 401/422 setup failures, the user reported a Nebius smoke response that passed local schema/reference validation but failed the expected-action check. No successful live food interpretation is verified; the W004 brief owns this evidence and diagnostic follow-ups. The adapter's response-format wrapper is checked against an attributed provider OpenAPI fixture. Real Telegram checks remain unverified. A changed contract requires regeneration; a changed migration/transaction requires both PostgreSQL suites.
 
 ## Completion and handoff
 
