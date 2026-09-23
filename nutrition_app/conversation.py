@@ -71,13 +71,107 @@ class ConversationWorker:
                    "local_date": source["source_sent_at"].astimezone(ZoneInfo(source["source_time_zone"])).date().isoformat(),
                    "has_reply": source["reply_to_message_id"] is not None, "forwarded": source["forwarded"],
                    "catalog_overflow": len(rows) > MAX_CANDIDATES, "candidates": [],
-                   "pending_candidates": [], "pending_questions": {}, "pending": None}
+                   "pending_candidates": [], "pending_questions": {}, "pending": None,
+                   "entries": [], "reply_entry_ref": None}
         if not context["catalog_overflow"]:
             context["candidates"] = [{"ref": f"c{i}", "version_id": str(row["id"]), "name": row["name"],
                 "nutrition_basis": row["nutrition_basis"], "weight_basis": row["weight_basis"],
                 "food_kind": row["food_kind"], "declared_fat_percent":
                     None if row["declared_fat_percent"] is None else str(row["declared_fat_percent"])}
                 for i, row in enumerate(rows, 1)]
+        entry_rows = connection.execute(sa.select(
+            db.food_entries.c.id.label("entry_id"),
+            db.food_entry_revisions.c.id.label("revision_id"),
+            db.food_entry_revisions.c.revision_no,
+            db.food_entry_revisions.c.food_day_id,
+            db.food_entry_revisions.c.description,
+            db.food_entry_revisions.c.meal,
+            db.food_entry_revisions.c.time_zone,
+            db.food_entry_revisions.c.state,
+            db.food_days.c.local_date.label("effective_date"),
+            db.food_components.c.position.label("component_position"),
+            db.food_components.c.description.label("component_description"),
+            db.food_components.c.product_version_id,
+            db.food_components.c.quantity_kind,
+            db.food_components.c.edible_g,
+            db.food_components.c.gross_g,
+            db.food_components.c.inedible_g,
+            db.food_components.c.volume_ml,
+            db.food_components.c.weight_basis,
+        ).select_from(
+            db.food_entries.join(db.food_entry_revisions, sa.and_(
+                db.food_entries.c.user_id == db.food_entry_revisions.c.user_id,
+                db.food_entries.c.id == db.food_entry_revisions.c.food_entry_id,
+                db.food_entries.c.current_revision_id == db.food_entry_revisions.c.id))
+            .join(db.food_days, sa.and_(
+                db.food_entry_revisions.c.user_id == db.food_days.c.user_id,
+                db.food_entry_revisions.c.food_day_id == db.food_days.c.id))
+            .outerjoin(db.food_components, sa.and_(
+                db.food_entry_revisions.c.user_id == db.food_components.c.user_id,
+                db.food_entry_revisions.c.id == db.food_components.c.food_entry_revision_id))
+        ).where(db.food_entries.c.user_id == user["id"])
+         .order_by(db.food_days.c.local_date.desc(), db.food_entry_revisions.c.created_at.desc(),
+                   db.food_entries.c.id, db.food_components.c.position)).mappings().all()
+        entry_map = {}
+        for row in entry_rows:
+            key = row["entry_id"]
+            record = entry_map.setdefault(key, {"entry_id": str(key), "revision_id": str(row["revision_id"]),
+                "state": row["state"], "description": row["description"], "meal": row["meal"],
+                "effective_date": row["effective_date"].isoformat(), "time_zone": row["time_zone"],
+                "components": [], "food": None, "undo_revision_id": None})
+            if row["component_position"] is not None:
+                if row["quantity_kind"] == "mass":
+                    quantity = {"kind": "mass", "edible_g": str(row["edible_g"]),
+                                "gross_g": None if row["gross_g"] is None else str(row["gross_g"]),
+                                "inedible_g": None if row["inedible_g"] is None else str(row["inedible_g"]),
+                                "weight_basis": row["weight_basis"]}
+                else:
+                    quantity = {"kind": "volume", "ml": str(row["volume_ml"]),
+                                "weight_basis": row["weight_basis"]}
+                record["components"].append({"kind": "product", "description": row["component_description"],
+                    "product_version_id": str(row["product_version_id"]), "quantity": quantity})
+        for record in entry_map.values():
+            previous = connection.execute(sa.select(db.food_entry_revisions.c.id).where(
+                db.food_entry_revisions.c.user_id == user["id"],
+                db.food_entry_revisions.c.food_entry_id == UUID(record["entry_id"]),
+                db.food_entry_revisions.c.state == "active",
+                db.food_entry_revisions.c.revision_no < sa.select(db.food_entry_revisions.c.revision_no).where(
+                    db.food_entry_revisions.c.user_id == user["id"],
+                    db.food_entry_revisions.c.id == UUID(record["revision_id"])).scalar_subquery(),
+            ).order_by(db.food_entry_revisions.c.revision_no.desc()).limit(1)).scalar_one_or_none()
+            record["undo_revision_id"] = None if previous is None else str(previous)
+            record["food"] = {"effective_date": record["effective_date"], "time_zone": record["time_zone"],
+                               "meal": record["meal"], "description": record["description"],
+                               "components": record["components"]}
+        entry_records = list(entry_map.values())
+        for index, record in enumerate(entry_records, len(rows) + 1):
+            record["ref"] = f"c{index}"
+            context["entries"].append({"ref": record["ref"], "description": record["description"],
+                                        "effective_date": record["effective_date"], "meal": record["meal"],
+                                        "state": record["state"]})
+        context["entry_records"] = entry_records
+        if source["reply_to_message_id"] is not None:
+            replied_entry = connection.execute(sa.select(db.food_entries.c.id).select_from(
+                db.food_entries.join(db.food_entry_revisions, sa.and_(
+                    db.food_entries.c.user_id == db.food_entry_revisions.c.user_id,
+                    db.food_entries.c.id == db.food_entry_revisions.c.food_entry_id,
+                    db.food_entries.c.current_revision_id == db.food_entry_revisions.c.id))
+                .join(db.applied_operations, sa.and_(
+                    db.food_entry_revisions.c.user_id == db.applied_operations.c.user_id,
+                    db.food_entry_revisions.c.applied_operation_id == db.applied_operations.c.id))
+                .join(db.prepared_operations, sa.and_(
+                    db.applied_operations.c.user_id == db.prepared_operations.c.user_id,
+                    db.applied_operations.c.id == db.prepared_operations.c.id))
+                .join(db.inbox_updates, sa.and_(
+                    db.prepared_operations.c.user_id == db.inbox_updates.c.user_id,
+                    db.prepared_operations.c.origin_update_id == db.inbox_updates.c.id))
+            ).where(db.food_entries.c.user_id == user["id"],
+                    db.inbox_updates.c.telegram_account_id == source["telegram_account_id"],
+                    db.inbox_updates.c.telegram_message_id == source["reply_to_message_id"])).scalar_one_or_none()
+            for record in entry_records:
+                if record["entry_id"] == (None if replied_entry is None else str(replied_entry)):
+                    context["reply_entry_ref"] = record["ref"]
+                    break
         if source["reply_to_message_id"] is not None:
             original = db.inbox_updates.alias("original_inbox")
             pending = connection.execute(sa.select(db.conversation_jobs).select_from(
@@ -252,7 +346,8 @@ class ConversationWorker:
         if not claim.prepared:
             context = claim.context
             proposal = None
-            if (context["has_reply"] or context["forwarded"]) and context.get("pending") is None:
+            if (context["forwarded"] or
+                    (context["has_reply"] and context.get("reply_entry_ref") is None)) and context.get("pending") is None:
                 resolution = Resolution("unresolved", "conversation_context_required")
             elif context["catalog_overflow"]:
                 resolution = Resolution("unsupported", "catalog_context_limit")

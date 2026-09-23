@@ -184,6 +184,72 @@ class ConversationWorkerTests(unittest.TestCase):
         self.assertEqual(states, [("applied", "clarification_resolved"), ("applied", "command_applied")])
         self.assertEqual(self.count(db.food_entries), 2)
 
+    def test_reply_target_correction_updates_the_same_entry(self):
+        original = self.source(1)
+        self.assertEqual(self.worker.run_one(self.actor, ControlledParser(), origin=original)["status"], "applied")
+        with self.engine.begin() as connection:
+            original_message_id = connection.execute(sa.select(db.inbox_updates.c.telegram_message_id).where(
+                db.inbox_updates.c.id == original)).scalar_one()
+        correction_text = "На самом деле 80 г"
+        correction = self.source(2, text=correction_text, reply_to_message_id=original_message_id)
+        output = {"schema_version": "1.0", "actions": [{
+            "kind": "correct_food", "action_id": "a1", "evidence": correction_text,
+            "depends_on": [], "unresolved": [], "target": {"kind": "reply"},
+            "change": {"kind": "set_quantity", "quantity": {"amount": "80", "unit": "g"}},
+        }]}
+        parser = ControlledParser(output)
+        result = self.worker.run_one(self.actor, parser, origin=correction)
+        self.assertEqual(result["status"], "applied")
+        self.assertEqual(parser.requests[0].entries[0]["description"], PRODUCT_NAME)
+        self.assertEqual(set(parser.requests[0].entries[0]), {"ref", "description", "effective_date", "meal", "state"})
+        self.assertNotIn("entry_id", repr(parser.requests[0]))
+        self.assertNotIn("revision_id", repr(parser.requests[0]))
+        self.assertEqual(self.count(db.food_entries), 1)
+        self.assertEqual(self.count(db.food_entry_revisions), 2)
+        self.assertEqual(self.service.get_day(self.actor, date(2026, 9, 22)).nutrition.kcal.amount.value, "96")
+
+    def test_unique_entry_candidate_supports_delete_and_undo(self):
+        original = self.source(1)
+        added = self.worker.run_one(self.actor, ControlledParser(), origin=original)
+        self.assertEqual(added["status"], "applied")
+        delete_text = "Удали запись"
+        delete = self.source(2, text=delete_text)
+        delete_output = {"schema_version": "1.0", "actions": [{
+            "kind": "delete_food", "action_id": "a1", "evidence": delete_text,
+            "depends_on": [], "unresolved": [],
+            "target": {"kind": "candidate", "candidate_ref": "c2", "candidate_kind": "entry"},
+        }]}
+        delete_result = self.worker.run_one(self.actor, ControlledParser(delete_output), origin=delete)
+        self.assertEqual(delete_result["status"], "applied")
+        self.assertEqual(self.service.get_day(self.actor, date(2026, 9, 22)).entry_count, 0)
+        undo_text = "Верни запись"
+        undo = self.source(3, text=undo_text)
+        undo_output = {"schema_version": "1.0", "actions": [{
+            "kind": "undo_food", "action_id": "a1", "evidence": undo_text,
+            "depends_on": [], "unresolved": [],
+            "target": {"kind": "candidate", "candidate_ref": "c2", "candidate_kind": "entry"},
+        }]}
+        undo_result = self.worker.run_one(self.actor, ControlledParser(undo_output), origin=undo)
+        self.assertEqual(undo_result["status"], "applied")
+        self.assertEqual(self.service.get_day(self.actor, date(2026, 9, 22)).entry_count, 1)
+        self.assertEqual(self.count(db.food_entry_revisions), 3)
+
+    def test_ambiguous_description_target_stays_unresolved(self):
+        self.assertEqual(self.worker.run_one(self.actor, ControlledParser(), origin=self.source(1))["status"], "applied")
+        self.assertEqual(self.worker.run_one(self.actor, ControlledParser(), origin=self.source(2))["status"], "applied")
+        text = "Исправь Synthetic product A на 80 г"
+        origin = self.source(3, text=text)
+        output = {"schema_version": "1.0", "actions": [{
+            "kind": "correct_food", "action_id": "a1", "evidence": text,
+            "depends_on": [], "unresolved": [],
+            "target": {"kind": "description", "description": PRODUCT_NAME},
+            "change": {"kind": "set_quantity", "quantity": {"amount": "80", "unit": "g"}},
+        }]}
+        result = self.worker.run_one(self.actor, ControlledParser(output), origin=origin)
+        self.assertEqual((result["status"], result["reason"]), ("unresolved", "entry_target_ambiguous"))
+        self.assertEqual(self.count(db.food_entry_revisions), 2)
+        self.assertEqual(self.count(db.prepared_operations), 2)
+
     def test_forward_and_reply_inputs_wait_without_calling_parser(self):
         parser = ControlledParser()
         for number, change in enumerate([{"forwarded": True}, {"reply_to_message_id": 88}], 1):
