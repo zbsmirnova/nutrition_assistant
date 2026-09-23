@@ -110,6 +110,10 @@ If the smoke check reports `parser_rejected` with `Nebius rejected the request (
 
 For HTTP 401, resolve authentication first: copy the complete secret value from [Nebius Token Factory API keys](https://tokenfactory.nebius.com/project/api-keys), creating a new key if the original value is unavailable. The value is displayed only at creation, according to [Nebius authentication instructions](https://docs.tokenfactory.nebius.com/api-reference/introduction#authentication). Supply only that value as NEBIUS_API_KEY, without quotes or a Bearer prefix; the adapter adds the prefix. Read it into the same shell with `read -rs 'NEBIUS_API_KEY?Paste API key, then press Enter: '`, paste the key when prompted, then run `echo` and `export NEBIUS_API_KEY` separately. Keep the model setting unchanged and rerun the smoke command. Never put the secret itself in command history, a repository file or chat. A 401 does not yet establish model or schema compatibility.
 
+The read command deliberately displays no characters while you paste. Press Enter after pasting the secret; text following `?` in the command is just the prompt, not the key's value.
+
+For HTTP 422, investigate request validation rather than re-entering the key. The initial adapter sent an invalid direct-schema shape; the current adapter uses the named schema wrapper required by Nebius's published API and explicitly enables its optional strict mode. That correction is checked against the provider's OpenAPI definitions, but successful inference with the configured model remains unverified. Retry the smoke command in the same configured terminal. The new request format changes parser identity for unfinished worker jobs; already frozen commands retain their existing recovery path.
+
 ### Processing an explicit inbox source
 
 For an explicit identified inbox source, the operator command is:
@@ -132,7 +136,7 @@ Transient failures retry through durable job state, with three total claims and 
 git diff --check
 ~~~
 
-The first command runs 82 checks: 32 contract, 9 arithmetic, 11 Telegram protocol/rendering, 13 controlled resolver, 15 Nebius protocol/CLI, and 2 intake-evaluation fixture checks. The integration command runs 59 tests against local PostgreSQL, including 15 worker and 6 Nebius-worker checks; the separate QA command runs 32 retained checks from M1, W002, W003, and W004. Developer verification and independent review are distinguished in the work briefs and QA reports. Each database test creates and removes its own randomly named schema. These commands do not reset development data or call Telegram/Nebius. An unavailable database fails the run; there is no silent skip or SQLite substitute.
+The first command runs 83 checks: 32 contract, 9 arithmetic, 11 Telegram protocol/rendering, 13 controlled resolver, 16 Nebius protocol/CLI, and 2 intake-evaluation fixture checks. The integration command runs 59 tests against local PostgreSQL, including 15 worker and 6 Nebius-worker checks; the separate QA command runs 32 retained checks from M1, W002, W003, and W004. Developer verification and independent review are distinguished in the work briefs and QA reports. Each database test creates and removes its own randomly named schema. These commands do not reset development data or call Telegram/Nebius. An unavailable database fails the run; there is no silent skip or SQLite substitute.
 
 Runtime dependencies are pinned in [requirements-runtime.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/requirements-runtime.txt?type=file&root=%252F), including [requirements-contracts.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/requirements-contracts.txt?type=file&root=%252F). For contract-only work, install the latter and run unittest discovery with the pattern test_contracts.py. No provider credentials are needed.
 

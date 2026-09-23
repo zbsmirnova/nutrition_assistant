@@ -69,7 +69,7 @@ class ProtocolQA(unittest.TestCase):
         exported=json.loads((ROOT/'contracts/v1/parser-output.schema.json').read_text())
         # Export adds document-identification metadata, not validation constraints.
         for key in ('$schema','$id'):exported.pop(key,None)
-        self.assertEqual(body['response_format']['json_schema'],exported)
+        self.assertEqual(body['response_format']['json_schema']['schema'],exported)
         with self.assertRaises(ParserRejected):
             parser.parse(ParserRequest(req.source_text,req.local_date,req.time_zone,tuple(candidate for _ in range(MAX_CANDIDATES+1))))
         self.assertEqual(len(observed),1)

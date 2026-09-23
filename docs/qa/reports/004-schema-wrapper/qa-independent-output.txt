@@ -1,0 +1,15 @@
+Executor: independent QA
+Base: 86a77da4fd1c2426202228d876c9b1b457d90a84
+Patch SHA256: 159edbfb057663188e179aaaa2c3f3c30038a35ea43c9cd73f27072620a7f83e
+Command: ['/private/tmp/nutrition-wrapper-review-udd8hae1/.venv/bin/python', '-m', 'unittest', 'qa_wrapper', '-v']
+
+test_qa01_official_provenance_contract_rejects_base_accepts_fix (qa_wrapper.WrapperQA.test_qa01_official_provenance_contract_rejects_base_accepts_fix) ... ok
+test_qa02_only_wrapper_changes_inner_schema_prompt_policy_privacy_preserved (qa_wrapper.WrapperQA.test_qa02_only_wrapper_changes_inner_schema_prompt_policy_privacy_preserved) ... ok
+test_qa03_identity_changes_from_base_but_not_with_key_rotation (qa_wrapper.WrapperQA.test_qa03_identity_changes_from_base_but_not_with_key_rotation) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.116s
+
+OK
+
+Exit status: 0

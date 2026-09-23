@@ -1,0 +1,267 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index a6fb694..4caeaf2 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -60,7 +60,7 @@ When a contract model changes, regenerate schemas before those checks:
+ 
+ The existing suite checks generated-schema drift. For documentation-only changes, inspect links, document ownership/status consistency, and formatting; do not add implementation-mirroring tests or claim independent QA occurred.
+ 
+-The explicit integration and retained QA suites require local PostgreSQL and create/remove only their own random schemas. They fail when the database is unavailable. Default test discovery runs offline contract, arithmetic, protocol, and resolver checks. An explicit synthetic Nebius smoke command exists but has not been run live. Real Telegram checks remain unverified. A changed contract requires regeneration; a changed migration/transaction requires both PostgreSQL suites.
++The explicit integration and retained QA suites require local PostgreSQL and create/remove only their own random schemas. They fail when the database is unavailable. Default test discovery runs offline contract, arithmetic, protocol, and resolver checks. User-run synthetic Nebius smoke attempts have returned HTTP 401 and then 422; no successful live interpretation is verified. The adapter's response-format wrapper is now checked against an attributed provider OpenAPI fixture. Real Telegram checks remain unverified. A changed contract requires regeneration; a changed migration/transaction requires both PostgreSQL suites.
+ 
+ ## Completion and handoff
+ 
+diff --git a/README.md b/README.md
+index 8823635..08e0b47 100644
+--- a/README.md
++++ b/README.md
+@@ -110,6 +110,10 @@ If the smoke check reports `parser_rejected` with `Nebius rejected the request (
+ 
+ For HTTP 401, resolve authentication first: copy the complete secret value from [Nebius Token Factory API keys](https://tokenfactory.nebius.com/project/api-keys), creating a new key if the original value is unavailable. The value is displayed only at creation, according to [Nebius authentication instructions](https://docs.tokenfactory.nebius.com/api-reference/introduction#authentication). Supply only that value as NEBIUS_API_KEY, without quotes or a Bearer prefix; the adapter adds the prefix. Read it into the same shell with `read -rs 'NEBIUS_API_KEY?Paste API key, then press Enter: '`, paste the key when prompted, then run `echo` and `export NEBIUS_API_KEY` separately. Keep the model setting unchanged and rerun the smoke command. Never put the secret itself in command history, a repository file or chat. A 401 does not yet establish model or schema compatibility.
+ 
++The read command deliberately displays no characters while you paste. Press Enter after pasting the secret; text following `?` in the command is just the prompt, not the key's value.
++
++For HTTP 422, investigate request validation rather than re-entering the key. The initial adapter sent an invalid direct-schema shape; the current adapter uses the name/schema/strict wrapper required by Nebius's published API. That correction is checked against the provider's OpenAPI definitions, but successful inference with the configured model remains unverified. Retry the smoke command in the same configured terminal. The new request format changes parser identity for unfinished worker jobs; already frozen commands retain their existing recovery path.
++
+ ### Processing an explicit inbox source
+ 
+ For an explicit identified inbox source, the operator command is:
+@@ -132,7 +136,7 @@ Transient failures retry through durable job state, with three total claims and
+ git diff --check
+ ~~~
+ 
+-The first command runs 82 checks: 32 contract, 9 arithmetic, 11 Telegram protocol/rendering, 13 controlled resolver, 15 Nebius protocol/CLI, and 2 intake-evaluation fixture checks. The integration command runs 59 tests against local PostgreSQL, including 15 worker and 6 Nebius-worker checks; the separate QA command runs 32 retained checks from M1, W002, W003, and W004. Developer verification and independent review are distinguished in the work briefs and QA reports. Each database test creates and removes its own randomly named schema. These commands do not reset development data or call Telegram/Nebius. An unavailable database fails the run; there is no silent skip or SQLite substitute.
++The first command runs 83 checks: 32 contract, 9 arithmetic, 11 Telegram protocol/rendering, 13 controlled resolver, 16 Nebius protocol/CLI, and 2 intake-evaluation fixture checks. The integration command runs 59 tests against local PostgreSQL, including 15 worker and 6 Nebius-worker checks; the separate QA command runs 32 retained checks from M1, W002, W003, and W004. Developer verification and independent review are distinguished in the work briefs and QA reports. Each database test creates and removes its own randomly named schema. These commands do not reset development data or call Telegram/Nebius. An unavailable database fails the run; there is no silent skip or SQLite substitute.
+ 
+ Runtime dependencies are pinned in [requirements-runtime.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/requirements-runtime.txt?type=file&root=%252F), including [requirements-contracts.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/requirements-contracts.txt?type=file&root=%252F). For contract-only work, install the latter and run unittest discovery with the pattern test_contracts.py. No provider credentials are needed.
+ 
+diff --git a/docs/decisions/0012-nebius-adapter.md b/docs/decisions/0012-nebius-adapter.md
+index 4a1bf0b..487c667 100644
+--- a/docs/decisions/0012-nebius-adapter.md
++++ b/docs/decisions/0012-nebius-adapter.md
+@@ -10,7 +10,7 @@ Authority: the user selected Nebius in D009 and instructed continuing with its a
+ 
+ Use the standard-library HTTPS client against the fixed api.tokenfactory.nebius.com origin and /v1/chat/completions path. Send bearer authentication from NEBIUS_API_KEY, require an explicit NUTRITION_LLM_MODEL, and retain certificate verification. No configurable alternate host, redirect following, SDK retry loop, or provider fallback is introduced. No dependencies or migration change.
+ 
+-Request one non-streaming completion with temperature 0 and max_tokens 4096. Use response_format.type=json_schema with the existing ParserOutput-generated schema directly in json_schema, as shown by Nebius's structured-output guide. Include the schema in the system prompt as well. This preserves the actual contract; there is no schema simplification, JSON repair, or fallback to arbitrary JSON. Exact chosen-model compatibility remains a live verification task.
++Request one non-streaming completion with temperature 0 and max_tokens 4096. Use response_format.type=json_schema with a named JSON Schema wrapper as specified in the correction below. The original W004 implementation placed the ParserOutput-generated schema directly in json_schema, following the guide's Python example; that format is superseded. Include the unchanged schema in the system prompt as well. There is no schema simplification, JSON repair, or fallback to arbitrary JSON. Exact chosen-model compatibility remains a live verification task.
+ 
+ The request contains only the source text, source-local date and time zone, and W003's public product candidate fields with scoped tokens. Explicitly project candidate fields again at the adapter boundary. Names and source text are data in a separate user message; the system prompt instructs faithful intent extraction and no invented consumption, identities, quantities or nutrients. These instructions do not establish resistance to every prompt injection or model accuracy; existing local validation/resolution remains mandatory.
+ 
+@@ -32,6 +32,14 @@ W004's required verification is offline protocol/CLI testing and PostgreSQL inte
+ 
+ ## Sources and related artifacts
+ 
++### Request-format correction — 2026-09-23
++
++After the user resolved key entry, their smoke command returned HTTP 422. Nebius's published OpenAPI version 20260916-b712a99a4 defines JsonSchemaResponseFormat with required name and schema fields. The old direct-schema payload lacks both and fails validation against that definition. The guide's Python example still shows the old shape, while its named-schema example and the API reference show the wrapper. Prefer the machine-readable API contract for the request envelope.
++
++Send response_format as {"type":"json_schema","json_schema":{"name":"nutrition_parser_output","schema":ParserOutput.model_json_schema(),"strict":true}}. Preserve all inner schema constraints and local validation. Adapter identity becomes nebius-chat-v3 and hashes the actual wrapper, including name, strictness and schema. This intentionally changes interpretation identity for unfinished work; frozen prepared commands still resume under W003's existing rules. No migration, provider fallback or error-body logging is added.
++
++The [API reference](https://docs.tokenfactory.nebius.com/api-reference/inference/create-chat-completion) and [OpenAPI document](https://api.tokenfactory.nebius.com/openapi.json) were fetched on 2026-09-23. An attributed extraction of the two response-format definitions is retained in [nebius-response-format-openapi.json](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/tests/fixtures/nebius-response-format-openapi.json?type=file&root=%252F), with API version and full-source hash. Tests validate the outgoing format against this independent provider contract. This fixes a proven request-shape mismatch; a successful live response with the selected model and full inner schema still needs verification.
++
+ Official sources fetched on 2026-09-22: [Nebius quickstart](https://docs.tokenfactory.nebius.com/quickstart) for origin/authentication, [structured output](https://docs.tokenfactory.nebius.com/ai-models-inference/json) for JSON Schema format/model-dependent support, and [text generation](https://docs.tokenfactory.nebius.com/api-reference/examples/text-generation) for completion fields. The guide examples include formatting inconsistencies; local tests verify our intended payload, while the actual schema/model combination still requires live confirmation.
+ 
+ Scope and acceptance belong to [004-nebius-adapter.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/004-nebius-adapter.md?type=file&root=%252F). D012 extends D009/D011's selected provider and worker boundary without changing product scope or portable contracts.
+diff --git a/docs/work/004-nebius-adapter.md b/docs/work/004-nebius-adapter.md
+index 1357539..d323a08 100644
+--- a/docs/work/004-nebius-adapter.md
++++ b/docs/work/004-nebius-adapter.md
+@@ -54,8 +54,14 @@ Only documentation changed. Validation for this follow-up covers the observed co
+ 
+ ## HTTP diagnostic follow-up — 2026-09-23
+ 
+-Status: done for the diagnostic change; authentication setup remains pending. The next user smoke attempt reached a permanent HTTP rejection, but the existing message hid the status. The error now exposes only the integer status; credentials, response bodies, headers and reason phrases stay out of diagnostics. The user subsequently reported HTTP 401 from the updated smoke command. This identifies an authentication rejection, without establishing why the credential was rejected or whether the model/schema is compatible. The next action is to re-enter a complete Token Factory secret key in the user's terminal and retry; no credential was inspected by the assistant.
++Status: done for the diagnostic change. The next user smoke attempt reached a permanent HTTP rejection, but the existing message hid the status. The error now exposes only the integer status; credentials, response bodies, headers and reason phrases stay out of diagnostics. The user subsequently reported HTTP 401 from both the smoke command and a direct model-list check. After creating and correctly entering a new key, their smoke response changed to HTTP 422; the request-format follow-up below tracks that next issue. No credential was inspected by the assistant.
+ 
+ Acceptance: the smoke CLI prints the rejection's numeric HTTP status and exits unsuccessfully; error bodies remain unread and no sensitive data appears in stdout/stderr; requests, parser identity, retry classification and database behavior remain unchanged. Validate with offline protocol/CLI regressions and independent review of an identified source before committing. No live call or database test is needed for a diagnostic-text change.
+ 
+ Verification: 82 developer offline tests pass; independent QA passes three additional probes and all 15 Nebius protocol/CLI tests, with no defect found. [qa-http-diagnostic-report.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/004-http-diagnostic/qa-http-diagnostic-report.md?type=file&root=%252F) identifies the base, reviewed patch and exact source hashes, and links the retained evidence. The reproducible [004-http-diagnostic-source.patch](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/004-http-diagnostic-source.patch?type=file&root=%252F) applies to 7d561e03942c4fd5f559f8bf42f0c11ec36ca5d9. [004-http-diagnostic-developer-output.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/004-http-diagnostic-developer-output.txt?type=file&root=%252F) preserves the full offline run. Final packaging only adds evidence, closes this status and clarifies README wording; runtime and tests match the reviewed hashes.
++
++## Structured-output wrapper follow-up — 2026-09-23
++
++Status: implementing. User-observed HTTP 422 revealed a request-shape mismatch: the published API requires name and schema inside response_format.json_schema. The old payload placed the schema directly there. D012 records the evidence and correction; the original completion/QA evidence above remains historical and did not catch this mismatch.
++
++Acceptance: (1) outgoing response_format validates against an attributed extraction of the provider's published API schema, while the old payload fails; (2) the inner ParserOutput schema, prompt, local validation, scoped data, error redaction and request limits are preserved; (3) changing the wrapper changes parser identity, key rotation does not, and existing retry/prepared-command recovery checks still pass; (4) relevant regressions and source-specific independent review pass, with live model compatibility kept unverified until the user reruns the smoke command. The one retained W004 QA assertion that addressed the old schema location must follow the new nested schema field; preserve its earlier source/report and attribute the adaptation.
+diff --git a/nutrition_app/nebius.py b/nutrition_app/nebius.py
+index 7db0246..9f633a5 100644
+--- a/nutrition_app/nebius.py
++++ b/nutrition_app/nebius.py
+@@ -75,11 +75,13 @@ class NebiusParser:
+     def __init__(self, config: NebiusConfig, *, request=None):
+         self._config = config
+         self._schema = ParserOutput.model_json_schema()
++        self._response_format = {"type": "json_schema", "json_schema": {
++            "name": "nutrition_parser_output", "schema": self._schema, "strict": True}}
+         self._request = request or self._https
+-        self.version = "nebius:" + digest({"adapter": "nebius-chat-v2", "model": config.model,
++        self.version = "nebius:" + digest({"adapter": "nebius-chat-v3", "model": config.model,
+             "prompt": PROMPT, "schema": self._schema, "policy": REQUEST_POLICY,
+             "host": HOST, "endpoint": ENDPOINT, "timeout": TIMEOUT_SECONDS,
+-            "max_bytes": MAX_BYTES, "response_format": "direct_json_schema"})
++            "max_bytes": MAX_BYTES, "response_format": self._response_format})
+ 
+     def _payload(self, request: ParserRequest):
+         if len(request.candidates) > MAX_CANDIDATES:
+@@ -92,7 +94,7 @@ class NebiusParser:
+         payload = {"model": self._config.model, **REQUEST_POLICY,
+             "messages": [{"role": "system", "content": PROMPT + "\nJSON Schema:\n" + json.dumps(self._schema)},
+                          {"role": "user", "content": json.dumps(context, ensure_ascii=False)}],
+-            "response_format": {"type": "json_schema", "json_schema": self._schema}}
++            "response_format": self._response_format}
+         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+         if len(body) > MAX_BYTES:
+             raise ParserRejected("Provider request exceeds the supported size limit")
+diff --git a/tests/qa/test_w004_independent.py b/tests/qa/test_w004_independent.py
+index 6bc6b19..686ef52 100644
+--- a/tests/qa/test_w004_independent.py
++++ b/tests/qa/test_w004_independent.py
+@@ -69,7 +69,7 @@ class ProtocolQA(unittest.TestCase):
+         exported=json.loads((ROOT/'contracts/v1/parser-output.schema.json').read_text())
+         # Export adds document-identification metadata, not validation constraints.
+         for key in ('$schema','$id'):exported.pop(key,None)
+-        self.assertEqual(body['response_format']['json_schema'],exported)
++        self.assertEqual(body['response_format']['json_schema']['schema'],exported)
+         with self.assertRaises(ParserRejected):
+             parser.parse(ParserRequest(req.source_text,req.local_date,req.time_zone,tuple(candidate for _ in range(MAX_CANDIDATES+1))))
+         self.assertEqual(len(observed),1)
+diff --git a/tests/test_nebius.py b/tests/test_nebius.py
+index f215c30..4fb0ab8 100644
+--- a/tests/test_nebius.py
++++ b/tests/test_nebius.py
+@@ -5,9 +5,12 @@ from email.utils import format_datetime
+ import io
+ import json
+ import os
++from pathlib import Path
+ import unittest
+ from unittest.mock import patch
+ 
++from jsonschema import Draft202012Validator
++
+ from nutrition_app.__main__ import main
+ from nutrition_app.conversation_demo import TEXT, PRODUCT_NAME, fixture
+ from nutrition_app.interpretation import ParserRejected, ParserRequest, ParserUnavailable
+@@ -36,6 +39,17 @@ def client(payload=None, status=200, headers=None):
+ 
+ 
+ class NebiusProtocolTests(unittest.TestCase):
++    def test_response_format_conforms_to_published_nebius_contract(self):
++        contract = json.loads(Path(__file__).with_name("fixtures").joinpath(
++            "nebius-response-format-openapi.json").read_text())["schema"]
++        Draft202012Validator.check_schema(contract)
++        validator = Draft202012Validator(contract)
++        payload = json.loads(client()._payload(request()))
++        validator.validate(payload["response_format"])
++        # The previous shape is rejected by the provider's published contract.
++        legacy = {"type": "json_schema", "json_schema": ParserOutput.model_json_schema()}
++        self.assertFalse(validator.is_valid(legacy))
++
+     def test_missing_invalid_configuration_does_not_echo_values(self):
+         for key, model in [("", "example/model"), ("test-secret", ""), ("secret\nvalue", "x"),
+                            ("secret value", "x"), ("test-secret", "model\nvalue")]:
+@@ -58,7 +72,8 @@ class NebiusProtocolTests(unittest.TestCase):
+         self.assertEqual(len(seen), 1)
+         payload, timeout = seen[0]
+         self.assertEqual(payload["model"], "example/model")
+-        self.assertEqual(payload["response_format"], {"type": "json_schema", "json_schema": ParserOutput.model_json_schema()})
++        self.assertEqual(payload["response_format"], {"type": "json_schema", "json_schema": {
++            "name": "nutrition_parser_output", "schema": ParserOutput.model_json_schema(), "strict": True}})
+         self.assertEqual((payload["stream"], payload["n"], payload["temperature"], payload["max_tokens"]), (False, 1, 0, 4096))
+         self.assertTrue(0 < timeout <= 30)
+         self.assertEqual([m["role"] for m in payload["messages"]], ["system", "user"])
+diff --git a/tests/fixtures/nebius-response-format-openapi.json b/tests/fixtures/nebius-response-format-openapi.json
+new file mode 100644
+index 0000000..2e6536f
+--- /dev/null
++++ b/tests/fixtures/nebius-response-format-openapi.json
+@@ -0,0 +1,89 @@
++{
++  "source_url": "https://api.tokenfactory.nebius.com/openapi.json",
++  "retrieved_on": "2026-09-23",
++  "api_version": "20260916-b712a99a4",
++  "source_sha256": "e6ba0e6dc303e48fb8eec5d62fcc29cfc2f552a7725a2ae0903719023961ddb5",
++  "schema": {
++    "$ref": "#/components/schemas/app__models__chat_completion__ResponseFormat",
++    "components": {
++      "schemas": {
++        "app__models__chat_completion__ResponseFormat": {
++          "properties": {
++            "type": {
++              "type": "string",
++              "enum": [
++                "text",
++                "json_object",
++                "json_schema"
++              ],
++              "title": "Type"
++            },
++            "json_schema": {
++              "anyOf": [
++                {
++                  "$ref": "#/components/schemas/JsonSchemaResponseFormat"
++                },
++                {
++                  "type": "null"
++                }
++              ]
++            }
++          },
++          "type": "object",
++          "required": [
++            "type"
++          ],
++          "title": "ResponseFormat"
++        },
++        "JsonSchemaResponseFormat": {
++          "properties": {
++            "name": {
++              "type": "string",
++              "title": "Name"
++            },
++            "description": {
++              "anyOf": [
++                {
++                  "type": "string"
++                },
++                {
++                  "type": "null"
++                }
++              ],
++              "title": "Description"
++            },
++            "schema": {
++              "anyOf": [
++                {
++                  "additionalProperties": true,
++                  "type": "object"
++                },
++                {
++                  "type": "null"
++                }
++              ],
++              "title": "Schema"
++            },
++            "strict": {
++              "anyOf": [
++                {
++                  "type": "boolean"
++                },
++                {
++                  "type": "null"
++                }
++              ],
++              "title": "Strict"
++            }
++          },
++          "type": "object",
++          "required": [
++            "name",
++            "schema"
++          ],
++          "title": "JsonSchemaResponseFormat"
++        }
++      }
++    }
++  }
++}

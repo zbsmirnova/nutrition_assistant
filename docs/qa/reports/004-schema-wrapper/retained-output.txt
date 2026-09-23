@@ -1,0 +1,10 @@
+test_qa01_retry_after_http_whitespace_preserves_delay_and_limit (test_w004_independent.ProtocolQA.test_qa01_retry_after_http_whitespace_preserves_delay_and_limit) ... ok
+test_qa02_catalog_instructions_are_data_and_overflow_makes_no_request (test_w004_independent.ProtocolQA.test_qa02_catalog_instructions_are_data_and_overflow_makes_no_request) ... ok
+test_qa03_read_failure_closes_once_and_smoke_error_is_redacted (test_w004_independent.ProtocolQA.test_qa03_read_failure_closes_once_and_smoke_error_is_redacted) ... ok
+test_qa04_smoke_rejects_wrong_quantity_without_writes (test_w004_independent.ProtocolQA.test_qa04_smoke_rejects_wrong_quantity_without_writes) ... ok
+test_qa05_http_date_retry_survives_restart_and_key_rotation (test_w004_independent.RetryDatabaseQA.test_qa05_http_date_retry_survives_restart_and_key_rotation) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.439s
+
+OK

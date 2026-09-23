@@ -1,0 +1,16 @@
+{
+  "base": "86a77da4fd1c2426202228d876c9b1b457d90a84",
+  "snapshot": "/private/tmp/nutrition-wrapper-review-udd8hae1",
+  "patch": "/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/004-schema-wrapper/source.patch",
+  "patch_sha256": "159edbfb057663188e179aaaa2c3f3c30038a35ea43c9cd73f27072620a7f83e",
+  "files": {
+    "AGENTS.md": "2ea516e5db69d2d2b4bfe642afee6edfeeb4cd84c1a812101fef188551c874ad",
+    "README.md": "70bd99bf3dbf05f409a5160992a458e7397135ad5aee8c1f5880a017973f87dd",
+    "docs/decisions/0012-nebius-adapter.md": "bc5d9a64c2e6714f40524c6905e7c8b04eeb41122c45c0935023e42bbd748b99",
+    "docs/work/004-nebius-adapter.md": "6f0b2ac5eb04c676dd5e017394b0f998947fef15441476cf7c9169edbd41d6c9",
+    "nutrition_app/nebius.py": "1d7ef8243cd38aefeb715b9a2342c51123952e751f4ab889cfab5d637e1ef67c",
+    "tests/qa/test_w004_independent.py": "25502cb228a0a59b385ca1f2fa792d6832f17abb5fc63ee6fe88228a91b2c2b8",
+    "tests/test_nebius.py": "f7b15c3769b654b510ff139adf89a35ab25a932d2a0525419e5e20d070d48998",
+    "tests/fixtures/nebius-response-format-openapi.json": "b0fa76e23eea84d637f2a367d48cf1f51fc7f93cddde0adb95f071a9ba38db63"
+  }
+}

@@ -1,0 +1,28 @@
+Executor: independent QA
+Base: 86a77da4fd1c2426202228d876c9b1b457d90a84
+Patch SHA256: 159edbfb057663188e179aaaa2c3f3c30038a35ea43c9cd73f27072620a7f83e
+Command: ['/private/tmp/nutrition-wrapper-review-udd8hae1/.venv/bin/python', '-m', 'unittest', 'discover', '-s', 'tests', '-p', 'test_nebius.py', '-v']
+
+test_cli_missing_configuration_exits_without_database_or_network (test_nebius.NebiusProtocolTests.test_cli_missing_configuration_exits_without_database_or_network) ... ok
+test_documented_request_contains_schema_and_minimal_public_context (test_nebius.NebiusProtocolTests.test_documented_request_contains_schema_and_minimal_public_context) ... ok
+test_https_uses_fixed_verified_origin_bearer_and_bounded_read (test_nebius.NebiusProtocolTests.test_https_uses_fixed_verified_origin_bearer_and_bounded_read) ... ok
+test_invalid_json_schema_or_foreign_reference_is_never_repaired (test_nebius.NebiusProtocolTests.test_invalid_json_schema_or_foreign_reference_is_never_repaired) ... ok
+test_live_worker_cli_processes_only_explicit_source_and_omits_outcome (test_nebius.NebiusProtocolTests.test_live_worker_cli_processes_only_explicit_source_and_omits_outcome) ... ok
+test_missing_invalid_configuration_does_not_echo_values (test_nebius.NebiusProtocolTests.test_missing_invalid_configuration_does_not_echo_values) ... ok
+test_redirect_and_permanent_error_do_not_follow_or_read_body (test_nebius.NebiusProtocolTests.test_redirect_and_permanent_error_do_not_follow_or_read_body) ... ok
+test_refusal_truncation_tool_calls_and_wrong_envelopes_are_rejected (test_nebius.NebiusProtocolTests.test_refusal_truncation_tool_calls_and_wrong_envelopes_are_rejected) ... ok
+test_request_and_response_limits_fail_without_unbounded_reads (test_nebius.NebiusProtocolTests.test_request_and_response_limits_fail_without_unbounded_reads) ... ok
+test_response_format_conforms_to_published_nebius_contract (test_nebius.NebiusProtocolTests.test_response_format_conforms_to_published_nebius_contract) ... ok
+test_smoke_http_rejection_reports_status_without_provider_data (test_nebius.NebiusProtocolTests.test_smoke_http_rejection_reports_status_without_provider_data) ... ok
+test_smoke_validates_expected_action_without_database_or_payload_output (test_nebius.NebiusProtocolTests.test_smoke_validates_expected_action_without_database_or_payload_output) ... ok
+test_transient_status_and_retry_after_are_exposed_without_local_retry (test_nebius.NebiusProtocolTests.test_transient_status_and_retry_after_are_exposed_without_local_retry) ... ok
+test_transport_exception_is_sanitized_and_connection_closes (test_nebius.NebiusProtocolTests.test_transport_exception_is_sanitized_and_connection_closes) ... ok
+test_untrusted_text_does_not_become_a_system_message (test_nebius.NebiusProtocolTests.test_untrusted_text_does_not_become_a_system_message) ... ok
+test_version_changes_with_model_prompt_schema_policy_but_not_key (test_nebius.NebiusProtocolTests.test_version_changes_with_model_prompt_schema_policy_but_not_key) ... ok
+
+----------------------------------------------------------------------
+Ran 16 tests in 0.601s
+
+OK
+
+Exit status: 0

@@ -5,8 +5,11 @@ from email.utils import format_datetime
 import io
 import json
 import os
+from pathlib import Path
 import unittest
 from unittest.mock import patch
+
+from jsonschema import Draft202012Validator
 
 from nutrition_app.__main__ import main
 from nutrition_app.conversation_demo import TEXT, PRODUCT_NAME, fixture
@@ -36,6 +39,17 @@ def client(payload=None, status=200, headers=None):
 
 
 class NebiusProtocolTests(unittest.TestCase):
+    def test_response_format_conforms_to_published_nebius_contract(self):
+        contract = json.loads(Path(__file__).with_name("fixtures").joinpath(
+            "nebius-response-format-openapi.json").read_text())["schema"]
+        Draft202012Validator.check_schema(contract)
+        validator = Draft202012Validator(contract)
+        payload = json.loads(client()._payload(request()))
+        validator.validate(payload["response_format"])
+        # The previous shape is rejected by the provider's published contract.
+        legacy = {"type": "json_schema", "json_schema": ParserOutput.model_json_schema()}
+        self.assertFalse(validator.is_valid(legacy))
+
     def test_missing_invalid_configuration_does_not_echo_values(self):
         for key, model in [("", "example/model"), ("test-secret", ""), ("secret\nvalue", "x"),
                            ("secret value", "x"), ("test-secret", "model\nvalue")]:
@@ -58,7 +72,8 @@ class NebiusProtocolTests(unittest.TestCase):
         self.assertEqual(len(seen), 1)
         payload, timeout = seen[0]
         self.assertEqual(payload["model"], "example/model")
-        self.assertEqual(payload["response_format"], {"type": "json_schema", "json_schema": ParserOutput.model_json_schema()})
+        self.assertEqual(payload["response_format"], {"type": "json_schema", "json_schema": {
+            "name": "nutrition_parser_output", "schema": ParserOutput.model_json_schema(), "strict": True}})
         self.assertEqual((payload["stream"], payload["n"], payload["temperature"], payload["max_tokens"]), (False, 1, 0, 4096))
         self.assertTrue(0 < timeout <= 30)
         self.assertEqual([m["role"] for m in payload["messages"]], ["system", "user"])

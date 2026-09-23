@@ -1,0 +1,16 @@
+Executor: independent QA
+Base: 86a77da4fd1c2426202228d876c9b1b457d90a84
+Patch SHA256: 159edbfb057663188e179aaaa2c3f3c30038a35ea43c9cd73f27072620a7f83e
+Command: ['/private/tmp/nutrition-wrapper-review-udd8hae1/.venv/bin/python', '-m', 'unittest', 'test_w004_independent.ProtocolQA', '-v']
+
+test_qa01_retry_after_http_whitespace_preserves_delay_and_limit (test_w004_independent.ProtocolQA.test_qa01_retry_after_http_whitespace_preserves_delay_and_limit) ... ok
+test_qa02_catalog_instructions_are_data_and_overflow_makes_no_request (test_w004_independent.ProtocolQA.test_qa02_catalog_instructions_are_data_and_overflow_makes_no_request) ... ok
+test_qa03_read_failure_closes_once_and_smoke_error_is_redacted (test_w004_independent.ProtocolQA.test_qa03_read_failure_closes_once_and_smoke_error_is_redacted) ... ok
+test_qa04_smoke_rejects_wrong_quantity_without_writes (test_w004_independent.ProtocolQA.test_qa04_smoke_rejects_wrong_quantity_without_writes) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.066s
+
+OK
+
+Exit status: 0

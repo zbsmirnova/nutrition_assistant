@@ -75,13 +75,11 @@ class NebiusParser:
     def __init__(self, config: NebiusConfig, *, request=None):
         self._config = config
         self._schema = ParserOutput.model_json_schema()
-        self._response_format = {"type": "json_schema", "json_schema": {
-            "name": "nutrition_parser_output", "schema": self._schema, "strict": True}}
         self._request = request or self._https
-        self.version = "nebius:" + digest({"adapter": "nebius-chat-v3", "model": config.model,
+        self.version = "nebius:" + digest({"adapter": "nebius-chat-v2", "model": config.model,
             "prompt": PROMPT, "schema": self._schema, "policy": REQUEST_POLICY,
             "host": HOST, "endpoint": ENDPOINT, "timeout": TIMEOUT_SECONDS,
-            "max_bytes": MAX_BYTES, "response_format": self._response_format})
+            "max_bytes": MAX_BYTES, "response_format": "direct_json_schema"})
 
     def _payload(self, request: ParserRequest):
         if len(request.candidates) > MAX_CANDIDATES:
@@ -94,7 +92,7 @@ class NebiusParser:
         payload = {"model": self._config.model, **REQUEST_POLICY,
             "messages": [{"role": "system", "content": PROMPT + "\nJSON Schema:\n" + json.dumps(self._schema)},
                          {"role": "user", "content": json.dumps(context, ensure_ascii=False)}],
-            "response_format": self._response_format}
+            "response_format": {"type": "json_schema", "json_schema": self._schema}}
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         if len(body) > MAX_BYTES:
             raise ParserRejected("Provider request exceeds the supported size limit")

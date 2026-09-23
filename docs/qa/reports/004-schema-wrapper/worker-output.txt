@@ -1,0 +1,11 @@
+test_auth_and_invalid_response_fail_once_without_food_or_payload_in_job (test_nebius_worker.NebiusWorkerTests.test_auth_and_invalid_response_fail_once_without_food_or_payload_in_job) ... ok
+test_missing_dairy_percentage_stays_pending_even_with_provider_candidate (test_nebius_worker.NebiusWorkerTests.test_missing_dairy_percentage_stays_pending_even_with_provider_candidate) ... ok
+test_prepared_command_resumes_after_provider_change_without_request (test_nebius_worker.NebiusWorkerTests.test_prepared_command_resumes_after_provider_change_without_request) ... ok
+test_provider_result_saves_expected_food_and_replay_does_not_call_model (test_nebius_worker.NebiusWorkerTests.test_provider_result_saves_expected_food_and_replay_does_not_call_model) ... ok
+test_rate_limit_persists_delay_and_exhausts_three_attempts_without_sleeping (test_nebius_worker.NebiusWorkerTests.test_rate_limit_persists_delay_and_exhausts_three_attempts_without_sleeping) ... ok
+test_rotated_key_can_retry_but_model_change_fences_unfinished_work (test_nebius_worker.NebiusWorkerTests.test_rotated_key_can_retry_but_model_change_fences_unfinished_work) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 1.302s
+
+OK
