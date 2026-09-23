@@ -134,6 +134,10 @@ Parser fingerprints were `nebius:296f39d6b9666f616f007abe08a66c568998b138821b3ec
 
 The subsequent four probes also produced no schema-valid proposal. Their parser fingerprints were `nebius:4b8df16be523d5fc8b5587d554ecc3073fd926c58184613df3eb47c1c76ad756`, `nebius:798208b0f4a8a7215709ffa92f532df94aeebcee77136bf64fc08f4816449751`, `nebius:083653763b381a4ba1b527306ce406c646c0c8cfa8e3650c1848309fd52e299b`, and `nebius:c6703633f383566b041379ef9d68dfaf6c29f8adf666c1ddc415a28386c75a9e`. DeepSeek V4 Pro and MiniMax reproduced short evidence; GLM 5.2 and DeepSeek V4 Pro 0813 failed before the schema-stage diagnostic. This is now a provider/model structured-output compatibility concern, not evidence against one particular Qwen model.
 
+## Single-action control — 2026-09-23
+
+The user reran `MiniMaxAI/MiniMax-M3` with the v4 prompt on `INTAKE-002`, which contains one food action only. The parser fingerprint was `nebius:c6703633f383566b041379ef9d68dfaf6c29f8adf666c1ddc415a28386c75a9e`. The call reached the adapter and failed local validation solely at `actions.0.add_food.evidence:string_too_short`; all scored metrics were therefore `n/a`. This reproduces the evidence failure without multi-action complexity. No model has passed the current live proposal contract, so further model comparison should wait until the evidence representation is reviewed.
+
 ## Findings
 
 The seven returned proposals preserved consumption intent and included an expected candidate, but the aggregate result is below the draft quality bars. Failures are concentrated in uncertainty handling and action discipline:
