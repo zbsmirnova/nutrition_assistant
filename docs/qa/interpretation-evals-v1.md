@@ -142,6 +142,17 @@ The user reran `MiniMaxAI/MiniMax-M3` with the v4 prompt on `INTAKE-002`, which 
 
 [prompt_diagnostic_no_evidence.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/evals/prompt_diagnostic_no_evidence.txt?type=file&root=%252F) and [diagnostic_nebius.py](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/evals/diagnostic_nebius.py?type=file&root=%252F) define an evaluation-only provider schema with model-authored `evidence` removed. After the diagnostic response passes its own schema, the evaluator attaches the original `source_text` solely as a fixture so candidate selection and quantity extraction can be measured. This derived evidence is not an authorization path and the production `ParserOutput`, generated schema, resolver, worker, and runtime quality guard are unchanged. Run only `INTAKE-002` and `INTAKE-001` first; do not use this contract for the bot or worker.
 
+## Diagnostic controls — 2026-09-23
+
+The user ran both controls against `MiniMaxAI/MiniMax-M3` with parser fingerprint `nebius-diagnostic-no-evidence:c88bae1d498bcc6bbd94f0a5555019e2b1e9c62ac200f01b19beb3e551241531`:
+
+| Case | Result | Quantity | Candidate selection | Interpretation |
+| --- | --- | --- | --- | --- |
+| INTAKE-002 | pass | 1.00 | 1.00 | Single chocolate item, 10 g, no clarification or date invented. |
+| INTAKE-001 | pass | 1.00 | 1.00 | Five expected items, 1:1 egg split as 57.5/57.5 g, breakfast preserved. |
+
+Both cases passed all applicable checks with no errors. Evidence validity is backend-derived in this diagnostic and must not be counted as model evidence. The result isolates the current production failure: removing model-authored evidence allows the same model to produce correct candidate references and quantities. A production contract decision remains open; no live model is selected and no full diagnostic batch was run.
+
 ## Findings
 
 The seven returned proposals preserved consumption intent and included an expected candidate, but the aggregate result is below the draft quality bars. Failures are concentrated in uncertainty handling and action discipline:
