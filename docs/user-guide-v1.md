@@ -31,6 +31,14 @@ Good examples in the bot's chat language:
 
 The assistant replies with what it saved and the updated daily kcal and protein totals. It keeps fat and carbohydrate values in the record even when the routine reply does not display those lines.
 
+## How the personal product cache should reduce friction
+
+The product database is intended to become a private, owner-scoped cache of products that you use repeatedly. During the pilot, we will test this with your real routine: when you confirm a product and its nutrition details, that confirmed profile can be reused for later matching messages. As the cache fills, common foods should need fewer product confirmations and logging should become faster.
+
+This is a personal cache, not a global catalog and not unrestricted model learning. A product should be reused only when the identity is clear enough. For example, a previously confirmed cottage cheese profile with a known fat percentage should not automatically answer a later generic “cottage cheese” message if the fat percentage is still unknown. A changed label or a different product should be added as a new version or clarified explicitly.
+
+The pilot hypothesis is that repeated confirmation creates a useful personal product history. The current MVP still provisions catalog profiles through a trusted setup path; automatic user-facing catalog learning and editing remain a capability to validate and implement. Until a matching profile is available, the assistant may ask for product identity, fat percentage, label values, or another material detail. Confirmations are therefore expected during initial onboarding and should decrease as the personal cache becomes more complete.
+
 ## Common practices
 
 ### Describe consumption explicitly
