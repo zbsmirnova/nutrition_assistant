@@ -115,6 +115,37 @@ class ConversationWorkerTests(unittest.TestCase):
         self.assertEqual(row["recipe_version_id"], recipe.version_id)
         self.assertEqual(str(row["edible_g"]), "250.000000")
 
+    def test_recipe_quantity_correction_updates_eaten_grams(self):
+        recipe = self.define_recipe(1)
+        text = "Съела 250 г мой суп"
+        origin = self.source(2, text=text)
+        original = self.worker.run_one(self.actor, ControlledParser(
+            self.recipe_output(text, {"kind": "candidate", "candidate_kind": "recipe", "candidate_ref": "c2"})),
+            origin=origin)
+        self.assertEqual(original["status"], "applied")
+        correction_text = "Исправь вес на 150 г"
+        correction = self.source(3, text=correction_text, reply_to_message_id=2)
+        output = {"schema_version": "1.0", "actions": [{
+            "kind": "correct_food", "action_id": "a1", "evidence": correction_text,
+            "depends_on": [], "unresolved": [], "target": {"kind": "reply"},
+            "change": {"kind": "set_quantity", "quantity": {"amount": "150", "unit": "g"}},
+        }]}
+        result = self.worker.run_one(self.actor, ControlledParser(output), origin=correction)
+        self.assertEqual(result["status"], "applied")
+        with self.engine.connect() as connection:
+            row = connection.execute(sa.select(db.food_components).select_from(
+                db.food_components.join(db.food_entry_revisions, sa.and_(
+                    db.food_components.c.user_id == db.food_entry_revisions.c.user_id,
+                    db.food_components.c.food_entry_revision_id == db.food_entry_revisions.c.id))
+                .join(db.food_entries, sa.and_(
+                    db.food_entry_revisions.c.user_id == db.food_entries.c.user_id,
+                    db.food_entry_revisions.c.food_entry_id == db.food_entries.c.id,
+                    db.food_entries.c.current_revision_id == db.food_entry_revisions.c.id))
+            ).where(db.food_components.c.user_id == self.actor)).mappings().one()
+        self.assertEqual(row["recipe_version_id"], recipe.version_id)
+        self.assertEqual(str(row["edible_g"]), "150.000000")
+        self.assertEqual(self.count(db.food_entries), 1)
+
     def test_unique_named_recipe_resolves_without_a_model_database_id(self):
         self.define_recipe(1)
         text = "Съела 250 г мой суп"

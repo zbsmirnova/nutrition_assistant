@@ -373,6 +373,15 @@ def resolve_entry_action(actor: UUID, origin: UUID, context: dict, action) -> Re
         if quantity is None:
             return Resolution("unresolved", quantity_reason)
         component = dict(components[0])
+        if component["kind"] == "recipe":
+            if quantity.unit != "g":
+                return Resolution("unresolved", "unit_basis_mismatch")
+            component["eaten_grams"] = quantity.amount
+            replacement["components"] = [component]
+            command = _entry_command(actor, origin, context, record, "correct_food_entry",
+                                     replacement=replacement, reason=action.evidence)
+            return Resolution("ready", "correction_command_prepared", command,
+                              command_position=context.get("operation_position", 0))
         current_quantity = component["quantity"]
         expected_unit = "g" if current_quantity["kind"] == "mass" else "ml"
         if quantity.unit != expected_unit:
