@@ -46,6 +46,7 @@ These IDs are stable references for specifications, work briefs, and QA. Product
 | RECIPE-003 | Product/recipe updates must not silently change historical meals. Preserve the source/version and calculation basis used by each meal. |
 | OBS-001 | Keep one current body-weight value per user/local date. Later values replace it with history, rather than creating multiple current readings or an average. |
 | OBS-002 | Keep one current steps total per user/local date. Later absolute totals replace it; only an explicit increment adds steps, with a known starting value. Missing steps and an explicitly supplied zero differ. |
+| REPORT-001 | Post-MVP reporting may provide concise weight-trend feedback by comparing the current value with available measurements from the previous 4–7 local days; exact coverage and wording are decided in M5. |
 | DAY-001 | Post-MVP W018: offer the combined completion/activity check-in according to the accepted dinner/reminder behavior. It is not an MVP requirement. |
 | DAY-002 | Post-MVP W018: support the accepted completion/activity actions and closure semantics. MVP records steps independently and has no close-day action. |
 | DAY-003 | Post-MVP W018: late food additions preserve any later-defined day-completeness state without requiring another check-in. MVP food totals update continuously. |

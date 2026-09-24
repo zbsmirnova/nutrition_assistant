@@ -1,6 +1,6 @@
 # Decisions and open questions
 
-Updated: 2026-09-23. Maintainer: lead assistant.
+Updated: 2026-09-24. Maintainer: lead assistant.
 This index is the decision log and the single register of unresolved choices. The constitution and specifications describe current requirements; records preserve the reasoning and authority behind consequential choices.
 
 ## Decision log
@@ -42,6 +42,7 @@ This index is the decision log and the single register of unresolved choices. Th
 | D033 | Product/technical | Accepted for MVP implementation | 2026-09-23 | [0033-backend-derived-parser-evidence.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0033-backend-derived-parser-evidence.md?type=file&root=%252F) — Nebius omits model-authored evidence; the backend attaches the persisted source after strict proposal validation. |
 | D034 | Technical | Accepted for MVP implementation | 2026-09-23 | [0034-mvp-telegram-processing-loop.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0034-mvp-telegram-processing-loop.md?type=file&root=%252F) — one bounded operator command composes Telegram poll, one-owner worker processing, and one queued reply delivery. |
 | D035 | Technical | Accepted for MVP pilot setup | 2026-09-24 | [0035-local-catalog-provisioning.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0035-local-catalog-provisioning.md?type=file&root=%252F) — trusted owner-scoped product provisioning supplies explicit nutrition context; the model cannot create catalog data. |
+| D036 | Product | Accepted for post-MVP reporting | 2026-09-24 | [0036-post-mvp-weight-trend-feedback.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0036-post-mvp-weight-trend-feedback.md?type=file&root=%252F) — compare current weight with available measurements from the previous 4–7 local days; exact coverage and wording remain M5 design work. |
 
 Recorded dates are dates these records were written. Earlier conversation decisions do not have independently verified timestamps; their acceptance evidence is described in each record.
 

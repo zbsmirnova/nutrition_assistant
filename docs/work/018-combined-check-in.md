@@ -3,7 +3,7 @@
 Status: planned (post-MVP).
 Milestone: M5 (post-MVP; depends on M4 observations, completed in W017).
 Owner: lead assistant, architect/developer.
-Updated: 2026-09-23.
+Updated: 2026-09-24.
 Decision: D032 supersedes the earlier MVP check-in scope in D030/D031; DAY-001–DAY-003 remain future requirements.
 
 ## Outcome and scope
@@ -11,6 +11,8 @@ Decision: D032 supersedes the earlier MVP check-in scope in D030/D031; DAY-001�
 Add one optional post-MVP daily interaction that can be triggered by a recognized dinner message or by an enabled local-time reminder. The two triggers share one durable daily-check-in identity and one suppression/closure state. The interaction may acknowledge dinner, ask for steps, and offer a user-controlled completion action. The exact closure semantics are part of this slice; MVP has no close-day command, completion button, dinner trigger, scheduled reminder, or callback transport.
 
 Food remains continuously persisted as each accepted operation arrives. Steps remain an independent daily observation through W017. A late food message updates food totals and does not create a second check-in. Unknown restaurant nutrition remains pending until the user supplies an approved portion and a separately defined nutrition source.
+
+Post-MVP reporting in this phase should also provide concise weight-trend feedback by comparing the current value with available measurements from the previous 4–7 local days. The exact minimum coverage, missing-day behavior, and wording remain part of M5 design; this does not change the MVP observation write path.
 
 ## Requirements and decisions
 
@@ -33,6 +35,7 @@ Technical decisions required before implementation:
 | W018-A04 | A late food addition updates totals and does not create another check-in; pending/unknown food remains visible and outside totals. |
 | W018-A05 | Callback actions are bound to user, local date, check-in state, and action version; stale, foreign, duplicate, and uncertain callbacks are safe. |
 | W018-A06 | Scheduler occurrence, DST, outage, retry, and uncertain-send behavior is covered by retained tests and documented operationally. |
+| W018-A07 | Post-MVP reporting provides the accepted 4–7-day weight-trend comparison with explicit behavior for insufficient or missing history and nonjudgmental wording. |
 
 ## Implementation checklist
 
