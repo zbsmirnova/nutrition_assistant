@@ -13,13 +13,15 @@ from alembic import command as alembic_command
 from alembic.config import Config
 import sqlalchemy as sa
 
+from nutrition_contracts.commands import CommandEnvelope, CommandSource, CorrectFoodEntry, FoodState, ProductComponent
+from nutrition_contracts.common import Mass
 import test_food_service as food_tests
 from nutrition_app import schema as db
 from nutrition_app.db import ROOT, engine_for, migrate
-from nutrition_app.demo import food_command, message, seed_user
+from nutrition_app.demo import DEMO_DATE, food_command, message, seed_user
 from nutrition_app.errors import Conflict
 from nutrition_app.outbox import OutboxWorker
-from nutrition_app.service import FoodService, digest
+from nutrition_app.service import FoodService, digest, operation_id_for
 from nutrition_app.telegram import TelegramClient, TelegramError, TelegramIngress, TelegramPoller, TelegramSender, link_account
 
 
@@ -185,6 +187,28 @@ TelegramPoller(engine_for(), API()).poll_once(timeout=0, fault=lambda point: os.
                          {"message_id": 1, "allow_sending_without_reply": True})
         self.assertEqual(self.row(db.outbox)["telegram_message_id"], 9001)
         self.assertEqual(self.count(db.food_entries), 1)
+
+    def test_sender_confirms_ordinary_food_correction(self):
+        added = self.service.apply(self.seed.user_id, self.command(1)).result.food_entries[0]
+        source = self.service.accept_message(self.seed.user_id, message(self.seed, 2, text="Было 80 г"))
+        correction = CommandEnvelope(
+            schema_version="1.0", user_id=self.seed.user_id, operation_id=operation_id_for(source),
+            context_revision=1, source=CommandSource(origin_update_id=source, evidence_update_ids=[source], pending_action_id=None),
+            command=CorrectFoodEntry(kind="correct_food_entry", entry_id=added.entry_id,
+                expected_revision_id=added.revision_id, reason="Было 80 г",
+                replacement=FoodState(effective_date=DEMO_DATE, time_zone="Europe/Berlin", meal="lunch",
+                    description="Synthetic product A", components=[ProductComponent(
+                        kind="product", description="Synthetic product A", product_version_id=self.seed.version_id,
+                        quantity=Mass(kind="mass", edible_g="80", gross_g=None, inedible_g=None, weight_basis="as_sold"))])),
+        )
+        self.service.apply(self.seed.user_id, correction)
+        api = FixtureAPI()
+        worker = OutboxWorker(self.engine, bot_id=101)
+        self.assertEqual(worker.dispatch_one(TelegramSender(api)), "sent")
+        self.assertEqual(worker.dispatch_one(TelegramSender(api)), "sent")
+        sends = [payload for method, payload in api.calls if method == "sendMessage"]
+        self.assertEqual(len(sends), 2)
+        self.assertTrue(sends[1]["text"].startswith("Исправлено: Synthetic product A"))
 
     def test_claiming_and_expiry_are_scoped_to_the_configured_bot(self):
         self.service.apply(self.seed.user_id, self.command())
