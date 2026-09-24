@@ -155,6 +155,14 @@ class RussianReplyTests(unittest.TestCase):
 
     def test_unsupported_outcome_is_not_presented_as_saved(self):
         payload = outcome()
-        payload["result"]["food_entries"][0]["change"] = "corrected"
+        payload["result"]["food_entries"][0]["change"] = "deleted"
+        payload["result"]["food_entries"][0]["nutrition"] = None
         with self.assertRaises(ValueError):
             render_food_result(payload)
+
+    def test_corrected_food_outcome_is_rendered_as_an_update(self):
+        payload = outcome()
+        payload["result"]["food_entries"][0]["change"] = "corrected"
+        text = render_food_result(payload)
+        self.assertTrue(text.startswith("Исправлено: мой суп"))
+        self.assertIn("Итого за 22.09.2026", text)

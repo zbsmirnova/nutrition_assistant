@@ -40,15 +40,16 @@ def render_food_result(payload: dict) -> str:
             or len(result.daily_summaries) != 1 or result.observations or result.recipe is not None):
         raise ValueError("Only M1 food outcomes are supported")
     entry, day = result.food_entries[0], result.daily_summaries[0]
-    if entry.change != "added":
-        raise ValueError("Correction rendering is not implemented")
+    if entry.change not in {"added", "corrected"}:
+        raise ValueError("This food change cannot be rendered as a saved result")
     # Plain text has no parse mode. Bound a user-supplied label independently so
     # even the longest allowed source cannot crowd out nutrition/coverage.
     name = " ".join(entry.description.split())[:160]
     if len(" ".join(entry.description.split())) > 160:
         name += "…"
     estimate_note = "\nКоличество отмечено по вашему предположению." if entry.estimated else ""
-    text = (f"Записано: {name}{estimate_note}\n{profile(entry.nutrition, nutrient)}\n\n"
+    verb = "Записано" if entry.change == "added" else "Исправлено"
+    text = (f"{verb}: {name}{estimate_note}\n{profile(entry.nutrition, nutrient)}\n\n"
             f"Итого за {day.effective_date.strftime('%d.%m.%Y')} на момент записи:\n"
             f"{profile(day.nutrition, total)}")
     if day.pending_food_actions:
