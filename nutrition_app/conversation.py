@@ -230,6 +230,22 @@ class ConversationWorker:
             ).where(db.food_entries.c.user_id == user["id"],
                     db.inbox_updates.c.telegram_account_id == source["telegram_account_id"],
                     db.inbox_updates.c.telegram_message_id == source["reply_to_message_id"])).scalar_one_or_none()
+            # A natural correction usually replies to the bot's acknowledgment,
+            # not to the original user message. The sent outbox row preserves the
+            # operation that produced that acknowledgment, so map it back to the
+            # food-entry revision without exposing database IDs to the parser.
+            if replied_entry is None:
+                replied_entry = connection.execute(sa.select(db.food_entries.c.id).select_from(
+                    db.food_entries.join(db.food_entry_revisions, sa.and_(
+                        db.food_entries.c.user_id == db.food_entry_revisions.c.user_id,
+                        db.food_entries.c.id == db.food_entry_revisions.c.food_entry_id))
+                    .join(db.outbox, sa.and_(
+                        db.food_entry_revisions.c.user_id == db.outbox.c.user_id,
+                        db.food_entry_revisions.c.applied_operation_id == db.outbox.c.operation_id))
+                ).where(db.food_entries.c.user_id == user["id"],
+                        db.outbox.c.telegram_account_id == source["telegram_account_id"],
+                        db.outbox.c.telegram_message_id == source["reply_to_message_id"])
+                .limit(1)).scalar_one_or_none()
             for record in entry_records:
                 if record["entry_id"] == (None if replied_entry is None else str(replied_entry)):
                     context["reply_entry_ref"] = record["ref"]
