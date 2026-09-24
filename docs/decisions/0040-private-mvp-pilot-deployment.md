@@ -61,10 +61,12 @@ and feedback capture remain outside MVP.
 
 ## Remaining choice
 
-The product owner selected Hetzner Cloud CX23 in Nürnberg (`nbg1`), Germany:
-2 vCPU, 4 GB RAM, and 40 GB local storage. The current list price is about
-€5.49/month before VAT; backups and any separate storage are additional.
-Actual deployment requires a separate authorized operation after W024 is
-implemented, tested, and the secrets are provided through the host's secret
-mechanism. Backup retention, restore target, and final availability objective
-remain open under Q10/Q11.
+The product owner selected Hetzner Cloud in Germany. CX23 is the preferred
+shape (2 vCPU, 4 GB RAM, 40 GB local storage), but it is currently unavailable
+in the console. Provision the first currently available x86/AMD plan with at
+least 2 vCPU and 4 GB RAM; CPX22 (2 vCPU, 4 GB, 80 GB) or CX33 (4 vCPU, 8 GB,
+80 GB) are acceptable fallbacks if offered. Do not choose an ARM CAX plan
+without a separate compatibility check. Actual deployment requires a separate
+authorized operation after W024 is implemented, tested, and the secrets are
+provided through the host's secret mechanism. Backup retention, restore target,
+and final availability objective remain open under Q10/Q11.

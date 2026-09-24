@@ -45,7 +45,9 @@ scaling, and unknown-restaurant nutrition sourcing.
 
 ## Required user input before deployment
 
-The product owner selected a Hetzner Cloud CX23 in Nürnberg (`nbg1`). Before
+The product owner selected Hetzner Cloud in Germany. CX23 is preferred but
+currently unavailable; provision the first available x86/AMD plan with at
+least 2 vCPU and 4 GB RAM (CPX22 or CX33 are acceptable fallbacks). Before
 deployment, the host must be provisioned and the product owner must authorize
 the deployment operation. Credentials are entered directly into the host's
 secret store and must not be sent in chat or committed.
