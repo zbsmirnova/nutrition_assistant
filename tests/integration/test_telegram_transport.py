@@ -181,6 +181,8 @@ TelegramPoller(engine_for(), API()).poll_once(timeout=0, fault=lambda point: os.
         sends = [payload for method, payload in api.calls if method == "sendMessage"]
         self.assertEqual(len(sends), 1)
         self.assertIn("Ккал: 250", sends[0]["text"])
+        self.assertEqual(sends[0]["reply_parameters"],
+                         {"message_id": 1, "allow_sending_without_reply": True})
         self.assertEqual(self.row(db.outbox)["telegram_message_id"], 9001)
         self.assertEqual(self.count(db.food_entries), 1)
 

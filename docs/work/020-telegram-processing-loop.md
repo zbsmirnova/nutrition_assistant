@@ -8,7 +8,7 @@ Decision: D034, using W002 transport, W003 worker, W004 Nebius adapter, and D033
 
 ## Outcome and scope
 
-Add one explicit `telegram-process` command that polls one bounded batch, processes the next eligible message for one supplied owner through Nebius, and dispatches one queued response. Keep polling, interpretation, durable job claims, retries, and outbox delivery as their existing separate components. Do not add a daemon, scheduler, callback keyboard, close-day command, or multi-user dispatcher.
+Add one explicit `telegram-process` command that polls one bounded batch, processes the next eligible message for one supplied owner through Nebius, and dispatches one queued response. Keep polling, interpretation, durable job claims, retries, and outbox delivery as their existing separate components. When the source message is available, the Telegram response is sent as a reply to that message so delayed processing remains attributable. Do not add a daemon, scheduler, callback keyboard, close-day command, or multi-user dispatcher.
 
 ## Acceptance criteria
 
@@ -26,8 +26,9 @@ Add one explicit `telegram-process` command that polls one bounded batch, proces
 - [x] Keep output redacted to operational status fields.
 - [x] Add the D034 decision and README operator instructions.
 - [x] Run focused Nebius/CLI tests and the complete offline suite.
+- [x] Preserve source-message association on Telegram acknowledgments through `reply_parameters`.
 
-Developer verification: focused Nebius/CLI tests passed, followed by 115 offline tests, 97 PostgreSQL integration tests, and 32 retained QA tests on 2026-09-24. A user-run pilot verified bot identity and private-message ingestion (`accepted: 1`). After the runtime prompt was strengthened with an explicit undated-source null-date example, the live smoke passed; a message without a matching catalog item was held as `product_unresolved` with no food mutation. After W021 provisioned a known product, a later message completed with `status: applied` and `delivery: sent`. The bounded worker now also resolves W017 weight and steps proposals into trusted observation commands; the first live weight attempt before that follow-up returned `action_not_implemented`, so a new live observation run remains pending. The bot response reported one older pending action from the unmatched message; clarification delivery for that branch remains outside this slice. No independent QA review was run.
+Developer verification: focused Nebius/CLI tests passed, followed by 116 offline tests, 97 PostgreSQL integration tests, and 32 retained QA tests on 2026-09-24. A user-run pilot verified bot identity and private-message ingestion (`accepted: 1`). After the runtime prompt was strengthened with an explicit undated-source null-date example, the live smoke passed; a message without a matching catalog item was held as `product_unresolved` with no food mutation. After W021 provisioned a known product, a later message completed with `status: applied` and `delivery: sent`. The bounded worker now also resolves W017 weight and steps proposals into trusted observation commands; the first live weight attempt before that follow-up returned `action_not_implemented`, so a new live observation run remains pending. Source-linked Telegram replies are now verified by unit and PostgreSQL transport tests; the live pilot messages that exposed the delayed-reply ambiguity were processed in source order, but their acknowledgments appeared after newer messages because replies were previously ordinary chat messages. The bot response reported one older pending action from the unmatched message; clarification delivery for that branch remains outside this slice. No independent QA review was run.
 
 ## Deferred acknowledgment copy improvements
 

@@ -77,6 +77,17 @@ class TelegramProtocolTests(unittest.TestCase):
         self.assertIn("22.09.2026", payload["text"])
         self.assertIn("22,5", payload["text"])
 
+    def test_sender_replies_to_the_triggering_message_when_available(self):
+        calls = []
+        def request(method, payload, timeout):
+            calls.append(payload)
+            return 200, {"ok": True, "result": {"message_id": 7, "chat": {"id": 789}}}
+        item = Delivery(id=uuid4(), claim_token=uuid4(), user_id=uuid4(), private_chat_id=789,
+                        payload=outcome(), bot_id=101, reply_to_message_id=42)
+        TelegramSender(TelegramClient("101:synthetic", 101, request=request)).send(item)
+        self.assertEqual(calls[0]["reply_parameters"],
+                         {"message_id": 42, "allow_sending_without_reply": True})
+
     def test_cross_bot_send_is_rejected_before_api_call(self):
         client = TelegramClient("101:synthetic", 101, request=lambda *args: self.fail("must not send"))
         with self.assertRaises(DeliveryRejected):

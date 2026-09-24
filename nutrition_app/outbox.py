@@ -33,6 +33,7 @@ class Delivery:
     private_chat_id: int
     payload: dict
     bot_id: int
+    reply_to_message_id: int | None = None
 
 
 class Sender(Protocol):
@@ -72,8 +73,15 @@ class OutboxWorker:
             account = connection.execute(sa.select(db.telegram_accounts).where(
                 db.telegram_accounts.c.id == row["telegram_account_id"], db.telegram_accounts.c.user_id == row["user_id"],
             )).mappings().one()
+            reply_to_message_id = connection.execute(sa.select(db.inbox_updates.c.telegram_message_id).select_from(
+                db.prepared_operations.join(db.inbox_updates, sa.and_(
+                    db.inbox_updates.c.user_id == db.prepared_operations.c.user_id,
+                    db.inbox_updates.c.id == db.prepared_operations.c.origin_update_id,
+                ))).where(db.prepared_operations.c.user_id == row["user_id"],
+                           db.prepared_operations.c.id == row["operation_id"])).scalar_one_or_none()
             delivery = Delivery(id=row["id"], claim_token=token, user_id=row["user_id"],
-                                private_chat_id=account["private_chat_id"], payload=row["payload"], bot_id=account["bot_id"])
+                                private_chat_id=account["private_chat_id"], payload=row["payload"], bot_id=account["bot_id"],
+                                reply_to_message_id=reply_to_message_id)
         return delivery
 
     def _finish(self, delivery: Delivery, status: str, *, delay: int = 0, message_id: int | None = None) -> bool:

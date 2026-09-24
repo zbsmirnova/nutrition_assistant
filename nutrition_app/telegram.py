@@ -234,8 +234,12 @@ class TelegramSender:
         except (ValidationError, ValueError, TypeError):
             raise DeliveryRejected("Unsupported response payload") from None
         try:
-            result = self.api.call("sendMessage", {"chat_id": delivery.private_chat_id, "text": text,
-                "link_preview_options": {"is_disabled": True}})
+            payload = {"chat_id": delivery.private_chat_id, "text": text,
+                       "link_preview_options": {"is_disabled": True}}
+            if delivery.reply_to_message_id is not None:
+                payload["reply_parameters"] = {"message_id": delivery.reply_to_message_id,
+                                                "allow_sending_without_reply": True}
+            result = self.api.call("sendMessage", payload)
         except TelegramRejected as exc:
             if exc.error_code == 429:
                 # A valid 429 proves rejection even if retry_after was omitted.
