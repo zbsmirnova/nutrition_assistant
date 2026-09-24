@@ -1,6 +1,6 @@
 # W025 developer verification — external food catalog fallback
 
-Revision: working-tree snapshot after the W025 implementation (before commit).
+Revision: commits `5becd00` plus the follow-up clarification-context fix (before its local commit).
 Date: 2026-09-24. Reviewer: lead assistant (developer verification).
 
 The adapter tests cover injected Open Food Facts and USDA nutrient mapping,
@@ -11,6 +11,9 @@ separate `product_confirmations` row, deterministic food persistence after
 selection, and reuse of the confirmed local version without a second provider
 call. Migration/model drift, the full integration suite, the retained QA suite,
 the offline suite, dependency checks, and whitespace checks passed.
+
+The follow-up resolver-context fix was rerun through the full offline suite and
+the external-cache plus recipe-clarification PostgreSQL checks; all passed.
 
 Executed evidence:
 

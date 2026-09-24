@@ -8,8 +8,8 @@ with the normalized food term. The provider result is an untrusted candidate,
 never a food entry and never an authorization to use nutrition values.
 
 The worker stores the provider snapshot and asks the user to choose a candidate.
-It then asks for the exact eaten weight or an explicit user-approved estimate,
-using the existing MVP quantity rule. Only the selected candidate and the
+It applies the existing MVP quantity rule: an approximate or missing portion
+gets an exact-weight or explicit user-approved-estimate question. Only the selected candidate and the
 approved portion can enter a daily total. The source snapshot is immutable;
 the user's selection is recorded in a separate confirmation row. A confirmed
 version becomes part of the user's local catalog and later messages use it

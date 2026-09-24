@@ -72,7 +72,7 @@ class ConversationWorker:
             if choices:
                 return ("Нашёл варианты продукта. Выберите подходящий номер:\n" +
                         "\n".join(choices) +
-                        "\nПосле выбора попрошу подтвердить вес порции.")
+                        "\nЕсли вес в исходном сообщении приблизительный, отдельно уточню его.")
         if reason in {"quantity_unresolved", "quantity_not_exact", "weight_basis_unresolved"}:
             ref = next(iter(pending_questions), None)
             recipe = next((item for item in context.get("recipes", ()) if item["ref"] == ref), None)
@@ -467,6 +467,9 @@ class ConversationWorker:
             self.service._user(connection, claim.actor)
             if self._live_claim(connection, claim) is None:
                 return False
+            if resolution.pending_context is not None:
+                claim.context.clear()
+                claim.context.update(resolution.pending_context)
             if resolution.command is not None:
                 position = resolution.command_position
                 if position is None:
@@ -483,7 +486,7 @@ class ConversationWorker:
                 claim.context["pending_position"] = resolution.pending_position or 0
                 claim.context["pending_food_date"] = (None if resolution.pending_food_date is None
                                                         else resolution.pending_food_date.isoformat())
-            values = {"proposal": proposal,
+            values = {"proposal": (resolution.pending_proposal or proposal),
                       "pending_questions": resolution.pending_questions,
                       "context": claim.context}
             # _set normally clears the date; use a separate value assignment below.

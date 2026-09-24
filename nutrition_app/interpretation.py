@@ -24,7 +24,7 @@ from .service import digest, operation_id_for
 
 
 CONTEXT_VERSION = "single-food-context-v7"
-RESOLVER_VERSION = "single-food-resolver-v11"
+RESOLVER_VERSION = "single-food-resolver-v12"
 MAX_CANDIDATES = 64
 
 
@@ -120,6 +120,8 @@ class Resolution:
     command: CommandEnvelope | None = None
     pending_food_date: date | None = None
     pending_questions: dict[str, dict[str, str]] | None = None
+    pending_proposal: dict | None = None
+    pending_context: dict | None = None
     pending_position: int | None = None
     command_position: int | None = None
 
@@ -584,6 +586,8 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
         merged["pending_action_id"] = UUID(pending["job_id"])
         merged["quantity_clarification_answered"] = bool(quantity_answers or estimate_answers)
         merged["quantity_provenance"] = "user_approved_estimate" if estimate_answers else "measured"
+        if selections:
+            merged["pending_proposal"] = original.model_dump(mode="json")
         if quantity_answers or estimate_answers:
             merged["clarification_text"] = answer_text
             if estimate_answers:
@@ -611,7 +615,10 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
             }.get(reason)
             if question_kind is not None:
                 questions = {pending_ref: {"q1": question_kind}}
-        return Resolution("unresolved", reason, pending_food_date=target_date, pending_questions=questions)
+        return Resolution("unresolved", reason, pending_food_date=target_date,
+                          pending_questions=questions,
+                          pending_proposal=context.get("pending_proposal"),
+                          pending_context=(context if context.get("pending_proposal") else None))
 
     if action.depends_on or action.unresolved:
         return defer("proposal_unresolved")

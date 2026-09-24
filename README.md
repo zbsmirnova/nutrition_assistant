@@ -67,8 +67,8 @@ cold-start fallback. Open Food Facts is queried without a secret; USDA FoodData
 Central is added when `USDA_FDC_API_KEY` is present. Set a descriptive
 `NUTRITION_FOOD_USER_AGENT` for Open Food Facts. The provider result is cached
 as an unconfirmed source snapshot, shown as numbered choices, and never enters
-the diary until you select it and confirm the eaten weight (or approve an
-estimate). Later messages reuse the confirmed local version. Provider outages
+the diary until you select it; approximate or missing weights still require an
+exact value or approved estimate. Later messages reuse the confirmed local version. Provider outages
 retry; empty results and unknown restaurant nutrition remain unresolved. See
 [D043](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0043-external-food-catalog-fallback.md?type=file&root=%252F) and [W025](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/025-external-food-catalog-fallback.md?type=file&root=%252F).
 

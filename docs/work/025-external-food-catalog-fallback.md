@@ -34,7 +34,7 @@ pending.
 | W025-A01 | Local candidates resolve before any external call; the external query contains only the bounded food term selected by the interpretation. |
 | W025-A02 | Injected Open Food Facts and USDA responses map only usable per-100-g nutrition and preserve provider/external identifiers, basis, and license. |
 | W025-A03 | A provider result creates no food entry and remains hidden from ordinary catalog context until the user selects it. |
-| W025-A04 | Selection is durable, resumes the original operation, records confirmation separately from the immutable source snapshot, and then enforces the existing exact/approved portion rule. |
+| W025-A04 | Selection is durable, resumes the original operation, records confirmation separately from the immutable source snapshot, and enforces the existing exact/approved portion rule for approximate or missing weights. |
 | W025-A05 | A confirmed version is reused locally; provider outage is retryable; empty or unsuitable results remain unresolved without changing totals. |
 | W025-A06 | Source adapter unit tests, PostgreSQL migration/worker tests, offline regression tests, and `git diff --check` pass. |
 
