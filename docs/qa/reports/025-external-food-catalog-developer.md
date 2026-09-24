@@ -27,7 +27,9 @@ Executed evidence:
 - `pip check`: no broken requirements.
 - `git diff --check`: clean after the final test-file formatting fix.
 
-No independent QA review was run. No live Open Food Facts or USDA request was
-made, so provider availability, live payload drift, quotas, and production
-Russian search quality remain unverified. Restaurant nutrition, barcode/photo
+No independent QA review was run. A user-run live Open Food Facts search for
+`творог 2,5%` returned HTTP 503 on 2026-09-24; the worker consequently kept
+the message retryable as `food_source_unavailable` without a food mutation.
+Provider availability, live payload drift, quotas, and production Russian
+search quality therefore remain unverified. Restaurant nutrition, barcode/photo
 flows, and background synchronization remain outside W025.
