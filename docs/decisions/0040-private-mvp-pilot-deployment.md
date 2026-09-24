@@ -1,8 +1,8 @@
 # D040 — Private single-host MVP pilot deployment
 
-Status: Accepted for MVP topology; provider not selected
+Status: Accepted for MVP topology and initial provider choice
 Recorded: 2026-09-24
-Authority: product-owner choice of always-on cloud; hosting provider and spending constraints remain open
+Authority: product-owner choice of always-on cloud, provider, and pilot spending constraint; backup/data-lifecycle details remain open
 Related questions: Q10, Q11
 
 ## Decision proposal
@@ -61,12 +61,15 @@ and feedback capture remain outside MVP.
 
 ## Remaining choice
 
-The product owner selected Hetzner Cloud in Germany. CX23 is the preferred
-shape (2 vCPU, 4 GB RAM, 40 GB local storage), but it is currently unavailable
-in the console. Provision the first currently available x86/AMD plan with at
-least 2 vCPU and 4 GB RAM; CPX22 (2 vCPU, 4 GB, 80 GB) or CX33 (4 vCPU, 8 GB,
-80 GB) are acceptable fallbacks if offered. Do not choose an ARM CAX plan
-without a separate compatibility check. Actual deployment requires a separate
-authorized operation after W024 is implemented, tested, and the secrets are
-provided through the host's secret mechanism. Backup retention, restore target,
-and final availability objective remain open under Q10/Q11.
+The product owner selected a Netcup VPS nano G11.5s in the x86 configuration,
+with 2 vCore, 2 GB RAM, 60 GB SSD, public IPv4/IPv6 connectivity, and a
+six-month term at the displayed monthly rate. This is an explicit reduced
+resource choice for the private single-user pilot, not a general production
+capacity target. The worker and PostgreSQL containers therefore carry memory
+limits, the host needs swap, and no local model or additional service may be
+added. Upgrade to at least 4 GB RAM remains the recovery path if memory
+pressure or restart evidence appears. Cloud vLAN and extra IPv4 are not
+required for the one-host topology. Actual deployment requires W024
+verification and secrets entered directly into the host's secret mechanism.
+Backup retention, restore target, and final availability objective remain open
+under Q10/Q11.

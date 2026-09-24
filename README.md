@@ -39,6 +39,22 @@ To stop local PostgreSQL while preserving its volume:
 docker compose -f compose.dev.yml stop db
 ~~~
 
+## Private pilot deployment
+
+W024 now provides the production image in [Dockerfile.production](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/Dockerfile.production?type=file&root=%252F) and the one-worker Compose topology in [compose.production.yml](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/compose.production.yml?type=file&root=%252F). It is intended for the selected 2 GB single-user VPS: PostgreSQL and the worker have memory limits, and the host needs swap. The deployment uses long polling, so it exposes no application or PostgreSQL port publicly.
+
+On the host, install Docker Compose, clone the exact reviewed revision, create an untracked `.env` from [.env.example](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/.env.example?type=file&root=%252F), and enter the secrets directly there. Set `POSTGRES_USER`, a long random alphanumeric `POSTGRES_PASSWORD`, `POSTGRES_DB`, `NUTRITION_INTERNAL_USER_ID`, `NEBIUS_API_KEY`, `NUTRITION_LLM_MODEL`, `NUTRITION_TELEGRAM_TOKEN`, and `NUTRITION_TELEGRAM_BOT_ID`. Do not paste secret values into chat, commits, or ordinary logs.
+
+Start and inspect the stack with:
+
+~~~sh
+docker compose -f compose.production.yml --env-file .env up -d --build
+docker compose -f compose.production.yml ps
+docker compose -f compose.production.yml logs --tail=100 worker
+~~~
+
+The `migrate` service runs to completion before the worker starts. To stop the pilot while preserving PostgreSQL data, use `docker compose -f compose.production.yml stop`; do not remove the `nutrition_pgdata` volume. Backup and restore rehearsal instructions remain part of W024 before calling the pilot release ready.
+
 ## Telegram transport development
 
 Apply the current migration head before using these commands (`migrate` handles this; the current head includes daily observations). No new runtime dependencies are needed. The API adapter uses normal HTTPS certificate verification; if your environment uses a custom CA, configure its trusted CA through Python's standard SSL_CERT_FILE setting.

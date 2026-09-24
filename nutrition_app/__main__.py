@@ -3,6 +3,7 @@
 import argparse
 from datetime import date
 import json
+import logging
 import os
 from pathlib import Path
 from uuid import UUID
@@ -25,6 +26,7 @@ from .outbox import FakeSender, OutboxWorker
 from .service import FoodService
 from . import schema as db
 from .telegram import TelegramClient, TelegramError, TelegramPoller, TelegramSender, link_account
+from .runner import PilotRunner
 
 
 def main():
@@ -87,6 +89,9 @@ def main():
     process = sub.add_parser("telegram-process", help="Poll, process one owner's next message, and send one reply")
     process.add_argument("--user", type=UUID, required=True)
     process.add_argument("--timeout", type=int, default=25)
+    worker = sub.add_parser("worker", help="Run the supervised private Telegram pilot worker")
+    worker.add_argument("--user", type=UUID, required=True)
+    worker.add_argument("--timeout", type=int, default=25)
     args = parser.parse_args()
     engine = None
     try:
@@ -96,7 +101,7 @@ def main():
             return
         # Check provider configuration before creating a database engine or job.
         live_parser = (NebiusParser(NebiusConfig.from_environment())
-                       if args.action in {"conversation-nebius", "telegram-process"} else None)
+                       if args.action in {"conversation-nebius", "telegram-process", "worker"} else None)
         engine = engine_for()
         if args.action == "migrate":
             migrate(engine)
@@ -163,6 +168,18 @@ def main():
         elif args.action == "telegram-link":
             account = link_account(engine, args.user, args.bot_id, args.telegram_user_id, args.chat_id)
             output = {"account_id": str(account)}
+        elif args.action == "worker":
+            try:
+                bot_id = int(os.environ.get("NUTRITION_TELEGRAM_BOT_ID", ""))
+            except ValueError:
+                raise TelegramError("Set NUTRITION_TELEGRAM_BOT_ID locally") from None
+            logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+            runner = PilotRunner(engine, actor=args.user, bot_id=bot_id,
+                                 token=os.environ.get("NUTRITION_TELEGRAM_TOKEN", ""),
+                                 poll_timeout=args.timeout)
+            runner.install_signal_handlers()
+            runner.run()
+            output = {"status": "stopped"}
         elif args.action in {"telegram-poll", "telegram-send", "telegram-process"}:
             try:
                 bot_id = int(os.environ.get("NUTRITION_TELEGRAM_BOT_ID", ""))

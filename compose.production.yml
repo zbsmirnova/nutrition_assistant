@@ -1,0 +1,57 @@
+services:
+  db:
+    image: postgres:17@sha256:f4c66b820c6f974249089d3d16d86a3698eae11e8746eb6644b2271031e91232
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB}
+    volumes:
+      - nutrition_pgdata:/var/lib/postgresql/data
+    mem_limit: 768m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+    restart: "no"
+    environment:
+      NUTRITION_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    command: ["migrate"]
+    depends_on:
+      db:
+        condition: service_healthy
+    mem_limit: 384m
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 30s
+    environment:
+      NUTRITION_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      NEBIUS_API_KEY: ${NEBIUS_API_KEY:?set NEBIUS_API_KEY}
+      NUTRITION_LLM_MODEL: ${NUTRITION_LLM_MODEL:?set NUTRITION_LLM_MODEL}
+      NUTRITION_TELEGRAM_TOKEN: ${NUTRITION_TELEGRAM_TOKEN:?set NUTRITION_TELEGRAM_TOKEN}
+      NUTRITION_TELEGRAM_BOT_ID: ${NUTRITION_TELEGRAM_BOT_ID:?set NUTRITION_TELEGRAM_BOT_ID}
+      NUTRITION_FOOD_USER_AGENT: ${NUTRITION_FOOD_USER_AGENT:-NutritionAssistant/1.0}
+    command: ["worker", "--user", "${NUTRITION_INTERNAL_USER_ID:?set NUTRITION_INTERNAL_USER_ID}"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    mem_limit: 768m
+    healthcheck:
+      test: ["CMD-SHELL", "kill -0 1"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  nutrition_pgdata:

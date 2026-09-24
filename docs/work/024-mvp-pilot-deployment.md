@@ -1,9 +1,9 @@
 # W024 — Always-on MVP pilot runner and deployment
 
-Status: planned.  
+Status: in progress.
 Milestone: M6 personal release readiness, first usable MVP pilot.  
 Owner: lead assistant, architect/developer.  
-Decision: proposed D040; Q10/Q11 constraints remain open.
+Decision: D040; Q10/Q11 constraints remain open.
 
 ## Goal
 
@@ -45,9 +45,10 @@ scaling, and unknown-restaurant nutrition sourcing.
 
 ## Required user input before deployment
 
-The product owner selected Hetzner Cloud in Germany. CX23 is preferred but
-currently unavailable; provision the first available x86/AMD plan with at
-least 2 vCPU and 4 GB RAM (CPX22 or CX33 are acceptable fallbacks). Before
-deployment, the host must be provisioned and the product owner must authorize
-the deployment operation. Credentials are entered directly into the host's
-secret store and must not be sent in chat or committed.
+The product owner selected a Netcup VPS nano G11.5s: 2 vCore x86, 2 GB RAM,
+60 GB SSD, public IPv4/IPv6 connectivity, and a six-month term. This is an
+explicit single-user pilot constraint; the production image limits the worker
+and database for the small host, and the host must use swap. Extra IPv4 and
+Cloud vLAN are not required. Upgrade to 4 GB RAM remains the recovery path if
+the pilot shows memory pressure. Credentials are entered directly into the
+host's secret store and must not be sent in chat or committed.
