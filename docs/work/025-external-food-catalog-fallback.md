@@ -21,6 +21,9 @@ and approves the portion before the normal deterministic food command runs.
 - Numbered candidate clarification followed by the existing exact-weight or
   user-approved-estimate clarification.
 - Reuse of a confirmed local version on later messages.
+- A model proposal that marks only the food identity as unresolved may still
+  enter the external lookup path when its quantity, date, and basis are
+  otherwise complete. Other unresolved fields remain pending.
 
 Out of scope: restaurants and unverified nutrition averages, barcode/photo
 flows, bulk imports, background synchronization, aliases, and recipes that
@@ -37,6 +40,7 @@ pending.
 | W025-A04 | Selection is durable, resumes the original operation, records confirmation separately from the immutable source snapshot, and enforces the existing exact/approved portion rule for approximate or missing weights. |
 | W025-A05 | A confirmed version is reused locally; provider outage is retryable; empty or unsuitable results remain unresolved without changing totals. |
 | W025-A06 | Source adapter unit tests, PostgreSQL migration/worker tests, offline regression tests, and `git diff --check` pass. |
+| W025-A07 | A name-based proposal with only an identity unresolved searches the configured external catalog; unresolved quantity, date, basis, or dependencies do not bypass backend guards. |
 
 ## Verification
 

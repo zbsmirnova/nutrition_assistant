@@ -539,6 +539,25 @@ class ConversationWorker:
                    for component in command.command.food.components
                    if hasattr(component, "product_version_id"))
 
+    @staticmethod
+    def _external_identity_fallback(output, resolution):
+        """Allow an unknown named food to reach the catalog fallback.
+
+        The production prompt deliberately marks an identity that is absent
+        from the supplied local catalog as unresolved. That is a safe model
+        proposal, but it must not prevent the worker from trying the explicitly
+        configured external catalog. Only an otherwise single, name-based
+        add-food action with an identity-only unresolved path is eligible;
+        unresolved quantity, date, basis, or dependencies remain pending.
+        """
+        if resolution.reason != "proposal_unresolved" or output is None or len(output.actions) != 1:
+            return False
+        action = output.actions[0]
+        if not isinstance(action, AddFood) or action.food.kind != "name" or action.depends_on:
+            return False
+        paths = {item.path for item in action.unresolved}
+        return bool(paths) and paths <= {"food", "food.name", "food.identity"}
+
     def _failure(self, claim, reason, *, retryable, require_claim=True, retry_after=None):
         with self.engine.begin() as connection:
             self.service._user(connection, claim.actor)
@@ -619,7 +638,9 @@ class ConversationWorker:
                     proposal = output.model_dump(mode="json")
                 except (ValidationError, ValueError, TypeError, OverflowError):
                     resolution = Resolution("rejected", "invalid_parser_proposal")
-                if (resolution.reason == "product_unresolved" and output is not None and self.food_lookup is not None and
+                if ((resolution.reason == "product_unresolved" or
+                     self._external_identity_fallback(output, resolution)) and
+                        output is not None and self.food_lookup is not None and
                         len(output.actions) == 1 and isinstance(output.actions[0], AddFood) and
                         output.actions[0].food.kind == "name"):
                     try:

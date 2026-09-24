@@ -158,6 +158,35 @@ class ConversationWorkerTests(unittest.TestCase):
         self.assertEqual(worker.run_one(self.actor, ControlledParser(local_output), origin=second)["status"], "applied")
         self.assertEqual(self.count(db.food_entries), 2)
 
+    def test_identity_only_unresolved_named_food_uses_external_fallback(self):
+        text = "Съела 80 гр творога 2,5%"
+        origin = self.source(1, text=text)
+        output = {"schema_version": "1.0", "actions": [{
+            "kind": "add_food", "action_id": "a1", "evidence": text,
+            "depends_on": [], "unresolved": [{"path": "food", "reason": "ambiguous"}],
+            "food": {"kind": "name", "name": "творог 2,5%"},
+            "quantity": {"amount": "80", "unit": "g"}, "weight_basis": "as_sold",
+            "date_hint": {"text": None}, "meal": "unspecified"}]}
+
+        class Lookup:
+            def __init__(self):
+                self.queries = []
+
+            def search(self, query, *, limit=5):
+                self.queries.append((query, limit))
+                return [ExternalFoodCandidate(
+                    "fixture", "quark-25", "Творог 2,5%", "121", "17", "2.5", "3.0",
+                    food_kind="dairy", declared_fat_percent="2.5",
+                    source_name="Творог 2,5% (fixture)", license="fixture")]
+
+        lookup = Lookup()
+        result = ConversationWorker(self.engine, food_lookup=lookup).run_one(
+            self.actor, ControlledParser(output), origin=origin)
+        self.assertEqual((result["status"], result["reason"]),
+                         ("unresolved", "external_product_selection"))
+        self.assertEqual(lookup.queries, [("творог 2,5%", 5)])
+        self.assertIn("Творог 2,5%", result["clarification"])
+
     def test_saved_recipe_is_an_opaque_candidate_and_logs_eaten_grams(self):
         recipe = self.define_recipe(1)
         text = "Съела 250 г мой суп"
