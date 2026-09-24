@@ -37,7 +37,29 @@ The product database is intended to become a private, owner-scoped cache of prod
 
 This is a personal cache, not a global catalog and not unrestricted model learning. A product should be reused only when the identity is clear enough. For example, a previously confirmed cottage cheese profile with a known fat percentage should not automatically answer a later generic “cottage cheese” message if the fat percentage is still unknown. A changed label or a different product should be added as a new version or clarified explicitly.
 
-The pilot hypothesis is that repeated confirmation creates a useful personal product history. The current MVP still provisions catalog profiles through a trusted setup path; automatic user-facing catalog learning and editing remain a capability to validate and implement. Until a matching profile is available, the assistant may ask for product identity, fat percentage, label values, or another material detail. Confirmations are therefore expected during initial onboarding and should decrease as the personal cache becomes more complete.
+The pilot hypothesis is that repeated confirmation creates a useful personal product history. For an unmatched packaged or generic food, the pilot may offer external catalog candidates; you select the right candidate and confirm the portion before it can be used. The selected profile then becomes part of your local cache. This flow does not cover restaurant nutrition, and automatic editing of an existing profile remains a separate capability to validate. Until a matching profile is available, the assistant may ask for product identity, fat percentage, label values, or another material detail. Confirmations are therefore expected during initial onboarding and should decrease as the personal cache becomes more complete.
+
+## Expected user strategy: hybrid tracking
+
+The intended practice is to combine measured portions with practical estimates. The goal is useful consistency, not perfect measurement of every meal. Use the 20/80 principle: spend precision where it changes the result most, and keep logging easy enough to continue.
+
+### Phase 1: learn the flow and calibrate your eye
+
+At home, weigh food often enough to build familiar visual references. Learn what 100 g of baked chicken breast looks like, what 100 g of cooked pasta looks like, and how much vegetable salad fits in your usual plate. Pay special attention to oils, dressings, sauces, nuts, cheese, and other calorie-dense additions that are easy to underestimate.
+
+When eating at a restaurant or visiting someone, do not weigh food if that feels uncomfortable. Record the dish and a reasonable portion estimate instead. The estimate should remain visibly approximate, with the likely direction or size of the error left open where useful. A rough, honest entry is more useful than skipping the meal entirely.
+
+### Phase 2: use stable personal references
+
+Once you are confident, stop weighing foods whose portions are reliably similar. For example, an apple of your usual variety may almost always weigh about 120 g; a difference of roughly 20 g has very little effect on its calories. If you routinely add one teaspoon of oil to a salad, record that repeated amount as a known personal habit.
+
+Most vegetables without dressing are low in calories and can usually be logged without weighing. Keep measuring or estimating the ingredients that materially change the total, especially oils, sauces, spreads, sugar, and other concentrated foods. If a portion is unusually large, small, or prepared differently, return to weighing or make a new explicit estimate.
+
+### Later phases
+
+The vacation phase and additional confidence levels will be added after the first two phases are tested in real use.
+
+The product should support this strategy by keeping confirmed personal products and recurring portion references easy to reuse, while preserving visible uncertainty for estimates. The current MVP still keeps unknown restaurant nutrition pending; accepting an explicit user-approved estimate for an unknown restaurant dish is a future behavior to validate and implement.
 
 ## Common practices
 
