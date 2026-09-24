@@ -15,7 +15,7 @@ from nutrition_contracts.common import TimeZoneName
 from .db import engine_for, migrate
 from .conversation import ConversationWorker
 from .conversation_demo import run_conversation_demo
-from .catalog import create_product
+from .catalog import create_product, create_recipe
 from .interpretation import SyntheticParser
 from .nebius import NebiusConfig, NebiusParser, run_synthetic_smoke
 from .demo import run_demo
@@ -66,6 +66,15 @@ def main():
     product.add_argument("--weight-basis", choices=["raw", "cooked", "as_sold"], default="as_sold")
     product.add_argument("--food-kind", choices=["general", "dairy"], default="general")
     product.add_argument("--declared-fat-percent")
+    recipe = sub.add_parser("recipe-create", help="Create one owner-scoped recipe profile from supplied nutrition values")
+    recipe.add_argument("--user", type=UUID, required=True)
+    recipe.add_argument("--name", required=True)
+    recipe.add_argument("--kcal")
+    recipe.add_argument("--protein-g")
+    recipe.add_argument("--fat-g")
+    recipe.add_argument("--carbs-g")
+    recipe.add_argument("--instructions")
+    recipe.add_argument("--ingredients-json", help="JSON array of {name, amount, unit, weight_basis?} snapshots")
     link = sub.add_parser("telegram-link", help="Explicitly link a private Telegram account to an existing owner")
     link.add_argument("--user", type=UUID, required=True)
     link.add_argument("--bot-id", type=int, required=True)
@@ -139,6 +148,17 @@ def main():
                                                "fat_g": args.fat_g, "carbs_g": args.carbs_g},
                                     nutrition_basis=args.nutrition_basis, weight_basis=args.weight_basis,
                                     food_kind=args.food_kind, declared_fat_percent=args.declared_fat_percent)
+        elif args.action == "recipe-create":
+            ingredients = None
+            if args.ingredients_json is not None:
+                try:
+                    ingredients = json.loads(args.ingredients_json)
+                except (TypeError, json.JSONDecodeError):
+                    raise ApplicationError("--ingredients-json must be valid JSON") from None
+            output = create_recipe(engine, args.user, name=args.name,
+                                   nutrition={"kcal": args.kcal, "protein_g": args.protein_g,
+                                              "fat_g": args.fat_g, "carbs_g": args.carbs_g},
+                                   ingredients=ingredients, cooking_instructions=args.instructions)
         elif args.action == "telegram-link":
             account = link_account(engine, args.user, args.bot_id, args.telegram_user_id, args.chat_id)
             output = {"account_id": str(account)}

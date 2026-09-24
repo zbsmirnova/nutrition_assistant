@@ -6,7 +6,7 @@ import unittest
 import sqlalchemy as sa
 from sqlalchemy.engine import make_url
 
-from nutrition_app.catalog import create_product
+from nutrition_app.catalog import create_product, create_recipe
 from nutrition_app.db import database_url, engine_for, migrate
 from nutrition_app import schema as db
 from nutrition_app.errors import ApplicationError
@@ -56,6 +56,31 @@ class CatalogProvisioningTests(unittest.TestCase):
         with self.assertRaisesRegex(ApplicationError, "food kind dairy"):
             create_product(self.engine, self.actor, name="Не молочное", nutrition={"kcal": "1"},
                            declared_fat_percent="5")
+
+    def test_creates_owner_scoped_recipe_with_ingredient_snapshots(self):
+        result = create_recipe(self.engine, self.actor, name="Овсяная каша",
+            nutrition={"kcal": "76", "protein_g": "2.5", "fat_g": "1.2", "carbs_g": "13"},
+            cooking_instructions="Сварить до готовности.", ingredients=[
+                {"name": "Овсяные хлопья", "amount": "93", "unit": "g", "weight_basis": "raw"},
+                {"name": "Вода", "amount": "375", "unit": "ml"},
+            ])
+        with self.engine.connect() as connection:
+            recipe = connection.execute(sa.select(db.recipes).where(db.recipes.c.user_id == self.actor)).mappings().one()
+            version = connection.execute(sa.select(db.recipe_versions).where(
+                db.recipe_versions.c.user_id == self.actor)).mappings().one()
+            ingredients = connection.execute(sa.select(db.recipe_ingredients).where(
+                db.recipe_ingredients.c.user_id == self.actor).order_by(db.recipe_ingredients.c.position)).mappings().all()
+        self.assertEqual(result["recipe_id"], str(recipe["id"]))
+        self.assertEqual(recipe["current_version_id"], version["id"])
+        self.assertEqual(version["name"], "Овсяная каша")
+        self.assertEqual(str(version["kcal"]), "76.000000")
+        self.assertEqual([item["name_as_entered"] for item in ingredients], ["Овсяные хлопья", "Вода"])
+        self.assertEqual(ingredients[0]["original_quantity"]["amount"], "93")
+
+    def test_recipe_rejects_malformed_ingredient_snapshot(self):
+        with self.assertRaisesRegex(ApplicationError, "Each ingredient"):
+            create_recipe(self.engine, self.actor, name="Каша", nutrition={"kcal": "76"},
+                          ingredients=[{"name": "овёс", "amount": "0", "unit": "g"}])
 
 
 if __name__ == "__main__":

@@ -6,7 +6,8 @@ from uuid import UUID, uuid4
 import sqlalchemy as sa
 from pydantic import TypeAdapter, ValidationError
 
-from nutrition_contracts.common import DecimalText, Name, NutrientValue, NutritionSnapshot
+from nutrition_contracts.commands import RecipeIngredient, UnknownIngredientSource
+from nutrition_contracts.common import DecimalText, Name, NutrientValue, NutritionSnapshot, SourceQuantity, Text
 
 from . import schema as db
 from .errors import ApplicationError
@@ -87,3 +88,77 @@ def create_product(
             food_kind=food_kind, declared_fat_percent=fat,
             **to_columns(snapshot)))
     return {"product_id": str(product_id), "version_id": str(version_id), "name": product_name}
+
+
+def _recipe_ingredients(values: list[dict] | None) -> list[RecipeIngredient]:
+    """Validate operator-entered ingredient snapshots without resolving catalog data."""
+    if values is None:
+        return []
+    if not isinstance(values, list) or len(values) > 100:
+        raise ApplicationError("Recipe ingredients must be a JSON array with at most 100 items")
+    ingredients = []
+    for item in values:
+        if not isinstance(item, dict):
+            raise ApplicationError("Each recipe ingredient must be an object")
+        try:
+            name = TypeAdapter(Name).validate_python(item["name"])
+            quantity = SourceQuantity(amount=item["amount"], unit=item["unit"])
+            basis = item.get("weight_basis")
+            if basis not in {None, "raw", "cooked", "as_sold"}:
+                raise ValueError("invalid weight basis")
+            ingredients.append(RecipeIngredient(
+                name_as_entered=name,
+                original_quantity=quantity,
+                weight_basis=basis,
+                source=UnknownIngredientSource(kind="unknown", reason="operator-supplied ingredient snapshot"),
+            ))
+        except (KeyError, TypeError, ValueError, ValidationError):
+            raise ApplicationError(
+                "Each ingredient needs name, positive amount, unit, and optional weight_basis"
+            ) from None
+    return ingredients
+
+
+def create_recipe(
+    engine,
+    actor: UUID,
+    *,
+    name: str,
+    nutrition: dict[str, str | None],
+    ingredients: list[dict] | None = None,
+    cooking_instructions: str | None = None,
+) -> dict:
+    """Create one owner-scoped recipe profile for trusted local pilot setup.
+
+    Nutrition is explicitly supplied per 100 g. Ingredient rows are retained as
+    un-resolved snapshots; this command never looks up products or lets a model
+    create catalog data.
+    """
+    try:
+        recipe_name = TypeAdapter(Name).validate_python(name)
+        instructions = (None if cooking_instructions is None else
+                        TypeAdapter(Text).validate_python(cooking_instructions))
+    except ValidationError:
+        raise ApplicationError("Recipe name and instructions must be non-empty values") from None
+    snapshot = _snapshot(nutrition)
+    recipe_ingredients = _recipe_ingredients(ingredients)
+    recipe_id, version_id, source_id = uuid4(), uuid4(), uuid4()
+    with engine.begin() as connection:
+        FoodService._user(connection, actor)
+        connection.execute(db.data_sources.insert().values(
+            id=source_id, user_id=actor, kind="operator_catalog",
+            evidence={"entered_by": "trusted_local_operator", "basis": "supplied_recipe_nutrition"}))
+        connection.execute(db.recipes.insert().values(
+            id=recipe_id, user_id=actor, current_version_id=version_id))
+        connection.execute(db.recipe_versions.insert().values(
+            id=version_id, user_id=actor, recipe_id=recipe_id, version_no=1,
+            name=recipe_name, cooking_instructions=instructions, nutrition_kind="provided",
+            data_source_id=source_id, **to_columns(snapshot)))
+        for position, ingredient in enumerate(recipe_ingredients):
+            connection.execute(db.recipe_ingredients.insert().values(
+                id=uuid4(), user_id=actor, recipe_version_id=version_id, position=position,
+                name_as_entered=ingredient.name_as_entered,
+                original_quantity=ingredient.original_quantity.model_dump(mode="json"),
+                weight_basis=ingredient.weight_basis,
+                source=ingredient.source.model_dump(mode="json")))
+    return {"recipe_id": str(recipe_id), "version_id": str(version_id), "name": recipe_name}
