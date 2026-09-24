@@ -3,7 +3,7 @@
 Status: done.
 Milestone: M4.
 Owner: lead assistant, architect/developer.
-Updated: 2026-09-23.
+Updated: 2026-09-24.
 Decision: D029, under D004 and OBS-001/OBS-002.
 
 ## Outcome and scope
@@ -35,11 +35,13 @@ OBS-001, OBS-002; D004 (one daily weight/steps value with history, explicit incr
 - Service handlers `_set_weight`, `_set_steps`, `_increment_steps`, a `get_observation` read helper, plus validation/dispatch. — done
 - Russian rendering `render_observation_result` and a `render_result` dispatcher; Telegram sender uses the dispatcher. — done
 - PostgreSQL integration tests in `tests/integration/test_observation_service.py`. — done
+- Conversation resolution maps parser observation proposals to trusted backend commands; the backend supplies the source-local date and current revision guard, while private revision IDs remain outside provider context. — done
+- The bounded Telegram worker now accepts `set_daily_weight`, `set_daily_steps`, and `increment_daily_steps` proposals and executes them through the existing observation service. — done
 
 ## Developer handoff
 
-Working-tree snapshot (uncommitted at authoring). Setup: install pinned runtime dependencies and start local PostgreSQL per the README, then run the checks below. Changed: `nutrition_app/schema.py`, `nutrition_app/service.py`, `nutrition_app/rendering.py`, `nutrition_app/telegram.py`, `nutrition_app/demo.py`, `migrations/versions/0009_daily_observations.py`, and the observation/food integration tests. Migration: `alembic` upgrade to head (0009) via the standard `migrate` path; both PostgreSQL suites run it on disposable schemas. No contract change, so no schema regeneration was required. Known limitations: no observation deletion/undo, no live-day observation summary, and no check-in yet.
+Setup: install pinned runtime dependencies and start local PostgreSQL per the README, then run the checks below. The observation persistence slice changed `nutrition_app/schema.py`, `nutrition_app/service.py`, `nutrition_app/rendering.py`, `nutrition_app/telegram.py`, `nutrition_app/demo.py`, `migrations/versions/0009_daily_observations.py`, and the observation/food integration tests. The follow-up resolver slice changed `nutrition_app/interpretation.py`, `nutrition_app/conversation.py`, `tests/test_interpretation.py`, and the simulated Nebius worker fixture in `tests/integration/test_nebius_worker.py` so it follows the backend-derived-evidence provider contract. Migration: `alembic` upgrade to head (0009) via the standard `migrate` path; PostgreSQL suites run it on disposable schemas. No contract model changed, so schema regeneration was not required. Developer checks on 2026-09-24: 115 offline tests, 97 PostgreSQL integration tests, and 32 retained QA tests passed; `git diff --check` passed. The user's first live `Вес 76,3 кг` attempt reached `action_not_implemented` before this resolver follow-up; a new live Telegram verification is still pending. Known limitations: no observation deletion/undo, no live-day observation summary, and no check-in yet.
 
 ## QA result and completion
 
-Developer verification only; recorded in [017-daily-observations-developer.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/017-daily-observations-developer.md?type=file&root=%252F). No independent QA review was run. Definition of done: all acceptance criteria observable through the retained tests, offline and both PostgreSQL suites green, and the migration/model parity check passing. Live Telegram and live model behavior remain outside this brief.
+Developer verification only; recorded in [017-daily-observations-developer.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/017-daily-observations-developer.md?type=file&root=%252F). No independent QA review was run. Definition of done: all acceptance criteria observable through the retained tests, offline and both PostgreSQL suites green, and the migration/model parity check passing. The resolver is now wired into the bounded worker, but live Telegram/model behavior remains an unverified pilot boundary.

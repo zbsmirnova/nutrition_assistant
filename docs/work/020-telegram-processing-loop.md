@@ -3,7 +3,7 @@
 Status: done.
 Milestone: M2 (MVP pilot tooling; does not add post-MVP scheduling).
 Owner: lead assistant, architect/developer.
-Updated: 2026-09-23.
+Updated: 2026-09-24.
 Decision: D034, using W002 transport, W003 worker, W004 Nebius adapter, and D033 backend-derived evidence.
 
 ## Outcome and scope
@@ -27,7 +27,7 @@ Add one explicit `telegram-process` command that polls one bounded batch, proces
 - [x] Add the D034 decision and README operator instructions.
 - [x] Run focused Nebius/CLI tests and the complete offline suite.
 
-Developer verification: focused Nebius/CLI tests passed, followed by 112 offline tests. A user-run pilot verified bot identity and private-message ingestion (`accepted: 1`). After the runtime prompt was strengthened with an explicit undated-source null-date example, the live smoke passed; a message without a matching catalog item was held as `product_unresolved` with no food mutation. After W021 provisioned a known product, a later message completed with `status: applied` and `delivery: sent`. The bot response reported one older pending action from the unmatched message; clarification delivery for that branch remains outside this slice. No independent QA review was run.
+Developer verification: focused Nebius/CLI tests passed, followed by 115 offline tests, 97 PostgreSQL integration tests, and 32 retained QA tests on 2026-09-24. A user-run pilot verified bot identity and private-message ingestion (`accepted: 1`). After the runtime prompt was strengthened with an explicit undated-source null-date example, the live smoke passed; a message without a matching catalog item was held as `product_unresolved` with no food mutation. After W021 provisioned a known product, a later message completed with `status: applied` and `delivery: sent`. The bounded worker now also resolves W017 weight and steps proposals into trusted observation commands; the first live weight attempt before that follow-up returned `action_not_implemented`, so a new live observation run remains pending. The bot response reported one older pending action from the unmatched message; clarification delivery for that branch remains outside this slice. No independent QA review was run.
 
 ## Deferred acknowledgment copy improvements
 

@@ -31,8 +31,11 @@ class NebiusWorkerTests(unittest.TestCase):
     def parser(self, *, status=200, output=None, headers=None, key="test-secret", model="example/model"):
         def send(body, timeout):
             self.calls.append(json.loads(body))
+            provider_output = json.loads(json.dumps(fixture()["output"] if output is None else output))
+            for action in provider_output.get("actions", []):
+                action.pop("evidence", None)
             raw = {"choices": [{"index": 0, "finish_reason": "stop", "message": {
-                "role": "assistant", "content": json.dumps(fixture()["output"] if output is None else output)}}]}
+                "role": "assistant", "content": json.dumps(provider_output)}}]}
             return status, headers or {}, json.dumps(raw).encode()
         return NebiusParser(NebiusConfig(key, model), request=send)
 

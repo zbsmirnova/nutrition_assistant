@@ -20,6 +20,7 @@ def context(text=TEXT):
     return {"source_text": text, "local_date": "2026-09-22", "time_zone": "Europe/Berlin",
             "context_revision": 0, "context_version": CONTEXT_VERSION, "resolver_version": RESOLVER_VERSION,
             "schema_version": "1.0", "has_reply": False, "forwarded": False, "catalog_overflow": False,
+            "observations": [],
             "candidates": [{"ref": "c1", "version_id": str(VERSION), "name": PRODUCT_NAME,
                 "nutrition_basis": "per_100_g", "weight_basis": "as_sold", "food_kind": "dairy",
                 "declared_fat_percent": "5.00"}]}
@@ -31,7 +32,47 @@ def proposal(text=TEXT, **changes):
     return ParserOutput.model_validate_json(json.dumps(data))
 
 
+def observation_proposal(kind, text, **fields):
+    action = {"kind": kind, "action_id": "a1", "evidence": text,
+              "depends_on": [], "unresolved": [], "date_hint": {"text": None}}
+    action.update(fields)
+    return ParserOutput.model_validate({"schema_version": "1.0", "actions": [action]})
+
+
 class InterpretationTests(unittest.TestCase):
+    def test_daily_weight_resolves_to_backend_owned_command(self):
+        text = "Вес 76,3 кг"
+        result = resolve(ACTOR, ORIGIN, context(text), observation_proposal(
+            "set_daily_weight", text, quantity={"amount": "76.3", "unit": "kg"}))
+        self.assertEqual((result.status, result.reason), ("ready", "weight_command_prepared"))
+        self.assertEqual(result.command.command.kind, "set_daily_weight")
+        self.assertEqual(result.command.command.value_kg, "76.3")
+        self.assertIsNone(result.command.command.expected_revision_id)
+
+    def test_daily_steps_set_and_increment_use_current_revision(self):
+        text = "8200 шагов"
+        source = context(text)
+        source["observations"] = [{"metric": "daily_steps", "series_date": "2026-09-22",
+                                   "revision_id": "dddddddd-dddd-4ddd-8ddd-dddddddddddd"}]
+        set_result = resolve(ACTOR, ORIGIN, source, observation_proposal(
+            "set_daily_steps", text, steps=8200))
+        self.assertEqual(set_result.command.command.kind, "set_daily_steps")
+        self.assertEqual(str(set_result.command.command.expected_revision_id),
+                         "dddddddd-dddd-4ddd-8ddd-dddddddddddd")
+        increment_text = "ещё 500 шагов"
+        increment = resolve(ACTOR, ORIGIN, context(increment_text), observation_proposal(
+            "increment_daily_steps", increment_text, steps=500))
+        self.assertEqual(increment.reason, "steps_baseline_missing")
+
+    def test_increment_steps_requires_existing_baseline(self):
+        text = "ещё 500 шагов"
+        source = context(text)
+        source["observations"] = [{"metric": "daily_steps", "series_date": "2026-09-22",
+                                   "revision_id": "dddddddd-dddd-4ddd-8ddd-dddddddddddd"}]
+        result = resolve(ACTOR, ORIGIN, source, observation_proposal(
+            "increment_daily_steps", text, steps=500))
+        self.assertEqual((result.status, result.reason), ("ready", "steps_increment_prepared"))
+
     def test_known_dairy_builds_backend_owned_command_without_nutrition_values(self):
         result = resolve(ACTOR, ORIGIN, context(), proposal())
         self.assertEqual(result.status, "ready")

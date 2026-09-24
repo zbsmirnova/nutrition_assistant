@@ -12,18 +12,19 @@ import re
 from typing import Protocol
 from uuid import UUID
 
-from nutrition_contracts.commands import CommandEnvelope
+from nutrition_contracts.commands import (CommandEnvelope, IncrementDailySteps, SetDailySteps,
+                                           SetDailyWeight)
 from nutrition_contracts.parser import (AddFood, AnswerClarification, ApprovedEstimateAnswer, CandidateAnswer, CorrectFood,
                                          DeleteFood, MoveDate, NonLogging, NutritionAnswer, ParserOutput,
-                                         QuantityAnswer, TextAnswer,
+                                         QuantityAnswer, SetSteps, SetWeight, IncrementSteps, TextAnswer,
                                          SetMeal, SetQuantity, UndoFood, validate_parser_context)
 
 from .errors import ApplicationError
 from .service import digest, operation_id_for
 
 
-CONTEXT_VERSION = "single-food-context-v5"
-RESOLVER_VERSION = "single-food-resolver-v9"
+CONTEXT_VERSION = "single-food-context-v6"
+RESOLVER_VERSION = "single-food-resolver-v10"
 MAX_CANDIDATES = 64
 
 
@@ -385,6 +386,64 @@ def resolve_entry_action(actor: UUID, origin: UUID, context: dict, action) -> Re
                       command_position=context.get("operation_position", 0))
 
 
+def _observation_command(actor: UUID, origin: UUID, context: dict, command: dict) -> CommandEnvelope:
+    position = context.get("operation_position", 0)
+    payload = {"schema_version": "1.0", "user_id": str(actor),
+               "operation_id": str(operation_id_for(origin, position)),
+               "context_revision": context["context_revision"],
+               "source": {"origin_update_id": str(origin),
+                          "evidence_update_ids": [str(item) for item in context.get("evidence_update_ids", [origin])],
+                          "pending_action_id": None},
+               "command": command}
+    return CommandEnvelope.model_validate_json(json.dumps(payload))
+
+
+def resolve_observation(actor: UUID, origin: UUID, context: dict, action) -> Resolution:
+    """Resolve a daily observation using backend-owned date and revision state."""
+    if action.depends_on or action.unresolved:
+        return Resolution("unresolved", "proposal_unresolved")
+    if context["has_reply"] or context["forwarded"]:
+        return Resolution("unresolved", "conversation_context_required")
+    if NON_CONSUMPTION.search(context["source_text"]):
+        return Resolution("unresolved", "observation_evidence_conflict")
+    target_date = effective_date(context, action.date_hint.text)
+    if target_date is None:
+        return Resolution("unresolved", "date_unresolved")
+    observations = {item["metric"]: item for item in context.get("observations", ())
+                    if item["series_date"] == target_date.isoformat()}
+    timezone = context["time_zone"]
+    if isinstance(action, SetWeight):
+        if action.quantity.amount is None or action.quantity.unit != "kg":
+            return Resolution("unresolved", "weight_quantity_unresolved")
+        current = observations.get("weight")
+        command = {"kind": "set_daily_weight", "effective_date": target_date.isoformat(),
+                   "time_zone": timezone, "value_kg": action.quantity.amount,
+                   "expected_revision_id": None if current is None else current["revision_id"]}
+        return Resolution("ready", "weight_command_prepared", _observation_command(actor, origin, context, command),
+                          command_position=context.get("operation_position", 0))
+    if isinstance(action, SetSteps):
+        if action.steps is None:
+            return Resolution("unresolved", "steps_quantity_unresolved")
+        current = observations.get("daily_steps")
+        command = {"kind": "set_daily_steps", "effective_date": target_date.isoformat(),
+                   "time_zone": timezone, "steps": action.steps,
+                   "expected_revision_id": None if current is None else current["revision_id"]}
+        return Resolution("ready", "steps_command_prepared", _observation_command(actor, origin, context, command),
+                          command_position=context.get("operation_position", 0))
+    if isinstance(action, IncrementSteps):
+        if action.steps is None:
+            return Resolution("unresolved", "steps_quantity_unresolved")
+        current = observations.get("daily_steps")
+        if current is None:
+            return Resolution("unresolved", "steps_baseline_missing")
+        command = {"kind": "increment_daily_steps", "effective_date": target_date.isoformat(),
+                   "time_zone": timezone, "steps": action.steps,
+                   "expected_revision_id": current["revision_id"]}
+        return Resolution("ready", "steps_increment_prepared", _observation_command(actor, origin, context, command),
+                          command_position=context.get("operation_position", 0))
+    return Resolution("unsupported", "observation_action_not_implemented")
+
+
 def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> Resolution:
     candidate_kinds = {c["ref"]: "product" for c in context["candidates"]}
     candidate_kinds.update({c["ref"]: "recipe" for c in context.get("recipes", ())})
@@ -400,6 +459,8 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
     if isinstance(action, NonLogging):
         status = {"ambiguous_intent": "unresolved", "unsupported": "unsupported"}.get(action.reason, "non_logging")
         return Resolution(status, action.reason)
+    if isinstance(action, (SetWeight, SetSteps, IncrementSteps)):
+        return resolve_observation(actor, origin, context, action)
     if isinstance(action, AnswerClarification):
         pending = context.get("pending")
         if pending is None or action.pending is None:

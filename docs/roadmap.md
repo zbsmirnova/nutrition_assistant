@@ -1,6 +1,6 @@
 # Delivery roadmap
 
-Updated: 2026-09-23. Owner: lead assistant.
+Updated: 2026-09-24. Owner: lead assistant.
 This file owns milestone status and order. Individual task status and acceptance criteria belong in their work briefs.
 
 ## Current position
@@ -17,7 +17,7 @@ The completed brief is [001-persist-food-entry.md](air-file://fai6b8iclscp0tss0s
 | M1 | Durable food command — complete | M0 | Fresh local PostgreSQL setup; seeded owned product data; resolved add-food command; deterministic entry/day totals; atomic mutation/result/response intent; retries, restart recovery, and cross-user rejection verified. |
 | M2 | Conversational food and corrections — in progress | M1 | Telegram ingress/identity and delivery; provider adapter; bounded MVP processing loop; scoped reference resolution; Russian intent evaluation; pending clarifications; same-entry correction/delete/undo; independent clear items saved once; entry-plus-day replies. |
 | M3 | Recipes — in progress (W011–W014) | M1; M2 for conversation | Save original ingredient amounts/instructions and versioned per-100-g nutrition; clarify material inputs; deterministic calculations; log eaten grams; keep historical meals pinned to prior versions. |
-| M4 | Daily observations — complete for W017; completion deferred | M2 | One revisable daily weight and steps total; explicit increments; backdating; history shows coverage. Completion/check-in behavior is post-MVP W018. |
+| M4 | Daily observations — complete for W017; completion deferred | M2 | One revisable daily weight and steps total; explicit increments; backdating; history shows coverage. The bounded worker resolver is wired; live Telegram confirmation remains pending. Completion/check-in behavior is post-MVP W018. |
 | M5 | Combined check-in and reports — planned post-MVP | M3, M4 | Dinner-triggered and scheduled reminder flow share one logical daily offer; closure, date-bound replies, and daily/weekly reporting coverage are decided and implemented together. |
 | M6 | Personal release readiness — planned | M1–M5; deployment decisions | Agreed hosting/privacy/provider/retention/export/deletion behavior; reproducible deployment; monitoring; restore rehearsal; end-to-end acceptance and remaining-risk review. |
 

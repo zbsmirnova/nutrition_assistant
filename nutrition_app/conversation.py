@@ -114,7 +114,15 @@ class ConversationWorker:
                    "recipe_records": [],
                    "pending_candidates": [], "pending_recipes": [], "pending_entries": [],
                    "pending_questions": {}, "pending": None, "pending_reason": None,
+                   "observations": [],
                    "entries": [], "reply_entry_ref": None}
+        observation_rows = connection.execute(sa.select(
+            db.observations.c.metric, db.observations.c.series_date,
+            db.observations.c.current_revision_id.label("revision_id")
+        ).where(db.observations.c.user_id == user["id"],
+                db.observations.c.series_date == date.fromisoformat(context["local_date"]))).mappings().all()
+        context["observations"] = [{"metric": row["metric"], "series_date": row["series_date"].isoformat(),
+                                     "revision_id": str(row["revision_id"])} for row in observation_rows]
         if not context["catalog_overflow"]:
             context["candidates"] = [{"ref": f"c{i}", "version_id": str(row["id"]), "name": row["name"],
                 "nutrition_basis": row["nutrition_basis"], "weight_basis": row["weight_basis"],
