@@ -29,6 +29,17 @@ Add one explicit `telegram-process` command that polls one bounded batch, proces
 
 Developer verification: focused Nebius/CLI tests passed, followed by 112 offline tests. A user-run pilot verified bot identity and private-message ingestion (`accepted: 1`). After the runtime prompt was strengthened with an explicit undated-source null-date example, the live smoke passed; a message without a matching catalog item was held as `product_unresolved` with no food mutation. After W021 provisioned a known product, a later message completed with `status: applied` and `delivery: sent`. The bot response reported one older pending action from the unmatched message; clarification delivery for that branch remains outside this slice. No independent QA review was run.
 
+## Deferred acknowledgment copy improvements
+
+Product-owner notes for a later rendering slice; no implementation change is made here:
+
+- Use `Итого за сегодня:` in the normal current-day acknowledgment instead of the dated phrase.
+- Continue persisting all nutrients, but hide fat and carbohydrate lines from the Telegram acknowledgment.
+- Remove the pending-clarification count from the normal acknowledgment.
+- Remove the day-completeness sentence from routine food acknowledgments.
+
+These are presentation-only changes. Nutrition persistence, daily totals, pending-state accounting, and the no-close-day MVP rule remain unchanged until the rendering behavior is explicitly implemented and tested.
+
 ## Usage
 
 ~~~sh
