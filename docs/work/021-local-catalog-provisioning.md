@@ -31,4 +31,4 @@ Values are entered per 100 g by default. Use `--nutrition-basis per_100_ml` for 
 
 ## Verification
 
-Developer verification: the complete offline suite passed (`112` tests), and the dedicated PostgreSQL provisioning checks passed (`2` tests) against a disposable schema. No independent QA review was run. User live Telegram testing remains dependent on the owner running this command with their own label data.
+Developer verification: the complete offline suite passed (`112` tests), and the dedicated PostgreSQL provisioning checks passed (`2` tests) against a disposable schema. The user then ran the command for an apple profile and verified one live Telegram food message with `status: applied` and `delivery: sent`; the bot returned the expected scaled nutrition. One previously unresolved unmatched message remained pending. No independent QA review was run.

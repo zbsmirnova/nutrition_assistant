@@ -97,7 +97,7 @@ After configuring the two environment variables through your secret mechanism, a
 .venv/bin/python -m nutrition_app nebius-smoke
 ~~~
 
-This sends one fixed synthetic dairy entry to Nebius, validates the returned action through the existing resolver, and prints validation flags plus a parser fingerprint. It never opens the database and does not print the source, response or key. A user-run live smoke passed on 2026-09-24 with parser fingerprint `nebius:8776352673608f0fdef39ea5d7cebfc8336e2056454cff9c4de166a9e643cd3d`. This confirms one synthetic model path only; it is not a general food-quality or Telegram-readiness result.
+This sends one fixed synthetic dairy entry to Nebius, validates the returned action through the existing resolver, and prints validation flags plus a parser fingerprint. It never opens the database and does not print the source, response or key. A user-run live smoke passed on 2026-09-24 with parser fingerprint `nebius:8776352673608f0fdef39ea5d7cebfc8336e2056454cff9c4de166a9e643cd3d`. This confirms one synthetic model path only; it is not a general food-quality or Telegram-readiness result. A separate user-run pilot later saved one provisioned product and delivered its response; this remains one end-to-end example, not a quality verdict.
 
 The production parser now omits model-authored evidence. It derives the original source text in the backend only after the provider proposal passes its strict schema and parser-context checks; the internal command contract still retains explicit evidence provenance. Use the production prompt and contract for both evaluation and `conversation-nebius`:
 

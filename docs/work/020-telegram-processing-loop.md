@@ -27,7 +27,7 @@ Add one explicit `telegram-process` command that polls one bounded batch, proces
 - [x] Add the D034 decision and README operator instructions.
 - [x] Run focused Nebius/CLI tests and the complete offline suite.
 
-Developer verification: focused Nebius/CLI tests passed, followed by 112 offline tests. A user-run pilot verified bot identity and private-message ingestion (`accepted: 1`). After the runtime prompt was strengthened with an explicit undated-source null-date example, the live smoke passed; a subsequent message was accepted and held as `product_unresolved` with no food mutation. `delivery: idle` is expected because this slice does not yet enqueue Telegram clarification text for unresolved product identity. No independent QA review or successful live food save has been run for this slice.
+Developer verification: focused Nebius/CLI tests passed, followed by 112 offline tests. A user-run pilot verified bot identity and private-message ingestion (`accepted: 1`). After the runtime prompt was strengthened with an explicit undated-source null-date example, the live smoke passed; a message without a matching catalog item was held as `product_unresolved` with no food mutation. After W021 provisioned a known product, a later message completed with `status: applied` and `delivery: sent`. The bot response reported one older pending action from the unmatched message; clarification delivery for that branch remains outside this slice. No independent QA review was run.
 
 ## Usage
 
