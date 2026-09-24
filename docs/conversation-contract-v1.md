@@ -16,6 +16,7 @@ Accepted product choices and their evidence are recorded in D001/D004/D010 in [R
 | Entering a recipe | Accept arbitrary ingredient quantities, clarify missing details, and calculate nutrition per 100 g. Save the original amounts and cooking instructions when present for reuse. Direct per-100-g input also fits the recipe model. |
 | Normal food reply | Brief entry/correction summary with kcal/protein and the updated daily kcal/protein totals, headed `Итого за сегодня:`. Routine MVP copy does not include fat/carbohydrate lines, pending counts, or a day-completeness sentence; those states remain authoritative backend data. |
 | Dairy product identity | Ask for missing fat percentage when it affects the product/nutrition-profile choice; reuse an explicitly supplied percentage or an exact identified product/label without asking again. |
+| Preparation and subtype | Ask one concise question when preparation or subtype materially changes the nutrition profile and the message does not resolve it. Examples: “Куриная грудка: без кожи и масла?”, “Яичница: сколько масла или сливочного масла добавлено?”, “Сыр 42%: какой сорт или производитель?”, and “Картошка: с маслом или без?”. |
 
 The recipe clarification explicitly expands the saved recipe details to include ingredients and instructions while retaining the decision not to store portion sizes or preparation batches.
 
@@ -71,6 +72,27 @@ The original 100 g and date remain pending while the bot resolves the product. O
 Skip the fat question if the user already supplied it, or explicitly identified a saved product/label that resolves the variant. A catalog containing only one творог entry is not evidence that an unspecified message refers to that fat percentage. An explicit percentage that conflicts with a saved candidate must not be ignored; select a matching source or clarify the conflict. Reuse confirmed product details, but do not create an implicit preference for all future generic dairy mentions.
 
 Fat percentage is a product-selection detail, not a complete nutrition profile. Do not derive calories, protein, or carbohydrates from that percentage alone, or silently substitute an average product. If the remaining product/source identity is unclear, keep it pending and ask only for the remaining material details. A clearly identified source may still have honestly unknown nutrients under CALC-002. An estimated substitute requires explicit approval under the existing estimation rules.
+
+### Preparation and subtype
+
+A generic food name is insufficient when preparation or subtype creates materially
+different nutrition profiles. Ask only for the missing distinction that affects
+the calculation, and reuse a previously confirmed product or preparation when it
+is an exact match. Examples for the MVP are:
+
+> Куриная грудка: без кожи и масла?
+>
+> Яичница: сколько масла или сливочного масла добавлено?
+>
+> Сыр 42%: какой сорт или производитель?
+>
+> Картошка: с маслом или без?
+
+Until the user answers, keep the affected action pending and outside totals. Do
+not merge records from different preparation or subtype groups merely because
+their everyday names are similar. Any future robust average must be calculated
+from a deduplicated, homogeneous group with visible source provenance; this
+discussion rule does not authorize the model to select an average silently.
 
 ## 5. Clarifying a quantity
 
