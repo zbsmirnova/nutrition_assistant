@@ -15,6 +15,7 @@ from nutrition_contracts.common import TimeZoneName
 from .db import engine_for, migrate
 from .conversation import ConversationWorker
 from .conversation_demo import run_conversation_demo
+from .catalog import create_product
 from .interpretation import SyntheticParser
 from .nebius import NebiusConfig, NebiusParser, run_synthetic_smoke
 from .demo import run_demo
@@ -54,6 +55,17 @@ def main():
     sub.add_parser("dispatch", help="Send one queued result to an in-memory fake, never Telegram")
     create = sub.add_parser("user-create", help="Create a local application owner; no public onboarding")
     create.add_argument("--time-zone", default="Europe/Berlin")
+    product = sub.add_parser("product-create", help="Create one owner-scoped product from supplied nutrition values")
+    product.add_argument("--user", type=UUID, required=True)
+    product.add_argument("--name", required=True)
+    product.add_argument("--kcal")
+    product.add_argument("--protein-g")
+    product.add_argument("--fat-g")
+    product.add_argument("--carbs-g")
+    product.add_argument("--nutrition-basis", choices=["per_100_g", "per_100_ml"], default="per_100_g")
+    product.add_argument("--weight-basis", choices=["raw", "cooked", "as_sold"], default="as_sold")
+    product.add_argument("--food-kind", choices=["general", "dairy"], default="general")
+    product.add_argument("--declared-fat-percent")
     link = sub.add_parser("telegram-link", help="Explicitly link a private Telegram account to an existing owner")
     link.add_argument("--user", type=UUID, required=True)
     link.add_argument("--bot-id", type=int, required=True)
@@ -121,6 +133,12 @@ def main():
             with engine.begin() as connection:
                 actor = connection.execute(db.users.insert().values(time_zone=zone).returning(db.users.c.id)).scalar_one()
             output = {"user_id": str(actor), "time_zone": zone}
+        elif args.action == "product-create":
+            output = create_product(engine, args.user, name=args.name,
+                                    nutrition={"kcal": args.kcal, "protein_g": args.protein_g,
+                                               "fat_g": args.fat_g, "carbs_g": args.carbs_g},
+                                    nutrition_basis=args.nutrition_basis, weight_basis=args.weight_basis,
+                                    food_kind=args.food_kind, declared_fat_percent=args.declared_fat_percent)
         elif args.action == "telegram-link":
             account = link_account(engine, args.user, args.bot_id, args.telegram_user_id, args.chat_id)
             output = {"account_id": str(account)}

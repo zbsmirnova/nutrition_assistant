@@ -50,6 +50,7 @@ Create an owner with `user-create`, then copy the `user_id` from its JSON output
 ~~~sh
 .venv/bin/python -m nutrition_app migrate
 .venv/bin/python -m nutrition_app user-create --time-zone Europe/Berlin
+.venv/bin/python -m nutrition_app product-create --user INTERNAL_USER_UUID --name "Яблоко" --kcal 52 --protein-g 0.3 --fat-g 0.2 --carbs-g 14
 .venv/bin/python -m nutrition_app telegram-link --user INTERNAL_USER_UUID --bot-id BOT_ID --telegram-user-id TELEGRAM_USER_ID --chat-id PRIVATE_CHAT_ID
 .venv/bin/python -m nutrition_app telegram-poll --timeout 25
 .venv/bin/python -m nutrition_app telegram-send
@@ -57,6 +58,8 @@ Create an owner with `user-create`, then copy the `user_id` from its JSON output
 ~~~
 
 Each poll command receives one batch into the durable inbox; it does not run a parser or create food entries. Each send command attempts one committed food response for the configured bot. Repeated invocations resume from persisted state. The separate conversation worker below connects synthetic interpretation to validated commands. Existing fake dispatch remains available for synthetic demos.
+
+The `product-create` line is trusted local pilot setup: replace the example name and nutrition with values from your product label. It creates an owner-scoped catalog version; it does not call Nebius or let the model invent nutrition. Use it before sending a matching food message through Telegram. See [W021](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/021-local-catalog-provisioning.md?type=file&root=%252F).
 
 For the fastest personal pilot, `telegram-process` composes those steps once: it polls one bounded batch, processes the oldest eligible message for the supplied owner through the configured Nebius parser, and sends one queued response. Repeat it for the next message. Its output reports only poll, processing, and delivery status; it does not print message text or food totals. It is an operator command, not a daemon or scheduler. See [W020](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/020-telegram-processing-loop.md?type=file&root=%252F).
 
