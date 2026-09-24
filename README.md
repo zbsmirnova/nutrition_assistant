@@ -94,7 +94,7 @@ After configuring the two environment variables through your secret mechanism, a
 .venv/bin/python -m nutrition_app nebius-smoke
 ~~~
 
-This sends one fixed synthetic dairy entry to Nebius, validates the returned action through the existing resolver, and prints validation flags plus a parser fingerprint. It never opens the database and does not print the source, response or key. No successful live smoke result is recorded yet; the configured model must support the actual schema.
+This sends one fixed synthetic dairy entry to Nebius, validates the returned action through the existing resolver, and prints validation flags plus a parser fingerprint. It never opens the database and does not print the source, response or key. A user-run live smoke passed on 2026-09-24 with parser fingerprint `nebius:8776352673608f0fdef39ea5d7cebfc8336e2056454cff9c4de166a9e643cd3d`. This confirms one synthetic model path only; it is not a general food-quality or Telegram-readiness result.
 
 The production parser now omits model-authored evidence. It derives the original source text in the backend only after the provider proposal passes its strict schema and parser-context checks; the internal command contract still retains explicit evidence provenance. Use the production prompt and contract for both evaluation and `conversation-nebius`:
 
@@ -139,7 +139,7 @@ For an explicit identified inbox source, the operator command is:
 .venv/bin/python -m nutrition_app conversation-nebius --user INTERNAL_USER_UUID --source INBOX_UUID
 ~~~
 
-This command sends source text/date/time zone and bounded public product context to Nebius, then applies W003's validation, dairy/quantity/date guards, authorization, arithmetic and idempotency. It does not poll, send Telegram replies, or process the whole inbox. Real-data lifecycle choices remain Q10; start live verification with the synthetic check. Existing conversation-run remains the controlled-fixture path. Model/prompt/schema changes fence unfinished work; key rotation preserves parser identity. Frozen commands resume without another model call.
+This command sends source text/date/time zone and bounded public product context to Nebius, then applies W003's validation, dairy/quantity/date guards, authorization, arithmetic and idempotency. It does not poll, send Telegram replies, or process the whole inbox. Real-data lifecycle choices remain Q10; start live verification with the synthetic check. Existing conversation-run remains the controlled-fixture path. Model/prompt/schema changes fence unfinished work; key rotation preserves parser identity. Frozen commands resume without another model call. An unresolved live food message is held without a food mutation; this runtime slice does not yet enqueue a Telegram clarification for `product_unresolved`.
 
 Transient failures retry through durable job state, with three total claims and valid Retry-After delays. Permanent provider errors or invalid output become visible failed jobs without food. Terminal recovery after correcting configuration is later explicit tooling. Requests use the fixed HTTPS endpoint, verified TLS, a 30-second socket timeout and 256-KiB size limits; no redirect, provider fallback, schema downgrade or hidden retry occurs. D012 and [004-nebius-adapter.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/004-nebius-adapter.md?type=file&root=%252F) record scope and review status.
 
