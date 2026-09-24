@@ -15,7 +15,7 @@ from nutrition_app.__main__ import main
 from nutrition_app.conversation_demo import TEXT, PRODUCT_NAME, fixture
 from nutrition_app.interpretation import ParserRejected, ParserRequest, ParserUnavailable
 from nutrition_app.nebius import (ENDPOINT, HOST, MAX_BYTES, NebiusConfig, NebiusConfigurationError,
-                                  NebiusParser, provider_parser_schema, retry_after_seconds, run_synthetic_smoke)
+                                  NebiusParser, PROMPT, provider_parser_schema, retry_after_seconds, run_synthetic_smoke)
 from nutrition_contracts.parser import ParserOutput
 
 
@@ -84,6 +84,8 @@ class NebiusProtocolTests(unittest.TestCase):
         context = json.loads(payload["messages"][1]["content"])
         self.assertEqual(set(context), {"source_text", "local_date", "time_zone", "candidates"})
         self.assertEqual(context["source_text"], TEXT)
+        self.assertIn("never abbreviate or split a", PROMPT)
+        self.assertIn('"candidate_ref":"c2"', PROMPT)
         serialized = json.dumps(payload)
         for private in ("test-secret", "PRIVATE-VERSION", "PRIVATE-OWNER"):
             self.assertNotIn(private, serialized)

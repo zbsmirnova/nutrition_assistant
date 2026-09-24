@@ -108,4 +108,16 @@ Status: implementing; D033 accepted the no-model-evidence boundary after the dia
 
 The production Nebius provider schema now omits model-authored `evidence`. After strict provider-schema validation, the adapter derives each internal action's evidence from the original source message, then runs the existing ParserOutput, context, date, quantity, authorization, and resolver checks. The internal contract and persisted command evidence remain unchanged. [prompt_candidate_v5.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/evals/prompt_candidate_v5.txt?type=file&root=%252F) is the matching production evaluation prompt; v4 and the diagnostic path are historical comparisons.
 
+## Live saved-recipe pilot follow-up — 2026-09-24
+
+The user provisioned one saved recipe named `Овсяная каша` and sent an explicit
+200 g consumption message. The worker supplied the recipe as opaque candidate
+`c2`, but the provider returned a name action whose food name was the single
+letter `О`; the deterministic resolver correctly returned `product_unresolved`
+and made no food mutation. This is a provider candidate-binding defect, not a
+recipe persistence failure. The production prompt now includes an explicit
+whole-name/c-token rule and the Russian `Овсяная каша` example. A rerun is
+needed before claiming live saved-recipe interpretation; no provider quality
+verdict or independent QA result is inferred from this one failure.
+
 The focused provider tests and the complete offline suite pass: 112 tests. A user-run `INTAKE-002` production control on 2026-09-24 passed all applicable checks with parser fingerprint `nebius:63fbf471b7b808541bcccfc1aac1d29e3401ca60995b63e3610e4b4c3c9a0932`; this is one-case exploratory evidence. A first Telegram pilot accepted a private message but the worker recorded `parser_rejected`; the prompt was strengthened with an explicit undated-source `date_hint.text:null` example. A fresh user-run smoke then passed with parser fingerprint `nebius:8776352673608f0fdef39ea5d7cebfc8336e2056454cff9c4de166a9e643cd3d`. A subsequent Telegram message was accepted and safely held as `product_unresolved`; no food mutation or clarification delivery was claimed. After local product provisioning, a later user-run Telegram message reached `status: applied` and `delivery: sent`, producing the expected nutrition response for one known product. The response also reported one older pending action from the earlier unmatched message; that pending branch remains unresolved. This is one live end-to-end example, not independent QA or general model-quality evidence. The provider still does not invent dates, nutrition, portions, or unknown restaurant values.

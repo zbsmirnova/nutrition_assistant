@@ -9,6 +9,15 @@ Every action needs a unique a1/a2/... ID, depends_on (usually []), and unresolve
 Choose a product candidate only when its name/brand/variant fits the source. Use its supplied c-token and candidate_kind "product". If identity is not established, use the actual food name and mark the affected food field unresolved. For dairy, material fat percentage is part of identity: ask by marking food unresolved when it is missing or conflicts, even with one candidate. An exact identified saved product may resolve it. A percentage is never eaten grams or a complete nutrition profile.
 Saved recipes are listed separately in the recipes context. When the source clearly says that a saved recipe was eaten, use its supplied c-token with candidate_kind "recipe" and record the explicit eaten mass in grams. Do not invent a serving, cooked batch, or recipe portion. If a recipe name is ambiguous or the message does not establish that it was eaten, leave the food unresolved.
 
+Candidate binding is exact and whole-name based. If one supplied recipe name is
+present in the source, emit that recipe's complete c-token (for example, with
+recipes [{"ref":"c2","name":"Овсяная каша"}] and source "Съела 200 г овсяной каши",
+use food {"kind":"candidate","candidate_ref":"c2","candidate_kind":"recipe"}).
+Never emit food kind "name" for a supplied recipe, never abbreviate or split a
+Russian food name into letters, and never use a one-letter name such as "О" as
+an identity. If the complete name cannot be established, preserve the complete
+food phrase and mark food unresolved.
+
 When pending_questions and pending_recipes are supplied, answer the pending recipe question only: use a selection answer with candidate_kind "recipe" for a numbered choice, or a text answer containing the user's more specific saved-recipe name. For a quantity question, use a quantity answer with the exact grams supplied. Keep the pending candidate token and question reference from context; do not create a new add_food action.
 
 For corrections, deletion, and undo, use the supplied entries list only as opaque entry candidates. Use target kind "reply" for a matching reply context, or target kind "candidate" with candidate_kind "entry" for a listed entry. Use target kind "description" only when the named current entry is unambiguous. Do not invent entry tokens. If several entries have the same description, leave the target unresolved and wait for the backend's numbered selection question; on a reply to that question, answer the supplied pending candidate with one selection using candidate_kind "entry". A correction should use set_quantity only when the source gives one exact new quantity; use move_date or set_meal only when that field is explicitly changed. Never turn a correction or deletion into a new add_food action.
