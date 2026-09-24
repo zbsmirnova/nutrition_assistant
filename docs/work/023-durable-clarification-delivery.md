@@ -38,5 +38,9 @@ Developer verification on the completion revision:
 - retained QA suite: 32 checks;
 - `git diff --check`: passed.
 
-No independent QA review or new live Telegram clarification pilot was run for
-this slice.
+User-run live pilot on 2026-09-24: the bot asked for missing grams for the
+saved recipe `Овсяная каша`; a reply of `200 г` to the original source resumed
+the frozen operation and returned `status: applied` / `delivery: sent`, with
+152 kcal recorded. Existing pending items remained outside the day total.
+This is one end-to-end example, not broad model-quality evidence. No
+independent QA review was run.
