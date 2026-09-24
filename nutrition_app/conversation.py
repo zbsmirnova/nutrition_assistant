@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from datetime import date, timedelta
 import json
+import re
 from uuid import UUID, uuid4, uuid5
 from zoneinfo import ZoneInfo
 
@@ -558,6 +559,31 @@ class ConversationWorker:
         paths = {item.path for item in action.unresolved}
         return bool(paths) and paths <= {"food", "food.name", "food.identity"}
 
+    @staticmethod
+    def _external_conflict_fallback(output, resolution, source_text):
+        """Retry lookup when the model selected a conflicting local identity.
+
+        A provider must never silently replace the selected local product. The
+        source text is used only as a bounded search term after the resolver
+        has identified an identity conflict; quantity, date, basis, and other
+        guards still have to pass before a candidate can be selected.
+        """
+        if resolution.reason != "product_evidence_conflict" or output is None or len(output.actions) != 1:
+            return None
+        action = output.actions[0]
+        if not isinstance(action, AddFood) or action.food.kind != "candidate" or action.depends_on:
+            return None
+        if action.unresolved:
+            return None
+        query = re.sub(
+            r"(?iu)\b(?:съел(?:а|и)?|ел(?:а|и)?|выпил(?:а|и)?|съеден(?:а|ы)?|"
+            r"завтрак|обед|ужин|перекус)\b", " ", source_text)
+        query = re.sub(
+            r"(?iu)(?<![\w.,])[0-9]+(?:[.,][0-9]+)?\s*(?:килограмм(?:а|ов)?|"
+            r"грамм(?:а|ов)?|кг|гр|g|kg|миллилитр(?:а|ов)?|мл|ml|л|l)\b", " ", query)
+        query = re.sub(r"\s+", " ", query).strip(" ,;:.-")
+        return query or None
+
     def _failure(self, claim, reason, *, retryable, require_claim=True, retry_after=None):
         with self.engine.begin() as connection:
             self.service._user(connection, claim.actor)
@@ -638,13 +664,21 @@ class ConversationWorker:
                     proposal = output.model_dump(mode="json")
                 except (ValidationError, ValueError, TypeError, OverflowError):
                     resolution = Resolution("rejected", "invalid_parser_proposal")
-                if ((resolution.reason == "product_unresolved" or
-                     self._external_identity_fallback(output, resolution)) and
-                        output is not None and self.food_lookup is not None and
-                        len(output.actions) == 1 and isinstance(output.actions[0], AddFood) and
-                        output.actions[0].food.kind == "name"):
+                identity_fallback = self._external_identity_fallback(output, resolution)
+                conflict_query = self._external_conflict_fallback(
+                    output, resolution, context["source_text"])
+                external_action = (output is not None and len(output.actions) == 1 and
+                                   isinstance(output.actions[0], AddFood))
+                lookup_query = (output.actions[0].food.name
+                                if external_action and output.actions[0].food.kind == "name" and
+                                (identity_fallback or resolution.reason == "product_unresolved")
+                                else conflict_query)
+                external_kind = (external_action and
+                                 (output.actions[0].food.kind == "name" or conflict_query is not None))
+                if ((resolution.reason == "product_unresolved" or identity_fallback or conflict_query) and
+                        self.food_lookup is not None and external_kind):
                     try:
-                        external = self.food_lookup.search(output.actions[0].food.name, limit=5)
+                        external = self.food_lookup.search(lookup_query, limit=5)
                     except FoodSourceUnavailable:
                         status = self._failure(claim, "food_source_unavailable", retryable=True)
                         return {"status": status, "reason": "food_source_unavailable",
@@ -652,7 +686,7 @@ class ConversationWorker:
                     if external:
                         try:
                             cached = cache_external_products(self.engine, actor,
-                                                              query=output.actions[0].food.name,
+                                                              query=lookup_query,
                                                               candidates=external)
                         except ApplicationError:
                             status = self._failure(claim, "food_source_rejected", retryable=False)

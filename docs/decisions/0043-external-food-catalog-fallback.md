@@ -24,11 +24,14 @@ separate nutrition-source decision is made. No barcode, photo, restaurant
 estimate, bulk import, or automatic background synchronization is included.
 
 The production prompt may explicitly mark an unknown named identity as
-unresolved because it is absent from the supplied personal catalog. The worker
-may pass that proposal to the external lookup only when it is a single named
-food action and no quantity, date, weight-basis, or dependency is unresolved.
-This keeps user-controlled identity selection while preventing an external
-provider from bypassing any nutrition-affecting guard.
+unresolved because it is absent from the supplied personal catalog. The model
+may also select a local identity that the backend rejects as conflicting with
+the source. In either case, the worker may pass the proposal to the external
+lookup only when it is a single food action and no quantity, date, weight-basis,
+or dependency is unresolved. A conflicting local identity is searched using a
+bounded food term derived from the source message, never by trusting the
+conflicting catalog name. This keeps user-controlled identity selection while
+preventing an external provider from bypassing any nutrition-affecting guard.
 
 This supersedes D020's blanket deferral of runtime external lookup for the MVP;
 its deterministic recipe comparison and offline evaluation constraints remain
