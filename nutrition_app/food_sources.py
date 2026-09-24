@@ -189,8 +189,11 @@ class USDAFoodDataCentralSource:
         limit = _bounded_limit(limit)
         if not isinstance(query, str) or not query.strip():
             return []
-        params = {"api_key": self.api_key, "query": query.strip(), "pageSize": str(limit),
-                  "dataType": "Foundation,SR Legacy,Branded"}
+        # Keep the request compatible with the API's default search behavior.
+        # The dataType filter has changed shape across FDC API revisions and
+        # caused otherwise valid searches to be rejected; the backend already
+        # validates the returned nutrient snapshot and does not need that filter.
+        params = {"api_key": self.api_key, "query": query.strip(), "pageSize": str(limit)}
         payload = (self._request("/fdc/v1/foods/search", params) if self._request is not None else
                    self._http.get("api.nal.usda.gov", "/fdc/v1/foods/search?" + urlencode(params)))
         foods = payload.get("foods")

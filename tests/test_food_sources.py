@@ -31,6 +31,7 @@ class FoodSourceAdapterTests(unittest.TestCase):
         def request(path, params):
             self.assertEqual(path, "/fdc/v1/foods/search")
             self.assertEqual(params["api_key"], "test-key")
+            self.assertNotIn("dataType", params)
             return {"foods": [{"fdcId": 42, "description": "Apple, raw, with skin",
                 "foodNutrients": [{"nutrientId": 1008, "value": 52},
                                    {"nutrientId": 1003, "value": 0.3},

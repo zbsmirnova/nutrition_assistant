@@ -1,6 +1,6 @@
 # W025 developer verification — external food catalog fallback
 
-Revision: commits `5becd00`, `ea8bf24`, and `556836d` plus the conflicting-identity fallback fix (before its local commit).
+Revision: commits `5becd00`, `ea8bf24`, `556836d`, and `49099c6` plus the USDA request compatibility fix (before its local commit).
 Date: 2026-09-24. Reviewer: lead assistant (developer verification).
 
 The adapter tests cover injected Open Food Facts and USDA nutrient mapping,
@@ -32,5 +32,9 @@ No independent QA review was run. A user-run live Open Food Facts search for
 `творог 2,5%` returned HTTP 503 on 2026-09-24; the worker consequently kept
 the message retryable as `food_source_unavailable` without a food mutation.
 Provider availability, live payload drift, quotas, and production Russian
-search quality therefore remain unverified. Restaurant nutrition, barcode/photo
-flows, and background synchronization remain outside W025.
+search quality therefore remain unverified. A user-run USDA FoodData Central
+request with `DEMO_KEY` returned HTTP 200 and nutrition results for an English
+equivalent query. The adapter's optional `dataType` filter was removed to match
+that working request shape; the adapter change itself still needs a live worker
+rerun. Restaurant nutrition, barcode/photo flows, and background synchronization
+remain outside W025.
