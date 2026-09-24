@@ -45,7 +45,7 @@ Apply the current migration head before using these commands (`migrate` handles 
 
 The local transport harness is verified with synthetic data. The selected model provider is Nebius Token Factory; real-message retention and other data-lifecycle details remain open. These commands are documented for explicit operator use; they are not run by the test suite. Configure NUTRITION_TELEGRAM_TOKEN and NUTRITION_TELEGRAM_BOT_ID in your local environment; do not place a token in a command argument, chat message, or repository file.
 
-Create an owner with user-create, or use an existing internal user ID. Link that owner to numeric Telegram bot/user/private-chat IDs obtained through your own account. Replace the uppercase placeholders below:
+Create an owner with `user-create`, then copy the `user_id` from its JSON output. The uppercase values below are placeholders and must not be typed literally: `INTERNAL_USER_UUID` is a UUID, while the Telegram bot, user, and private-chat IDs are positive integers. For a private one-to-one chat, Telegram's chat ID is normally the same numeric value as your Telegram user ID. Obtain your Telegram user ID through your own Telegram account; never put the bot token in a command or repository file.
 
 ~~~sh
 .venv/bin/python -m nutrition_app migrate
