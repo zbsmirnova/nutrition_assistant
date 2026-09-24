@@ -57,7 +57,7 @@ class NebiusWorkerTests(unittest.TestCase):
         text = "Съела 100 г творога";source = self.source(text=text)
         result = self.worker.run_one(self.actor, self.parser(output=fixture(text)["output"]), origin=source)
         self.assertEqual((result["status"], result["reason"]), ("unresolved", "dairy_fat_missing"))
-        self.assertEqual((self.count(db.food_entries), self.count(db.outbox)), (0, 0))
+        self.assertEqual((self.count(db.food_entries), self.count(db.outbox)), (0, 1))
 
     def test_auth_and_invalid_response_fail_once_without_food_or_payload_in_job(self):
         for number, parser in enumerate((self.parser(status=401), self.parser(output={"secret": TEXT})), 1):

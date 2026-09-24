@@ -74,8 +74,19 @@ def render_observation_result(payload: dict) -> str:
     return f"Записано шагов за {day}: {observation.steps}."
 
 
+def render_clarification_result(payload: dict) -> str:
+    result = OutcomeEnvelope.model_validate_json(json.dumps(payload)).result
+    if result.outcome != "needs_clarification":
+        raise ValueError("Not a clarification result")
+    return "\n".join(question.prompt for question in result.questions)
+
+
 def render_result(payload: dict) -> str:
     """Render any supported committed outcome into a Russian confirmation."""
+    try:
+        return render_clarification_result(payload)
+    except ValueError:
+        pass
     try:
         return render_observation_result(payload)
     except ValueError:

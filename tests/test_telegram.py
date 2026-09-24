@@ -6,7 +6,7 @@ import unittest
 from uuid import uuid4
 
 from nutrition_app.outbox import Delivery, DeliveryRejected, RetryLater
-from nutrition_app.rendering import render_food_result
+from nutrition_app.rendering import render_clarification_result, render_food_result
 from nutrition_app.telegram import TelegramClient, TelegramError, TelegramRejected, TelegramSender, TelegramUnavailable
 
 
@@ -166,3 +166,13 @@ class RussianReplyTests(unittest.TestCase):
         text = render_food_result(payload)
         self.assertTrue(text.startswith("Исправлено: мой суп"))
         self.assertIn("Итого за 22.09.2026", text)
+
+    def test_clarification_outcome_is_rendered_as_a_question(self):
+        payload = {"result": {
+            "schema_version": "1.0", "operation_id": str(uuid4()), "outcome": "needs_clarification",
+            "pending_action_id": str(uuid4()), "pending_revision": 1, "effective_date": "2026-09-22",
+            "questions": [{"question_ref": "q1", "field": "fat_percent",
+                           "prompt": "Укажите процент жирности творога.", "answer_kind": "nutrition", "choices": []}],
+            "previously_applied_operation_ids": [],
+        }}
+        self.assertEqual(render_clarification_result(payload), "Укажите процент жирности творога.")

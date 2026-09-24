@@ -24,6 +24,7 @@ from nutrition_app.db import ROOT, migrate
 from nutrition_app.demo import food_command, message, seed_product, seed_user
 from nutrition_app.errors import NotFound
 from nutrition_app.interpretation import SyntheticParser
+from nutrition_app.outbox import OutboxWorker
 from nutrition_app.service import FoodService, operation_id_for
 from nutrition_contracts.commands import (CommandEnvelope, CommandSource, DefineRecipe, ProvidedRecipeNutrition,
                                           RecipeDefinition, RecipeIngredient, UnknownIngredientSource)
@@ -198,10 +199,10 @@ class ConversationWorkerTests(unittest.TestCase):
         self.assertEqual(parser.requests[0].pending_recipes,
                          ({"ref": "c2", "name": "мой суп"}, {"ref": "c3", "name": "мой суп"}))
         self.assertEqual(self.count(db.food_entries), 1)
-        self.assertEqual(self.count(db.outbox), 3)  # two recipe definitions plus one consumed-food result
+        self.assertEqual(self.count(db.outbox), 4)  # two definitions, one clarification, one consumed-food result
         self.assertEqual(self.worker.run_one(self.actor, parser, origin=reply)["status"], "applied")
         self.assertEqual(self.count(db.food_entries), 1)
-        self.assertEqual(self.count(db.outbox), 3)
+        self.assertEqual(self.count(db.outbox), 4)
 
     def test_specific_recipe_name_answer_resolves_fuzzy_ambiguity(self):
         self.define_recipe(1, name="суп с яблоком")
@@ -306,7 +307,15 @@ class ConversationWorkerTests(unittest.TestCase):
         result = self.worker.run_one(self.actor, ControlledParser(fixture(text)["output"]), origin=origin)
         self.assertEqual((result["status"], result["reason"]), ("unresolved", "dairy_fat_missing"))
         self.assertEqual(self.count(db.food_entries), 0)
-        self.assertEqual(self.count(db.outbox), 0)
+        self.assertEqual(self.count(db.outbox), 1)
+        with self.engine.connect() as connection:
+            payload = connection.execute(sa.select(db.outbox.c.payload).where(
+                db.outbox.c.user_id == self.actor)).scalar_one()
+        self.assertEqual(payload["result"]["outcome"], "needs_clarification")
+        self.assertIn("жирности", payload["result"]["questions"][0]["prompt"])
+        delivery = OutboxWorker(self.engine, bot_id=101).claim()
+        self.assertIsNotNone(delivery)
+        self.assertEqual(delivery.reply_to_message_id, 1)
         self.source(2)
         saved = self.worker.run_one(self.actor, ControlledParser())
         self.assertEqual(saved["outcome"]["result"]["daily_summaries"][0]["pending_food_actions"], 1)

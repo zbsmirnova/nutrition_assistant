@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from datetime import date, timedelta
 import json
-from uuid import UUID, uuid4
+from uuid import UUID, uuid4, uuid5
 from zoneinfo import ZoneInfo
 
 from pydantic import ValidationError
@@ -11,17 +11,20 @@ import sqlalchemy as sa
 from sqlalchemy.exc import DBAPIError
 
 from nutrition_contracts.parser import ParserOutput
+from nutrition_contracts.results import NeedsClarification, OutcomeEnvelope, Question
 
 from . import schema as db
 from .errors import ApplicationError, NotFound
 from .interpretation import (CONTEXT_VERSION, MAX_CANDIDATES, RESOLVER_VERSION,
                              Parser, ParserRejected, ParserUnavailable, Resolution, parser_request,
                              resolve, resolve_actions)
-from .service import FoodService, operation_id_for
+from .service import FoodService, digest, operation_id_for
 
 
 MAX_ATTEMPTS = 3
 TERMINAL = {"applied", "non_logging", "unresolved", "unsupported", "rejected", "failed"}
+CLARIFICATION_POSITION = 31
+CLARIFICATION_NAMESPACE = UUID("6f8e91a4-0e9a-4d5f-bca3-8a2fb4a1f6a0")
 
 
 @dataclass(frozen=True)
@@ -69,7 +72,69 @@ class ConversationWorker:
                         "использовать. Пока не включаю приблизительный вес в итог.")
             return (f"Укажите точный вес {name} в граммах или подтвердите оценку. "
                     "Приблизительный вес пока не включаю в итог.")
+        if reason in {"dairy_fat_missing", "catalog_fat_unknown"}:
+            ref = next(iter(pending_questions), None)
+            candidate = next((item for item in context.get("candidates", ()) if item["ref"] == ref), None)
+            name = "этого продукта" if candidate is None else f"«{candidate['name']}»"
+            return (f"Укажите процент жирности {name} (например, 5%). "
+                    "Пока не включаю продукт в итог.")
         return None
+
+    @staticmethod
+    def _clarification_question(context, reason, pending_questions):
+        prompt = ConversationWorker._clarification(context, reason, pending_questions)
+        if prompt is None:
+            return None
+        if reason == "recipe_target_ambiguous":
+            field, answer_kind = "recipe", "selection"
+        elif reason in {"dairy_fat_missing", "catalog_fat_unknown"}:
+            field, answer_kind = "fat_percent", "nutrition"
+        elif reason in {"quantity_unresolved", "quantity_not_exact", "weight_basis_unresolved"}:
+            field, answer_kind = "portion_grams", "quantity"
+        else:
+            return None
+        choices = []
+        for ref in pending_questions:
+            if any(item["ref"] == ref for item in context.get("recipes", ())):
+                choices.append({"kind": "candidate", "candidate_ref": ref, "candidate_kind": "recipe"})
+            elif any(item["ref"] == ref for item in context.get("candidates", ())):
+                choices.append({"kind": "candidate", "candidate_ref": ref, "candidate_kind": "product"})
+        return Question(question_ref="q1", field=field, prompt=prompt,
+                        answer_kind=answer_kind, choices=choices)
+
+    @staticmethod
+    def _clarification_operation_id(origin):
+        return uuid5(CLARIFICATION_NAMESPACE, str(origin))
+
+    def _queue_clarification(self, connection, claim, context, reason, pending_questions):
+        question = self._clarification_question(context, reason, pending_questions)
+        if question is None:
+            return
+        source = connection.execute(sa.select(db.inbox_updates.c.telegram_account_id).where(
+                db.inbox_updates.c.user_id == claim.actor,
+                db.inbox_updates.c.id == claim.origin)).mappings().one()
+        job = connection.execute(sa.select(db.conversation_jobs.c.id).where(
+            self._where(claim.actor, claim.origin))).scalar_one()
+        notification_id = self._clarification_operation_id(claim.origin)
+        if connection.execute(sa.select(db.applied_operations.c.id).where(
+                db.applied_operations.c.user_id == claim.actor,
+                db.applied_operations.c.id == notification_id)).scalar_one_or_none() is not None:
+            return
+        pending_date = context.get("pending_food_date") or context.get("local_date")
+        outcome = OutcomeEnvelope(result=NeedsClarification(
+            schema_version="1.0", operation_id=notification_id,
+            outcome="needs_clarification", pending_action_id=job, pending_revision=1,
+            effective_date=date.fromisoformat(pending_date) if pending_date else None,
+            questions=[question], previously_applied_operation_ids=[])).model_dump(mode="json")
+        prepared = {"kind": "clarification_notification", "pending_action_id": str(job)}
+        connection.execute(db.prepared_operations.insert().values(
+            id=notification_id, user_id=claim.actor, origin_update_id=claim.origin,
+            position=CLARIFICATION_POSITION, request_hash=digest(prepared), command=prepared))
+        connection.execute(db.applied_operations.insert().values(
+            id=notification_id, user_id=claim.actor, outcome=outcome))
+        connection.execute(db.outbox.insert().values(
+            user_id=claim.actor, operation_id=notification_id,
+            telegram_account_id=source["telegram_account_id"], payload=outcome))
 
     @staticmethod
     def _where(actor, origin):
@@ -393,6 +458,9 @@ class ConversationWorker:
             if resolution.pending_food_date is not None:
                 connection.execute(db.conversation_jobs.update().where(self._where(claim.actor, claim.origin))
                                    .values(pending_food_date=resolution.pending_food_date))
+            if resolution.pending_questions:
+                self._queue_clarification(connection, claim, claim.context, resolution.reason,
+                                          resolution.pending_questions)
         return True
 
     def _failure(self, claim, reason, *, retryable, require_claim=True, retry_after=None):
