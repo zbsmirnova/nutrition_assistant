@@ -2,7 +2,7 @@
 
 Date: 2026-09-22
 
-Status: current design overview. Product choices and technical proposals are distinguished in the decision register. Typed contracts, M1 persistence, W002 private Telegram transport, W003's controlled-proposal conversation worker, W006's reply-linked dairy clarification path, W007's bounded mixed-food partial saving, W008's trusted correction/delete/restore execution, W009/W010's bounded conversational entry targets, selection, and fields, W011's recipe persistence, W012's pinned recipe consumption, W013's bounded saved-recipe lookup, and W014's recipe clarification/resumption are implemented for their stated scopes. W004 implements the Nebius request adapter; live compatibility and model quality remain unverified. Later domains and deployment remain unimplemented; revision-specific verification belongs in the work briefs.
+Status: current design overview. Product choices and technical proposals are distinguished in the decision register. Typed contracts, M1 persistence, W002 private Telegram transport, W003's controlled-proposal conversation worker, W006's reply-linked dairy clarification path, W007's bounded mixed-food partial saving, W008's trusted correction/delete/restore execution, W009/W010's bounded conversational entry targets, selection, and fields, W011's recipe persistence, W012's pinned recipe consumption, W013's bounded saved-recipe lookup, and W014's recipe clarification/resumption are implemented for their stated scopes. W004 implements the Nebius request adapter; live compatibility and model quality remain unverified. D040 proposes a private one-worker/one-PostgreSQL EU VPS pilot; W024 owns the runner and deployment implementation. No production deployment is claimed yet.
 
 Input: the personal nutrition tracker architecture brief dated 2026-09-21.
 
@@ -186,7 +186,16 @@ Proposed telemetry: update accepted/deduplicated; processing started/failed; par
 
 Retention and provider-data policies are unresolved under Q10 in [README.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/README.md?type=file&root=%252F); do not silently turn an earlier candidate retention duration into implemented policy. Local synthetic-data development can proceed while real-data requirements are settled.
 
-The existing deployment settings allow zero running machines. Reminder delivery needs either a running worker or an external wake-up mechanism; an in-process timer cannot run while its process is stopped. Hosting, region, budget, and availability choices are tracked under Q11. Verify current vendor contracts before selecting or deploying the new runtime.
+For the MVP pilot, D040 proposes one always-on EU VPS with Docker Compose: one
+supervised worker, one private PostgreSQL service, persistent storage, and no
+public application port. The worker uses Telegram long polling and outbound
+Nebius HTTPS. The existing deployment settings allow zero running machines and
+describe Open WebUI, so they are not a deployment for this application.
+W024 must implement the long-running runner, secret injection, health checks,
+backup, restore rehearsal, and startup/rollback runbook before deployment.
+Reminder delivery still needs either a running worker or an external wake-up
+mechanism; reminders remain post-MVP W018. Host, budget, backup target, and
+availability constraints remain in Q11 until the product owner selects them.
 
 ## 10. Delivery and verification references
 
