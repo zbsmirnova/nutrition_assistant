@@ -204,6 +204,10 @@ The seven returned proposals preserved consumption intent and included an expect
 
 The clarification and action-discipline failures are prompt-alignment hypotheses, not evidence of a model-capability ceiling. The two provider errors are operational evidence only.
 
+## Production contract control — 2026-09-24
+
+The user reran `INTAKE-002` with the production backend-derived-evidence contract and [prompt_candidate_v5.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/evals/prompt_candidate_v5.txt?type=file&root=%252F). Parser fingerprint: `nebius:63fbf471b7b808541bcccfc1aac1d29e3401ca60995b63e3610e4b4c3c9a0932`. The single clean chocolate case passed all applicable checks: case-pass `1.00`, consumption `1.00`, one add-food action, evidence validity `1.00`, date validity `1.00`, quantity extraction `1.00`, candidate selection `1.00`, and clarification specificity `1.00`, with no errors. This is user-run exploratory evidence for one case, not model selection or independent QA.
+
 ## Prompt iteration plan
 
 Candidate prompt [prompt_candidate_v2.txt](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/evals/prompt_candidate_v2.txt?type=file&root=%252F) remains a historical comparison. Do not promote v2. Run v3 against the production prompt only after capturing the new parser fingerprint and revision, then compare clarification recall, quantity extraction, evidence/date validity, exact candidate selection, and parser rejection counts.
