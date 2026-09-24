@@ -61,7 +61,10 @@ and feedback capture remain outside MVP.
 
 ## Remaining choice
 
-The topology is accepted. The product owner still needs to choose the provider,
-EU region, monthly budget, backup target, and retention. Actual deployment
-requires a separate authorized operation after W024 is implemented, tested, and
-the secrets are provided through the host's secret mechanism.
+The product owner selected Hetzner Cloud CX23 in Nürnberg (`nbg1`), Germany:
+2 vCPU, 4 GB RAM, and 40 GB local storage. The current list price is about
+€5.49/month before VAT; backups and any separate storage are additional.
+Actual deployment requires a separate authorized operation after W024 is
+implemented, tested, and the secrets are provided through the host's secret
+mechanism. Backup retention, restore target, and final availability objective
+remain open under Q10/Q11.

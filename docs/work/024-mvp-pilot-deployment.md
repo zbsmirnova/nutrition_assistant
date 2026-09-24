@@ -45,7 +45,7 @@ scaling, and unknown-restaurant nutrition sourcing.
 
 ## Required user input before deployment
 
-The product owner must choose an always-on host (existing VPS or a new EU VPS)
-and an acceptable monthly budget. Credentials are entered directly into the
-host's secret store and must not be sent in chat or committed.
-
+The product owner selected a Hetzner Cloud CX23 in Nürnberg (`nbg1`). Before
+deployment, the host must be provisioned and the product owner must authorize
+the deployment operation. Credentials are entered directly into the host's
+secret store and must not be sent in chat or committed.
