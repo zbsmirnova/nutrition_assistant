@@ -48,5 +48,7 @@ grams explicitly.
 Developer verification: 116 offline tests, 99 PostgreSQL integration tests,
 32 retained QA tests, and `git diff --check` passed on 2026-09-24. The new
 recipe provisioning path is covered by two integration tests. No independent
-W022 review or live Telegram recipe result is claimed yet; the retained QA run
-is evidence for previously reviewed slices.
+W022 review was run. A subsequent user-run Telegram pilot consumed 200 g of
+the provisioned recipe and returned `status: applied` with 152 kcal; the
+recipe's missing macronutrients remained unknown as supplied. This is one
+live end-to-end example, not a general model-quality verdict.
