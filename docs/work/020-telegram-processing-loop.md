@@ -27,7 +27,7 @@ Add one explicit `telegram-process` command that polls one bounded batch, proces
 - [x] Add the D034 decision and README operator instructions.
 - [x] Run focused Nebius/CLI tests and the complete offline suite.
 
-Developer verification: focused Nebius/CLI tests passed, followed by 111 offline tests. No independent QA review, live Telegram delivery, or live model quality result was run for this slice.
+Developer verification: focused Nebius/CLI tests passed, followed by 112 offline tests. The first user-run pilot verified bot identity and private-message ingestion (`accepted: 1`), but interpretation failed with `parser_rejected`; the corresponding live smoke reported `date_hint_not_source_evidence`. The runtime prompt was strengthened with an explicit undated-source null-date example, so the next smoke run is required before claiming a successful pilot. No independent QA review or successful live model quality result has been run for this slice.
 
 ## Usage
 
