@@ -1,6 +1,7 @@
 """Trusted local catalog provisioning for the private MVP pilot."""
 
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 import sqlalchemy as sa
@@ -11,11 +12,124 @@ from nutrition_contracts.common import DecimalText, Name, NutrientValue, Nutriti
 
 from . import schema as db
 from .errors import ApplicationError
+from .food_sources import ExternalFoodCandidate
 from .nutrition import to_columns
 from .service import FoodService
 
 
 NUTRIENTS = ("kcal", "protein_g", "fat_g", "carbs_g")
+
+
+def _external_evidence(candidate: ExternalFoodCandidate, query: str) -> dict:
+    return {
+        "provider": candidate.provider,
+        "external_id": candidate.external_id,
+        "source_name": candidate.source_name or candidate.name,
+        "query": query.strip(),
+        "license": candidate.license,
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+def cache_external_products(engine, actor: UUID, *, query: str,
+                            candidates: list[ExternalFoodCandidate]) -> list[dict]:
+    """Persist untrusted source results as private, unconfirmed catalog candidates.
+
+    The source snapshot is immutable.  Repeated searches for the same provider
+    identifier reuse the existing product version instead of creating duplicate
+    local products.  No food entry is written here; the worker must receive an
+    explicit user selection before approving a candidate.
+    """
+    try:
+        product_name = TypeAdapter(Name).validate_python(query.strip())
+    except ValidationError:
+        raise ApplicationError("External lookup query must be a non-empty value") from None
+    if not candidates:
+        return []
+    results = []
+    with engine.begin() as connection:
+        FoodService._user(connection, actor)
+        source_rows = connection.execute(sa.select(db.data_sources).where(
+            db.data_sources.c.user_id == actor,
+            db.data_sources.c.kind == "external_catalog")).mappings().all()
+        by_external = {}
+        for source in source_rows:
+            evidence = source["evidence"] or {}
+            key = (evidence.get("provider"), str(evidence.get("external_id", "")))
+            if key[0] and key[1]:
+                by_external[key] = source
+        confirmed_versions = set(connection.execute(sa.select(
+            db.product_confirmations.c.product_version_id).where(
+                db.product_confirmations.c.user_id == actor)).scalars().all())
+        for candidate in candidates:
+            if not isinstance(candidate, ExternalFoodCandidate) or not candidate.usable():
+                continue
+            if (candidate.nutrition_basis not in {"per_100_g", "per_100_ml"}
+                    or candidate.weight_basis not in {"raw", "cooked", "as_sold"}
+                    or candidate.food_kind not in {"general", "dairy"}):
+                continue
+            if candidate.declared_fat_percent is not None:
+                try:
+                    declared_fat = Decimal(candidate.declared_fat_percent)
+                except (TypeError, ValueError, InvalidOperation):
+                    continue
+                if declared_fat < 0 or declared_fat > 100 or abs(declared_fat.as_tuple().exponent) > 2:
+                    continue
+            key = (candidate.provider, candidate.external_id)
+            source = by_external.get(key)
+            if source is None:
+                source_id, product_id, version_id = uuid4(), uuid4(), uuid4()
+                connection.execute(db.data_sources.insert().values(
+                    id=source_id, user_id=actor, kind="external_catalog",
+                    evidence=_external_evidence(candidate, query)))
+                connection.execute(db.products.insert().values(
+                    id=product_id, user_id=actor, current_version_id=version_id))
+                connection.execute(db.product_versions.insert().values(
+                    id=version_id, user_id=actor, product_id=product_id, version_no=1,
+                    name=product_name, data_source_id=source_id,
+                    nutrition_basis=candidate.nutrition_basis,
+                    weight_basis=candidate.weight_basis,
+                    food_kind=("dairy" if candidate.declared_fat_percent is not None else candidate.food_kind),
+                    declared_fat_percent=(None if candidate.declared_fat_percent is None
+                                         else declared_fat),
+                    **to_columns(_snapshot({name: getattr(candidate, name) for name in NUTRIENTS}))))
+                source = {"id": source_id, "evidence": _external_evidence(candidate, query)}
+                by_external[key] = source
+            version = connection.execute(sa.select(db.product_versions).where(
+                db.product_versions.c.user_id == actor,
+                db.product_versions.c.data_source_id == source["id"])).mappings().one()
+            evidence = source["evidence"] or {}
+            results.append({"version_id": str(version["id"]), "name": version["name"],
+                            "source_kind": "external_catalog", "external_unconfirmed": version["id"] not in confirmed_versions,
+                            "source_name": evidence.get("source_name") or version["name"],
+                            "provider": evidence.get("provider"), "external_id": evidence.get("external_id"),
+                            "nutrition_basis": version["nutrition_basis"], "weight_basis": version["weight_basis"],
+                            "food_kind": version["food_kind"],
+                            "declared_fat_percent": (None if version["declared_fat_percent"] is None
+                                                       else str(version["declared_fat_percent"]))})
+    return results
+
+
+def approve_external_product(engine, actor: UUID, version_id: UUID, *, confirmed_by_update: UUID | None = None) -> None:
+    """Record user approval separately from the immutable source snapshot."""
+    with engine.begin() as connection:
+        FoodService._user(connection, actor)
+        row = connection.execute(sa.select(db.product_versions.c.data_source_id).where(
+            db.product_versions.c.user_id == actor,
+            db.product_versions.c.id == version_id)).scalar_one_or_none()
+        if row is None:
+            raise ApplicationError("External product version not found")
+        source = connection.execute(sa.select(db.data_sources.c.kind, db.data_sources.c.evidence).where(
+            db.data_sources.c.user_id == actor, db.data_sources.c.id == row)).mappings().one()
+        if source["kind"] != "external_catalog":
+            return
+        exists = connection.execute(sa.select(db.product_confirmations.c.id).where(
+            db.product_confirmations.c.user_id == actor,
+            db.product_confirmations.c.product_version_id == version_id)).scalar_one_or_none()
+        if exists is None:
+            connection.execute(db.product_confirmations.insert().values(
+                id=uuid4(), user_id=actor, product_version_id=version_id,
+                confirmed_by_update_id=confirmed_by_update))
 
 
 def _snapshot(values: dict[str, str | None]) -> NutritionSnapshot:

@@ -118,7 +118,7 @@ Any future notification suppression is separate from food persistence: a prior W
 
 | Table | Important columns | Keys and rules |
 | --- | --- | --- |
-| `data_sources` | `kind`, `provider_name NULL`, `external_reference NULL`, `captured_at`, `evidence jsonb NULL`, `origin_update_id NULL`, `confirmation_operation_id NULL` | Immutable provenance snapshots: confirmed personal data, label/manufacturer, branded catalog, generic database, recipe calculation, or approved estimate. User-owned in v1. Do not mutate a source snapshot that supports historical food. |
+| `data_sources` | `kind`, `provider_name NULL`, `external_reference NULL`, `captured_at`, `evidence jsonb NULL`, `origin_update_id NULL`, `confirmation_operation_id NULL` | Immutable provenance snapshots: confirmed personal data, label/manufacturer, branded catalog, generic database, recipe calculation, or approved estimate. User-owned in v1. W025 stores external provider identifiers and license/query evidence here; selection approval is separate. Do not mutate a source snapshot that supports historical food. |
 | `products` | `current_version_id`, `archived_at NULL` | Stable identity. Archiving removes an option from new selections without breaking existing references. |
 | `product_versions` | `product_id`, `version_no`, `name`, `brand NULL`, `data_source_id`, `nutrition_basis` (`per_100_g` or `per_100_ml`), nutrition values, `grams_per_piece NULL`, `ml_per_piece NULL`, `density_g_per_ml NULL`, `weight_basis`, `applied_operation_id` | Unique `(user_id, product_id, version_no)`. Conversions are user-confirmed/source-backed, not invented. Name and label data are versioned for historical explanation. |
 
@@ -252,7 +252,7 @@ The maintained implementation sequence is [roadmap.md](air-file://fai6b8iclscp0t
 
 Runtime query definitions: [schema.py](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/nutrition_app/schema.py?type=file&root=%252F). Frozen migrations: [0001_m1_food_persistence.py](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/migrations/versions/0001_m1_food_persistence.py?type=file&root=%252F) and [0002_bot_delivery_identity.py](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/migrations/versions/0002_bot_delivery_identity.py?type=file&root=%252F). The local database is PostgreSQL 17.11; validation uses separate disposable schemas.
 
-Implemented tables: users, telegram_accounts, inbox_updates, prepared_operations, applied_operations, data_sources, products, product_versions, food_days, food_entries, food_entry_revisions, food_components, and outbox. Alembic maintains its own version table.
+Implemented tables: users, telegram_accounts, inbox_updates, prepared_operations, applied_operations, data_sources, products, product_versions, product_confirmations, food_days, food_entries, food_entry_revisions, food_components, and outbox. Alembic maintains its own version table.
 
 - Prepared operations retain an immutable typed command and request hash, one operation at position zero per M1 message. Applied operations retain the immutable result; unapplied state is the absence of that result. No whole-message completion flag falsely claims that future partial workflows are implemented.
 - M1 sources are synthetic seeded products. Product versions and components store typed nutrient columns with optional bounds. Components support compatible normalized mass/volume, with pinned source/version and calculation policy. Recipe and approved-estimate components are explicitly unsupported in this handler.
@@ -268,7 +268,7 @@ The integration checks in [test_food_service.py](air-file://fai6b8iclscp0tss0s3r
 
 Migration [0003_telegram_transport.py](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/migrations/versions/0003_telegram_transport.py?type=file&root=%252F) adds a per-bot polling cursor, nullable reply-to message identity and a forwarding flag on inbox sources, and a next-attempt timestamp plus Telegram delivery message ID on the outbox. Existing M1 delivery hashes remain compatible when the new source metadata is absent.
 
-The cursor is transport state, not user data or parser completion. It advances only after supported source messages commit; unsupported updates may be acknowledged without storing their personal payloads. Source ownership still comes from the mapped bot/user/private-chat identity. Inbox parsing and clarification state are not implemented by this migration. Account provisioning cannot reassign a previously linked identity.
+The cursor is transport state, not user data or parser completion. It advances only after supported source messages commit; unsupported updates may be acknowledged without storing their personal payloads. Source ownership still comes from the mapped bot/user/private-chat identity. Inbox parsing and clarification state are not implemented by this migration. Account provisioning cannot reassign a previously linked identity. Migration 0010 adds `product_confirmations`: approval of an external snapshot is a separate immutable ownership record and does not update `data_sources`.
 
 ## 15. W003 conversation work and catalog identity
 

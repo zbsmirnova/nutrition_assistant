@@ -23,8 +23,8 @@ from .errors import ApplicationError
 from .service import digest, operation_id_for
 
 
-CONTEXT_VERSION = "single-food-context-v6"
-RESOLVER_VERSION = "single-food-resolver-v10"
+CONTEXT_VERSION = "single-food-context-v7"
+RESOLVER_VERSION = "single-food-resolver-v11"
 MAX_CANDIDATES = 64
 
 
@@ -522,14 +522,14 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
             nutrition_answers = [answer.value for answer in action.answers
                                  if isinstance(answer.value, NutritionAnswer)]
             if selections:
-                if len(selections) != 1 or selections[0].candidate_kind != "recipe":
+                if len(selections) != 1 or selections[0].candidate_kind not in {"recipe", "product"}:
                     return Resolution("unresolved", "clarification_answer_incomplete",
                                       pending_questions=context["pending_questions"])
                 selected = selections[0]
                 if selected.candidate_ref not in context["pending_questions"]:
                     return Resolution("unresolved", "clarification_context_missing")
                 food = {"kind": "candidate", "candidate_ref": selected.candidate_ref,
-                        "candidate_kind": "recipe"}
+                        "candidate_kind": selected.candidate_kind}
                 original_action = type(original_action).model_validate({
                     **original_action.model_dump(mode="json"), "food": food})
             elif text_answers:
@@ -576,6 +576,9 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
         merged["pending_recipes"] = []
         merged["pending_entries"] = []
         merged["pending_identity_confirmed"] = True
+        merged["external_candidate_confirmed"] = bool(
+            isinstance(original_action, AddFood) and selections and
+            selections[0].candidate_kind == "product")
         merged["operation_position"] = pending_position
         merged["evidence_update_ids"] = [UUID(pending["origin_update_id"]), origin]
         merged["pending_action_id"] = UUID(pending["job_id"])
@@ -678,8 +681,12 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
     pending_ref = matching_products[0]["ref"]
     product = matching_products[0]
     # Duplicate indistinguishable names are ambiguity even if the model picked a token.
-    if sum(normalized(c["name"]) == normalized(product["name"]) for c in candidates) != 1:
+    if (sum(normalized(c["name"]) == normalized(product["name"]) for c in candidates) != 1
+            and not (product.get("source_kind") == "external_catalog"
+                     and action.food.kind == "candidate")):
         return defer("product_ambiguous")
+    if product.get("external_unconfirmed") and not context.get("pending_identity_confirmed"):
+        return defer("external_product_selection", {pending_ref: {"q1": ["selection", "text"]}})
     if product["food_kind"] is None:
         return defer("catalog_identity_unclassified")
     text = context["source_text"]

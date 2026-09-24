@@ -16,6 +16,7 @@ from .db import engine_for, migrate
 from .conversation import ConversationWorker
 from .conversation_demo import run_conversation_demo
 from .catalog import create_product, create_recipe
+from .food_sources import lookup_from_environment
 from .interpretation import SyntheticParser
 from .nebius import NebiusConfig, NebiusParser, run_synthetic_smoke
 from .demo import run_demo
@@ -176,7 +177,7 @@ def main():
                           .dispatch_one(TelegramSender(api))}
             else:
                 polled = TelegramPoller(engine, api).poll_once(timeout=args.timeout)
-                processed = ConversationWorker(engine).run_one(args.user, live_parser)
+                processed = ConversationWorker(engine, food_lookup=lookup_from_environment()).run_one(args.user, live_parser)
                 # Keep the operator output useful without echoing source text,
                 # clarification wording, or the private outcome payload.
                 process_keys = {"status", "reason", "origin_update_id"}

@@ -22,9 +22,9 @@ No numerical usability, accuracy, cost, or latency target has been agreed. Live-
 
 ## Scope
 
-Accepted MVP domains: food logging and corrections, recipes, one daily body weight, and one daily steps total. The combined completion/activity check-in and reminders are post-MVP W018 work. Personal products and manual nutrition values support food logging. The release roadmap includes history/reporting, post-MVP feedback capture, and operational readiness; report scheduling and export/deletion requirements still have open product details.
+Accepted MVP domains: food logging and corrections, recipes, one daily body weight, and one daily steps total. The combined completion/activity check-in and reminders are post-MVP W018 work. Personal products and manual nutrition values support food logging; an unknown product may use the W025 external fallback after explicit candidate and portion confirmation. The release roadmap includes history/reporting, post-MVP feedback capture, and operational readiness; report scheduling and export/deletion requirements still have open product details.
 
-Training/workout tracking belongs in v2. Other measurements, menstrual-cycle context, additional activity metrics, Apple Health integration, external catalog/barcode conveniences, habit suggestions, historical imports, and public multi-user access are future work with timing to be decided.
+Training/workout tracking belongs in v2. Other measurements, menstrual-cycle context, additional activity metrics, Apple Health integration, barcode/photo flows, restaurant nutrition, background catalog synchronization, habit suggestions, historical imports, and public multi-user access are future work with timing to be decided.
 
 V1 does not include food-photo estimation, medical advice, autonomous changes to production code, or a promise of exact restaurant-food nutrition.
 

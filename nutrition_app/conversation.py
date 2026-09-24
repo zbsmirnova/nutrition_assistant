@@ -10,7 +10,7 @@ from pydantic import ValidationError
 import sqlalchemy as sa
 from sqlalchemy.exc import DBAPIError
 
-from nutrition_contracts.parser import ParserOutput
+from nutrition_contracts.parser import AddFood, ParserOutput
 from nutrition_contracts.results import NeedsClarification, OutcomeEnvelope, Question
 
 from . import schema as db
@@ -18,6 +18,8 @@ from .errors import ApplicationError, NotFound
 from .interpretation import (CONTEXT_VERSION, MAX_CANDIDATES, RESOLVER_VERSION,
                              Parser, ParserRejected, ParserUnavailable, Resolution, parser_request,
                              resolve, resolve_actions)
+from .catalog import cache_external_products
+from .food_sources import FoodSourceUnavailable
 from .service import FoodService, digest, operation_id_for
 
 
@@ -38,12 +40,13 @@ class Claim:
 
 
 class ConversationWorker:
-    def __init__(self, engine, *, lease_seconds=60):
+    def __init__(self, engine, *, lease_seconds=60, food_lookup=None):
         if type(lease_seconds) is not int or not 1 <= lease_seconds <= 300:
             raise ApplicationError("Worker lease must be between 1 and 300 seconds")
         self.engine = engine
         self.service = FoodService(engine)
         self.lease_seconds = lease_seconds
+        self.food_lookup = food_lookup
 
     @staticmethod
     def _clarification(context, reason, pending_questions):
@@ -59,6 +62,17 @@ class ConversationWorker:
             if choices:
                 return "Какой сохранённый рецепт записать?\n" + "\n".join(choices) + \
                     "\nОтветьте номером или напишите более точное название рецепта."
+        if reason == "external_product_selection":
+            choices = []
+            for number, candidate in enumerate((item for item in context.get("candidates", ())
+                                                if item["ref"] in pending_questions), 1):
+                source = candidate.get("source_name") or candidate.get("provider")
+                suffix = "" if not source or source == candidate["name"] else f" — источник: {source}"
+                choices.append(f"{number}. {candidate['name']}{suffix}")
+            if choices:
+                return ("Нашёл варианты продукта. Выберите подходящий номер:\n" +
+                        "\n".join(choices) +
+                        "\nПосле выбора попрошу подтвердить вес порции.")
         if reason in {"quantity_unresolved", "quantity_not_exact", "weight_basis_unresolved"}:
             ref = next(iter(pending_questions), None)
             recipe = next((item for item in context.get("recipes", ()) if item["ref"] == ref), None)
@@ -87,6 +101,8 @@ class ConversationWorker:
             return None
         if reason == "recipe_target_ambiguous":
             field, answer_kind = "recipe", "selection"
+        elif reason == "external_product_selection":
+            field, answer_kind = "product", "selection"
         elif reason in {"dairy_fat_missing", "catalog_fat_unknown"}:
             field, answer_kind = "fat_percent", "nutrition"
         elif reason in {"quantity_unresolved", "quantity_not_exact", "weight_basis_unresolved"}:
@@ -155,10 +171,20 @@ class ConversationWorker:
     @staticmethod
     def _context(connection, user, source, parser_version):
         versions, products = db.product_versions, db.products
-        rows = connection.execute(sa.select(versions).select_from(products.join(versions, sa.and_(
+        all_rows = connection.execute(sa.select(versions,
+            db.data_sources.c.kind.label("source_kind"),
+            db.data_sources.c.evidence.label("source_evidence"),
+            db.product_confirmations.c.id.label("confirmation_id")).select_from(products.join(versions, sa.and_(
             versions.c.user_id == products.c.user_id, versions.c.product_id == products.c.id,
-            versions.c.id == products.c.current_version_id))).where(products.c.user_id == user["id"])
+            versions.c.id == products.c.current_version_id)).join(db.data_sources, sa.and_(
+            db.data_sources.c.user_id == versions.c.user_id,
+            db.data_sources.c.id == versions.c.data_source_id)).outerjoin(db.product_confirmations, sa.and_(
+            db.product_confirmations.c.user_id == versions.c.user_id,
+            db.product_confirmations.c.product_version_id == versions.c.id))).where(products.c.user_id == user["id"])
             .order_by(versions.c.name, versions.c.id).limit(MAX_CANDIDATES + 1)).mappings().all()
+        rows = [row for row in all_rows if not (
+            row["source_kind"] == "external_catalog" and
+            row["confirmation_id"] is None)]
         recipe_rows = connection.execute(sa.select(
             db.recipe_versions.c.id.label("version_id"),
             db.recipe_versions.c.recipe_id,
@@ -192,7 +218,11 @@ class ConversationWorker:
             context["candidates"] = [{"ref": f"c{i}", "version_id": str(row["id"]), "name": row["name"],
                 "nutrition_basis": row["nutrition_basis"], "weight_basis": row["weight_basis"],
                 "food_kind": row["food_kind"], "declared_fat_percent":
-                    None if row["declared_fat_percent"] is None else str(row["declared_fat_percent"])}
+                    None if row["declared_fat_percent"] is None else str(row["declared_fat_percent"]),
+                "source_kind": row["source_kind"],
+                "source_name": (row["source_evidence"] or {}).get("source_name"),
+                "provider": (row["source_evidence"] or {}).get("provider"),
+                "external_unconfirmed": row["source_kind"] == "external_catalog" and row["confirmation_id"] is None}
                 for i, row in enumerate(rows, 1)]
             recipe_start = len(context["candidates"]) + 1
             context["recipes"] = [{"ref": f"c{i}", "name": row["name"]}
@@ -444,6 +474,9 @@ class ConversationWorker:
                     if claim.context.get("pending"):
                         position = claim.context["pending"].get("position", 0)
                 self.service._prepare(connection, claim.actor, resolution.command, position=position)
+                if (claim.context.get("external_candidate_confirmed") or
+                        self._pending_command_uses_external(claim.context, resolution.command)):
+                    self._approve_external_in_connection(connection, claim.actor, resolution.command)
             if resolution.pending_questions:
                 claim.context["pending_questions"] = resolution.pending_questions
                 claim.context["pending_reason"] = resolution.reason
@@ -462,6 +495,46 @@ class ConversationWorker:
                 self._queue_clarification(connection, claim, claim.context, resolution.reason,
                                           resolution.pending_questions)
         return True
+
+    @staticmethod
+    def _approve_external_in_connection(connection, actor, command):
+        from nutrition_contracts.commands import ProductComponent
+        for component in command.command.food.components:
+            if not isinstance(component, ProductComponent):
+                continue
+            source_id = connection.execute(sa.select(db.product_versions.c.data_source_id).where(
+                db.product_versions.c.user_id == actor,
+                db.product_versions.c.id == component.product_version_id)).scalar_one_or_none()
+            if source_id is None:
+                continue
+            row = connection.execute(sa.select(db.data_sources.c.kind, db.data_sources.c.evidence).where(
+                db.data_sources.c.user_id == actor, db.data_sources.c.id == source_id)).mappings().one_or_none()
+            if row is None or row["kind"] != "external_catalog":
+                continue
+            confirmed_by_update = (command.source.evidence_update_ids[-1]
+                                   if command.source.evidence_update_ids else command.source.origin_update_id)
+            exists = connection.execute(sa.select(db.product_confirmations.c.id).where(
+                db.product_confirmations.c.user_id == actor,
+                db.product_confirmations.c.product_version_id == component.product_version_id)).scalar_one_or_none()
+            if exists is None:
+                connection.execute(db.product_confirmations.insert().values(
+                    id=uuid4(), user_id=actor, product_version_id=component.product_version_id,
+                    confirmed_by_update_id=confirmed_by_update))
+
+    @staticmethod
+    def _pending_command_uses_external(context, command):
+        pending = context.get("pending")
+        if pending is None or command is None:
+            return False
+        if not hasattr(command.command, "food"):
+            return False
+        original_context = pending.get("context") or {}
+        external_versions = {candidate.get("version_id") for candidate in
+                             original_context.get("candidates", ())
+                             if candidate.get("source_kind") == "external_catalog"}
+        return any(str(component.product_version_id) in external_versions
+                   for component in command.command.food.components
+                   if hasattr(component, "product_version_id"))
 
     def _failure(self, claim, reason, *, retryable, require_claim=True, retry_after=None):
         with self.engine.begin() as connection:
@@ -517,6 +590,7 @@ class ConversationWorker:
                     status = self._failure(claim, "parser_unavailable", retryable=True)
                     return {"status": status, "origin_update_id": str(claim.origin)}
                 point("after_parse")
+                output = None
                 try:
                     if not isinstance(raw, str) or len(raw.encode("utf-8")) > 256 * 1024:
                         raise ValueError("Invalid proposal size or type")
@@ -542,6 +616,34 @@ class ConversationWorker:
                     proposal = output.model_dump(mode="json")
                 except (ValidationError, ValueError, TypeError, OverflowError):
                     resolution = Resolution("rejected", "invalid_parser_proposal")
+                if (resolution.reason == "product_unresolved" and output is not None and self.food_lookup is not None and
+                        len(output.actions) == 1 and isinstance(output.actions[0], AddFood) and
+                        output.actions[0].food.kind == "name"):
+                    try:
+                        external = self.food_lookup.search(output.actions[0].food.name, limit=5)
+                    except FoodSourceUnavailable:
+                        status = self._failure(claim, "food_source_unavailable", retryable=True)
+                        return {"status": status, "reason": "food_source_unavailable",
+                                "origin_update_id": str(claim.origin)}
+                    if external:
+                        try:
+                            cached = cache_external_products(self.engine, actor,
+                                                              query=output.actions[0].food.name,
+                                                              candidates=external)
+                        except ApplicationError:
+                            status = self._failure(claim, "food_source_rejected", retryable=False)
+                            return {"status": status, "reason": "food_source_rejected",
+                                    "origin_update_id": str(claim.origin)}
+                        start = len(context["candidates"]) + 1
+                        pending = {}
+                        for index, candidate in enumerate(cached, start):
+                            candidate["ref"] = f"c{index}"
+                            context["candidates"].append(candidate)
+                            pending[candidate["ref"]] = {"q1": ["selection", "text"]}
+                        if pending:
+                            resolution = Resolution("unresolved", "external_product_selection",
+                                pending_food_date=resolution.pending_food_date,
+                                pending_questions=pending)
             if not self._freeze(claim, proposal, resolution):
                 return {"status": "lost_claim", "origin_update_id": str(claim.origin)}
             point("after_prepare")

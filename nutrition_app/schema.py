@@ -90,6 +90,15 @@ data_sources = owned("data_sources",
     sa.Column("kind", sa.Text, nullable=False),
     sa.Column("evidence", JSONB, nullable=False))
 
+product_confirmations = owned("product_confirmations",
+    sa.Column("product_version_id", UUID(as_uuid=True), nullable=False),
+    sa.Column("confirmed_by_update_id", UUID(as_uuid=True)),
+    sa.ForeignKeyConstraint(["user_id", "product_version_id"],
+                            ["product_versions.user_id", "product_versions.id"]),
+    sa.ForeignKeyConstraint(["user_id", "confirmed_by_update_id"],
+                            ["inbox_updates.user_id", "inbox_updates.id"]),
+    sa.UniqueConstraint("user_id", "product_version_id", name="uq_product_confirmation_version"))
+
 products = owned("products", sa.Column("current_version_id", UUID(as_uuid=True), nullable=False))
 
 product_versions = owned("product_versions",

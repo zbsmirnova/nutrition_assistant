@@ -62,6 +62,16 @@ Each poll command receives one batch into the durable inbox; it does not run a p
 
 The `product-create` line is trusted local pilot setup: replace the example name and nutrition with values from your product label. It creates an owner-scoped catalog version; it does not call Nebius or let the model invent nutrition. Use it before sending a matching food message through Telegram. See [W021](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/021-local-catalog-provisioning.md?type=file&root=%252F).
 
+If a food is absent from the local catalog, the MVP can use the external
+cold-start fallback. Open Food Facts is queried without a secret; USDA FoodData
+Central is added when `USDA_FDC_API_KEY` is present. Set a descriptive
+`NUTRITION_FOOD_USER_AGENT` for Open Food Facts. The provider result is cached
+as an unconfirmed source snapshot, shown as numbered choices, and never enters
+the diary until you select it and confirm the eaten weight (or approve an
+estimate). Later messages reuse the confirmed local version. Provider outages
+retry; empty results and unknown restaurant nutrition remain unresolved. See
+[D043](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0043-external-food-catalog-fallback.md?type=file&root=%252F) and [W025](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/025-external-food-catalog-fallback.md?type=file&root=%252F).
+
 The `recipe-create` line is the corresponding trusted setup for a saved recipe. It records explicit per-100-g nutrition and does not calculate or infer nutrition from ingredient names. Add `--ingredients-json` when the original ingredient snapshots should be retained. A later Telegram message must include the grams eaten; no default serving is created. See [W022](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/022-local-recipe-provisioning.md?type=file&root=%252F).
 
 For the fastest personal pilot, `telegram-process` composes those steps once: it polls one bounded batch, processes the oldest eligible message for the supplied owner through the configured Nebius parser, and sends one queued response. Repeat it for the next message. Its output reports only poll, processing, and delivery status; it does not print message text or food totals. It is an operator command, not a daemon or scheduler. See [W020](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/020-telegram-processing-loop.md?type=file&root=%252F).

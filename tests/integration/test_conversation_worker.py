@@ -23,6 +23,7 @@ from nutrition_app.conversation_demo import PRODUCT_NAME, TEXT, dairy_nutrition,
 from nutrition_app.db import ROOT, migrate
 from nutrition_app.demo import food_command, message, seed_product, seed_user
 from nutrition_app.errors import NotFound
+from nutrition_app.food_sources import ExternalFoodCandidate
 from nutrition_app.interpretation import SyntheticParser
 from nutrition_app.outbox import OutboxWorker
 from nutrition_app.service import FoodService, operation_id_for
@@ -96,6 +97,66 @@ class ConversationWorkerTests(unittest.TestCase):
             "depends_on": [], "unresolved": [], "food": food,
             "quantity": {"amount": "250", "unit": "g"}, "weight_basis": None,
             "date_hint": {"text": None}, "meal": "lunch"}]}
+
+    def test_external_product_is_cached_then_requires_selection_and_approval(self):
+        text = "Съела 100 г яблока"
+        origin = self.source(1, text=text)
+        output = {"schema_version": "1.0", "actions": [{
+            "kind": "add_food", "action_id": "a1", "evidence": text,
+            "depends_on": [], "unresolved": [], "food": {"kind": "name", "name": "яблоко"},
+            "quantity": {"amount": "100", "unit": "g"}, "weight_basis": "as_sold",
+            "date_hint": {"text": None}, "meal": "lunch"}]}
+
+        class Lookup:
+            calls = 0
+            def search(self, query, *, limit=5):
+                self.calls += 1
+                if self.calls > 1:
+                    raise AssertionError("confirmed local product must not call the provider")
+                return [ExternalFoodCandidate("fixture", "apple-1", "Apple", "52", "0.3", "0.2", "14",
+                                               source_name="Apple (fixture)", license="fixture")]
+
+        worker = ConversationWorker(self.engine, food_lookup=Lookup())
+        initial = worker.run_one(self.actor, ControlledParser(output), origin=origin)
+        self.assertEqual((initial["status"], initial["reason"]), ("unresolved", "external_product_selection"))
+        self.assertIn("Apple", initial["clarification"])
+        with self.engine.begin() as connection:
+            message_id = connection.execute(sa.select(db.inbox_updates.c.telegram_message_id).where(
+                db.inbox_updates.c.id == origin)).scalar_one()
+            job = connection.execute(sa.select(db.conversation_jobs).where(
+                db.conversation_jobs.c.user_id == self.actor,
+                db.conversation_jobs.c.origin_update_id == origin)).mappings().one()
+            self.assertEqual(job["pending_questions"], {"c2": {"q1": ["selection", "text"]}})
+        reply = self.source(2, text="1", reply_to_message_id=message_id)
+        answer = {"schema_version": "1.0", "actions": [{
+            "kind": "answer_clarification", "action_id": "a1", "evidence": "1",
+            "depends_on": [], "unresolved": [],
+            "pending": {"kind": "candidate", "candidate_ref": "c2", "candidate_kind": "pending"},
+            "answers": [{"question_ref": "q1", "value": {"kind": "selection",
+                "selection": {"kind": "candidate", "candidate_ref": "c2", "candidate_kind": "product"}}}],
+        }]}
+        resumed = worker.run_one(self.actor, ControlledParser(answer), origin=reply)
+        self.assertEqual(resumed["status"], "applied")
+        with self.engine.connect() as connection:
+            source_id = connection.execute(sa.select(db.product_versions.c.data_source_id).where(
+                db.product_versions.c.user_id == self.actor,
+                db.product_versions.c.name == "яблоко")).scalar_one()
+            self.assertIsNotNone(connection.execute(sa.select(db.product_confirmations.c.id).where(
+                db.product_confirmations.c.user_id == self.actor,
+                db.product_confirmations.c.product_version_id == connection.execute(
+                    sa.select(db.product_versions.c.id).where(
+                        db.product_versions.c.user_id == self.actor,
+                        db.product_versions.c.data_source_id == source_id)).scalar_one())).scalar_one_or_none())
+            self.assertEqual(self.count(db.food_entries), 1)
+        second = self.source(3, text="Съела 50 г яблока")
+        local_output = {"schema_version": "1.0", "actions": [{
+            "kind": "add_food", "action_id": "a1", "evidence": "Съела 50 г яблока",
+            "depends_on": [], "unresolved": [],
+            "food": {"kind": "candidate", "candidate_ref": "c2", "candidate_kind": "product"},
+            "quantity": {"amount": "50", "unit": "g"}, "weight_basis": "as_sold",
+            "date_hint": {"text": None}, "meal": "lunch"}]}
+        self.assertEqual(worker.run_one(self.actor, ControlledParser(local_output), origin=second)["status"], "applied")
+        self.assertEqual(self.count(db.food_entries), 2)
 
     def test_saved_recipe_is_an_opaque_candidate_and_logs_eaten_grams(self):
         recipe = self.define_recipe(1)
