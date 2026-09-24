@@ -29,9 +29,9 @@ def total(value) -> str:
 
 
 def profile(snapshot, format_value):
+    visible_fields = (("kcal", "Ккал"), ("protein_g", "Белки, г"))
     return "\n".join(f"{label}: {format_value(getattr(snapshot, key))}"
-                     for key, label in (("kcal", "Ккал"), ("protein_g", "Белки, г"),
-                                        ("fat_g", "Жиры, г"), ("carbs_g", "Углеводы, г")))
+                     for key, label in visible_fields)
 
 
 def render_food_result(payload: dict) -> str:
@@ -50,11 +50,8 @@ def render_food_result(payload: dict) -> str:
     estimate_note = "\nКоличество отмечено по вашему предположению." if entry.estimated else ""
     verb = "Записано" if entry.change == "added" else "Исправлено"
     text = (f"{verb}: {name}{estimate_note}\n{profile(entry.nutrition, nutrient)}\n\n"
-            f"Итого за {day.effective_date.strftime('%d.%m.%Y')} на момент записи:\n"
+            "Итого за сегодня:\n"
             f"{profile(day.nutrition, total)}")
-    if day.pending_food_actions:
-        text += f"\nОжидают уточнения: {day.pending_food_actions}. Они не включены в итог."
-    text += "\nДень отмечен завершённым." if day.completeness == "complete" else "\nДень ещё не отмечен завершённым."
     if len(text.encode("utf-16-le")) // 2 > 4000:
         raise ValueError("Response exceeds the safe message limit")
     return text
@@ -70,7 +67,7 @@ def render_observation_result(payload: dict) -> str:
     observation = result.observations[0]
     day = observation.effective_date.strftime("%d.%m.%Y")
     if observation.kind == "daily_weight":
-        return f"Записан вес за {day}: {number(observation.value_kg)} кг."
+        return f"Вес за сегодня записан: {number(observation.value_kg)} кг."
     return f"Записано шагов за {day}: {observation.steps}."
 
 

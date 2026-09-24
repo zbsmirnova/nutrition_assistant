@@ -14,7 +14,7 @@ Accepted product choices and their evidence are recorded in D001/D004/D010 in [R
 | --- | --- |
 | A message contains clear and unclear food items | Save independent clear items; ask about unclear ones and exclude only those from totals. Resolving one pending item must not repeat another item. |
 | Entering a recipe | Accept arbitrary ingredient quantities, clarify missing details, and calculate nutrition per 100 g. Save the original amounts and cooking instructions when present for reuse. Direct per-100-g input also fits the recipe model. |
-| Normal food reply | Brief entry/correction summary with its kcal/macros and the updated daily kcal/macros. Indicate pending items and partial nutrient coverage. |
+| Normal food reply | Brief entry/correction summary with kcal/protein and the updated daily kcal/protein totals, headed `Итого за сегодня:`. Routine MVP copy does not include fat/carbohydrate lines, pending counts, or a day-completeness sentence; those states remain authoritative backend data. |
 | Dairy product identity | Ask for missing fat percentage when it affects the product/nutrition-profile choice; reuse an explicitly supplied percentage or an exact identified product/label without asking again. |
 
 The recipe clarification explicitly expands the saved recipe details to include ingredients and instructions while retaining the decision not to store portion sizes or preparation batches.

@@ -74,8 +74,8 @@ class TelegramProtocolTests(unittest.TestCase):
         self.assertTrue(payload["link_preview_options"]["is_disabled"])
         self.assertEqual(payload["chat_id"], 789)
         self.assertIn("Ккал: 175", payload["text"])
-        self.assertIn("22.09.2026", payload["text"])
-        self.assertIn("22,5", payload["text"])
+        self.assertIn("Итого за сегодня:", payload["text"])
+        self.assertNotIn("Жиры, г:", payload["text"])
 
     def test_sender_replies_to_the_triggering_message_when_available(self):
         calls = []
@@ -136,7 +136,8 @@ class RussianReplyTests(unittest.TestCase):
         entry["nutrition"]["protein_g"] = {"value": "0", "lower": None, "upper": None}
         day["nutrition"]["protein_g"]["amount"]["value"] = "0"
         text = render_food_result(payload)
-        self.assertEqual(text.count("Жиры, г: неизвестно"), 2)
+        self.assertNotIn("Жиры, г:", text)
+        self.assertNotIn("Углеводы, г:", text)
         self.assertEqual(text.count("Белки, г: 0"), 2)
         day["component_count"] = 2
         for key in day["nutrition"]:
@@ -149,8 +150,8 @@ class RussianReplyTests(unittest.TestCase):
         payload["result"]["food_entries"][0]["description"] = "🍲\n" * 7000
         text = render_food_result(payload)
         self.assertLess(len(text.encode("utf-16-le")) // 2, 4000)
-        self.assertIn("Итого за 22.09.2026", text)
-        self.assertIn("на момент записи", text)
+        self.assertIn("Итого за сегодня:", text)
+        self.assertNotIn("на момент записи", text)
         self.assertNotIn("🍲\n🍲", text)
 
     def test_unsupported_outcome_is_not_presented_as_saved(self):
@@ -165,7 +166,7 @@ class RussianReplyTests(unittest.TestCase):
         payload["result"]["food_entries"][0]["change"] = "corrected"
         text = render_food_result(payload)
         self.assertTrue(text.startswith("Исправлено: мой суп"))
-        self.assertIn("Итого за 22.09.2026", text)
+        self.assertIn("Итого за сегодня:", text)
 
     def test_clarification_outcome_is_rendered_as_a_question(self):
         payload = {"result": {

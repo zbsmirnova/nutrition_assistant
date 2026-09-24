@@ -181,7 +181,7 @@ class ObservationTests(unittest.TestCase):
     def test_confirmations_are_russian(self):
         weight = self.service.apply(self.seed.user_id, weight_command(self.seed, self.source(1),
             value_kg="76.3"))
-        self.assertEqual(render_result(weight.model_dump(mode="json")), "Записан вес за 22.09.2026: 76,3 кг.")
+        self.assertEqual(render_result(weight.model_dump(mode="json")), "Вес за сегодня записан: 76,3 кг.")
         steps = self.service.apply(self.seed.user_id, steps_command(self.seed, self.source(2), steps=8200))
         self.assertEqual(render_result(steps.model_dump(mode="json")), "Записано шагов за 22.09.2026: 8200.")
         repeat = self.service.apply(self.seed.user_id, weight_command(self.seed, self.source(3),

@@ -771,7 +771,7 @@ class ConversationWorkerTests(unittest.TestCase):
         result = run_conversation_demo(self.engine)
         self.assertEqual(result["current_day"]["entry_count"], 1)
         self.assertIn("Ккал: 120", result["rendered_replies"][0])
-        self.assertIn("Итого за 22.09.2026", result["rendered_replies"][0])
+        self.assertIn("Итого за сегодня:", result["rendered_replies"][0])
         replay = run_conversation_demo(self.engine)
         self.assertEqual(replay["current_day"]["entry_count"], 1)
         self.assertEqual(replay["delivery"], "idle")

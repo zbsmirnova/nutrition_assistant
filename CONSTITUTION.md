@@ -39,7 +39,7 @@ These IDs are stable references for specifications, work briefs, and QA. Product
 | FOOD-003 | Correct the same logical entry with retained revision history; changing 100 g to 80 g must not add another portion. |
 | FOOD-004 | In a mixed message, save clear independent items and clarify unresolved ones. Answering later must not repeat the already saved items. |
 | FOOD-005 | Plans, questions, and product/recipe definitions are not evidence of consumption. |
-| FOOD-006 | Food acknowledgments describe what was saved or corrected and show the entry nutrition plus updated day totals, including pending/partial coverage where relevant. |
+| FOOD-006 | Food acknowledgments describe what was saved or corrected and show entry and daily kcal/protein totals. The backend continues to persist all four nutrient fields, pending state, and completeness; routine MVP Telegram copy omits fat/carbohydrate lines and pending/completeness notices. |
 | FOOD-007 | In the MVP, model output may identify ambiguity and offer bounded choices, but user decisions control approximations, assumptions, averages, portion conversions, edible-weight interpretations, and recipe substitutes. Unapproved choices remain pending and outside totals. |
 | RECIPE-001 | Store versioned kcal and macronutrients per 100 g, original ingredient amounts/units, and cooking instructions when supplied. Calculate from arbitrary ingredient amounts or accept supplied per-100-g values. |
 | RECIPE-002 | Store eaten grams on food entries. Do not introduce default recipe portions, serving counts, or separate cooked-batch entities. Ask for material missing calculation inputs such as usable finished yield. |

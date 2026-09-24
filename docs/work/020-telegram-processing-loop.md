@@ -28,18 +28,24 @@ Add one explicit `telegram-process` command that polls one bounded batch, proces
 - [x] Run focused Nebius/CLI tests and the complete offline suite.
 - [x] Preserve source-message association on Telegram acknowledgments through `reply_parameters`.
 
-Developer verification: focused Nebius/CLI tests passed, followed by 118 offline tests, 103 PostgreSQL integration tests, and 32 retained QA tests on 2026-09-24. A user-run pilot verified bot identity and private-message ingestion (`accepted: 1`). After the runtime prompt was strengthened with an explicit undated-source null-date example, the live smoke passed; a message without a matching catalog item was held as `product_unresolved` with no food mutation. After W021 provisioned a known product, a later message completed with `status: applied` and `delivery: sent`. The bounded worker now also resolves W017 weight and steps proposals into trusted observation commands; the user confirmed live set-plus-increment steps processing after the queued messages were drained. Source-linked Telegram replies are verified by unit and PostgreSQL transport tests; the pilot also demonstrated why one-message-per-run acknowledgments need that source association. Follow-up tests map replies to the bot's sent acknowledgment through the outbox operation back to the same food entry, recover an unmatched provider description fragment using that backend reply target, correct a saved recipe by changing its eaten grams in the same entry, and render correction acknowledgments for both recipe and ordinary product entries. W023 now persists supported clarification questions through the same outbox path and covers their rendering/replay behavior in developer tests. On 2026-09-24 the user completed both an ordinary-product correction pilot and a saved-recipe weight-clarification pilot; Telegram returned the expected correction and then recorded 200 g of `Овсяная каша` at 152 kcal. A natural correction therefore does not require replying to the original user message, while the clarification answer currently replies to the original source. Unknown catalog/restaurant nutrition still has no automatic source. No independent QA review was run.
+Developer verification: focused Nebius/CLI tests passed, followed by 118 offline tests, 103 PostgreSQL integration tests, and 32 retained QA tests on 2026-09-24. A user-run pilot verified bot identity and private-message ingestion (`accepted: 1`). After the runtime prompt was strengthened with an explicit undated-source null-date example, the live smoke passed; a message without a matching catalog item was held as `product_unresolved` with no food mutation. After W021 provisioned a known product, a later message completed with `status: applied` and `delivery: sent`. The bounded worker now also resolves W017 weight and steps proposals into trusted observation commands; the user confirmed live set-plus-increment steps processing after the queued messages were drained. Source-linked Telegram replies are verified by unit and PostgreSQL transport tests; the pilot also demonstrated why one-message-per-run acknowledgments need that source association. Follow-up tests map replies to the bot's sent acknowledgment through the outbox operation back to the same food entry, recover an unmatched provider description fragment using that backend reply target, correct a saved recipe by changing its eaten grams in the same entry, and render correction acknowledgments for both recipe and ordinary product entries. W023 now persists supported clarification questions through the same outbox path and covers their rendering/replay behavior in developer tests. On 2026-09-24 the user completed both an ordinary-product correction pilot and a saved-recipe weight-clarification pilot; Telegram returned the expected correction and then recorded 200 g of `Овсяная каша` at 152 kcal. The MVP acknowledgment follow-up is covered by D042 and the linked developer report; it changes only Telegram wording and visibility, not persistence or totals. A natural correction therefore does not require replying to the original user message, while the clarification answer currently replies to the original source. Unknown catalog/restaurant nutrition still has no automatic source. No independent QA review was run.
 
-## Deferred acknowledgment copy improvements
+## MVP acknowledgment copy
 
-Product-owner notes for a later rendering slice; no implementation change is made here:
+The Telegram renderer now uses the product owner's MVP wording decision:
 
-- Use `Итого за сегодня:` in the normal current-day acknowledgment instead of the dated phrase.
-- Continue persisting all nutrients, but hide fat and carbohydrate lines from the Telegram acknowledgment.
-- Remove the pending-clarification count from the normal acknowledgment.
-- Remove the day-completeness sentence from routine food acknowledgments.
+- Food confirmations use `Итого за сегодня:` and show kcal/protein for the
+  entry and updated day total.
+- Fat and carbohydrate values remain persisted and calculated but are omitted
+  from routine Telegram copy.
+- Pending-clarification counts and day-completeness sentences are omitted from
+  routine food confirmations. Pending actions remain outside totals according
+  to the existing backend rules.
+- Weight confirmations use `Вес за сегодня записан: 76,3 кг.`. Steps retain
+  their dated confirmation wording for now.
 
-These are presentation-only changes. Nutrition persistence, daily totals, pending-state accounting, and the no-close-day MVP rule remain unchanged until the rendering behavior is explicitly implemented and tested.
+This is presentation-only behavior. Nutrition persistence, daily totals,
+pending-state accounting, and the no-close-day MVP rule are unchanged.
 
 ## Usage
 
