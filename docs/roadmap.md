@@ -38,6 +38,7 @@ Use [README.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutri
 ## Later scope
 
 - V2: training sessions and sets.
+- Post-MVP feedback capture: store contextual replies to bot messages and standalone general suggestions for later review; define schema, retention, and review workflow before implementation.
 - Prioritize separately: additional activity/measurements, menstrual-cycle context, Apple Health integration, habitual shortcuts, external catalogs/barcodes, historical import, and broader user access.
 - Before multi-user release, review access isolation, deletion behavior, and PostgreSQL row-level security with a runtime role that cannot bypass it.
 
