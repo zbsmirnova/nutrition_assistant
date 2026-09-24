@@ -1,8 +1,8 @@
 # D041 — Cold-start cloud alternative for the MVP pilot
 
-Status: Proposed alternative; not selected  
-Recorded: 2026-09-24  
-Authority: architect recommendation for product-owner choice  
+Status: Rejected for MVP; retained as a later alternative
+Recorded: 2026-09-24
+Authority: architect recommendation for product-owner choice
 Related questions: Q10, Q11
 
 ## Architecture required by cold start
@@ -66,4 +66,3 @@ sound but disproportionate for this one-user MVP. The database cost and
 webhook implementation dominate the savings, so cold start should be chosen
 for an explicit low-idle-cost goal, not assumed to be simpler than one small
 always-on VPS.
-

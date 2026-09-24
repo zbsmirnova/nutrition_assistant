@@ -1,8 +1,8 @@
 # D040 — Private single-host MVP pilot deployment
 
-Status: Proposed for user approval  
-Recorded: 2026-09-24  
-Authority: architect recommendation; hosting and spending constraints remain with the product owner  
+Status: Accepted for MVP topology; provider not selected
+Recorded: 2026-09-24
+Authority: product-owner choice of always-on cloud; hosting provider and spending constraints remain open
 Related questions: Q10, Q11
 
 ## Decision proposal
@@ -59,10 +59,9 @@ and feedback capture remain outside MVP.
 - **Managed services/Kubernetes:** deferred; they add cost and operational
   surface without helping a single-user MVP.
 
-## Acceptance boundary
+## Remaining choice
 
-This proposal becomes accepted only after the product owner confirms an
-always-on host/region and spending limit. Actual deployment requires a separate
-authorized operation after W024 is implemented, tested, and the secrets are
-provided through the host's secret mechanism.
-
+The topology is accepted. The product owner still needs to choose the provider,
+EU region, monthly budget, backup target, and retention. Actual deployment
+requires a separate authorized operation after W024 is implemented, tested, and
+the secrets are provided through the host's secret mechanism.
