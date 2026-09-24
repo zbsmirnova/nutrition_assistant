@@ -412,6 +412,27 @@ class ConversationWorkerTests(unittest.TestCase):
         self.assertEqual(self.count(db.food_entry_revisions), 2)
         self.assertEqual(self.service.get_day(self.actor, date(2026, 9, 22)).nutrition.kcal.amount.value, "96")
 
+    def test_reply_to_bot_acknowledgment_recovers_unmatched_description_fragment(self):
+        original = self.source(1)
+        self.assertEqual(self.worker.run_one(self.actor, ControlledParser(), origin=original)["status"], "applied")
+        with self.engine.begin() as connection:
+            operation_id = connection.execute(sa.select(db.outbox.c.operation_id).where(
+                db.outbox.c.user_id == self.actor)).scalar_one()
+            connection.execute(db.outbox.update().where(
+                db.outbox.c.user_id == self.actor, db.outbox.c.operation_id == operation_id
+            ).values(status="sent", sent_at=sa.func.now(), telegram_message_id=9002))
+        correction_text = "Исправь вес на 80 г"
+        correction = self.source(2, text=correction_text, reply_to_message_id=9002)
+        output = {"schema_version": "1.0", "actions": [{
+            "action_id": "a1", "evidence": correction_text, "depends_on": [], "unresolved": [],
+            "kind": "correct_food", "target": {"kind": "description", "description": "Я"},
+            "change": {"kind": "set_quantity", "quantity": {"amount": "80", "unit": "g"}},
+        }]}
+        result = self.worker.run_one(self.actor, ControlledParser(output), origin=correction)
+        self.assertEqual(result["status"], "applied")
+        self.assertEqual(self.count(db.food_entries), 1)
+        self.assertEqual(self.count(db.food_entry_revisions), 2)
+
     def test_unique_entry_candidate_supports_delete_and_undo(self):
         original = self.source(1)
         added = self.worker.run_one(self.actor, ControlledParser(), origin=original)

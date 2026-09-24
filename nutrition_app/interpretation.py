@@ -329,6 +329,16 @@ def resolve_entry_action(actor: UUID, origin: UUID, context: dict, action) -> Re
     matches, match_reason = _entry_matches(action.target, context)
     if match_reason is not None:
         return Resolution("unresolved", match_reason)
+    # Telegram reply metadata is backend-owned and more reliable than a
+    # provider's free-form description. If a reply maps to one entry but the
+    # provider emitted an unmatched description fragment, retain reply-first
+    # semantics without overriding a valid explicit description.
+    if (not matches and action.target.kind == "description"
+            and context.get("reply_entry_ref") is not None):
+        reply_matches = [entry for entry in context.get("entry_records", ())
+                         if entry["ref"] == context["reply_entry_ref"]]
+        if len(reply_matches) == 1:
+            matches = reply_matches
     if len(matches) > 1:
         pending_questions = {entry["ref"]: {"q1": "selection"} for entry in matches}
         return Resolution("unresolved", "entry_target_ambiguous", pending_questions=pending_questions)

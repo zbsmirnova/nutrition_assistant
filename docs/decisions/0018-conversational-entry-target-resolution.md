@@ -17,6 +17,8 @@ W009 resolves correction, delete, and undo proposals against a backend-owned cur
 - Delete and undo use the same target rules. Undo restores the immediately preceding active revision selected by the backend; if no such revision exists, it remains unresolved.
 - Forwarded messages, replies without a matching committed entry, deleted targets for correction/delete, and ambiguous descriptions remain outside totals and create no prepared command.
 
+Implementation guard: when Telegram reply metadata maps to exactly one current entry, but the provider emits a description that matches no current entry (for example, a truncated Russian name), the resolver uses the backend reply target. It does not override a valid explicit description or candidate target, and it does not weaken the unresolved behavior for missing or ambiguous replies.
+
 This slice invokes W008's guarded typed commands. It does not claim live-model accuracy, arbitrary date/meal disambiguation, multi-component corrections, pending corrections, or message-edit support.
 
 ## Alternatives and consequences
