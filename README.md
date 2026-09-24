@@ -175,6 +175,7 @@ Alembic revisions are the migration history. The runtime model in [schema.py](ai
 
 | Document | Purpose |
 | --- | --- |
+| [user-guide-v1.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/user-guide-v1.md?type=file&root=%252F) | English user guide and onboarding practices for the personal MVP. |
 | [CONSTITUTION.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/CONSTITUTION.md?type=file&root=%252F) | Product goals, scope, and enduring requirements. |
 | [AGENTS.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/AGENTS.md?type=file&root=%252F) | Agent/contributor instructions and maintenance responsibility. |
 | [architecture-plan.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/architecture-plan.md?type=file&root=%252F) | System boundaries and current design. |
