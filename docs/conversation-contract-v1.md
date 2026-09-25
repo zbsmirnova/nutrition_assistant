@@ -14,7 +14,7 @@ Accepted product choices and their evidence are recorded in D001/D004/D010 in [R
 | --- | --- |
 | A message contains clear and unclear food items | Save independent clear items; ask about unclear ones and exclude only those from totals. Resolving one pending item must not repeat another item. |
 | Entering a recipe | Accept arbitrary ingredient quantities, clarify missing details, and calculate nutrition per 100 g. Save the original amounts and cooking instructions when present for reuse. Direct per-100-g input also fits the recipe model. |
-| Normal food reply | Brief entry/correction summary with kcal/protein and the updated daily kcal/protein totals, headed `Итого за сегодня:`. Routine MVP copy does not include fat/carbohydrate lines, pending counts, or a day-completeness sentence; those states remain authoritative backend data. |
+| Normal food reply | Brief entry/correction summary with central kcal/protein and the updated daily kcal/protein ranges, headed `Итого за сегодня:`. Routine MVP copy does not include fat/carbohydrate lines, pending counts, or a day-completeness sentence; those states remain authoritative backend data. |
 | Dairy product identity | Ask for missing fat percentage when it affects the product/nutrition-profile choice; reuse an explicitly supplied percentage or an exact identified product/label without asking again. |
 | Preparation and subtype | Ask one concise question when preparation or subtype materially changes the nutrition profile and the message does not resolve it. Examples: “Куриная грудка: без кожи и масла?”, “Яичница: сколько масла или сливочного масла добавлено?”, “Сыр 42%: какой сорт или производитель?”, and “Картошка: с маслом или без?”. |
 
@@ -127,6 +127,34 @@ For the MVP, ask for an exact usable weight or an explicit user-approved assumpt
 If the user approves an assumption, the reply and stored provenance must say that the amount is assumed or estimated; it must not be presented as a measured value. Until the command and persistence models carry that assumption marker, the backend keeps the action pending rather than silently treating the assumption as exact. The backend applies this guard even when the parser proposal has no unresolved fields.
 
 W016 adds a typed `approved_estimate` answer for a known product or saved recipe. The user must provide the amount themselves—normally in grams for a portion-size clarification—and include explicit approval wording such as “считай примерно 120 г”. A compatible millilitre answer remains valid only for a product defined on a volume basis. The resulting component is marked as `user_approved_estimate` and retains the clarification update as approval evidence. A plain “да” cannot approve an amount, and this path does not authorize nutrition for an unknown restaurant dish.
+
+### MVP uncertainty ranges
+
+The MVP stores a central estimate and lower/upper bounds for kcal, protein,
+fat, and carbohydrates. The working default is ±10% for ordinary food and
+±25% for restaurant food. These are operational coefficients rather than
+statistical confidence intervals. A known weight range expands the result in
+addition to the nutrition coefficient. For a per-100-g estimate `n`, relative
+uncertainty `r`, and weight range `[w_min, w_max]`, the backend uses:
+
+```text
+lower = n * (1 - r) * w_min / 100
+upper = n * (1 + r) * w_max / 100
+```
+
+The same rule applies to all four nutrient fields. A single food reply shows
+the central kcal/protein values; the daily summary shows the kcal/protein
+ranges. Fat and carbohydrate values and bounds are persisted but omitted from
+routine MVP Telegram copy.
+
+### Restaurant portion requirement
+
+Restaurant food always requires a user-supplied portion weight before it can be
+recorded. An exact weight or a range such as `150–200 г` is valid. If the
+message gives only a dish name, ask for the approximate grams or range. The LLM
+provides the central kcal and macronutrient estimate; the backend does not query
+an open nutrition database for this MVP path. The ±25% restaurant coefficient
+and any weight range are applied by the backend and retained with the entry.
 
 Clarifications must not hold a database transaction or block unrelated messages. Revalidate referenced records before applying an answer; a record may have changed while the question was open.
 

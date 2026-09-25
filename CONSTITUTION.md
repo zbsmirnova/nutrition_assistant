@@ -22,7 +22,7 @@ No numerical usability, accuracy, cost, or latency target has been agreed. Live-
 
 ## Scope
 
-Accepted MVP domains: food logging and corrections, recipes, one daily body weight, and one daily steps total. The combined completion/activity check-in and reminders are post-MVP W018 work. Personal products and manual nutrition values support food logging; an unknown product may use the W025 external fallback after explicit candidate and portion confirmation. The release roadmap includes history/reporting, post-MVP feedback capture, and operational readiness; report scheduling and export/deletion requirements still have open product details.
+Accepted MVP domains: food logging and corrections, recipes, one daily body weight, and one daily steps total. The combined completion/activity check-in and reminders are post-MVP W018 work. Personal products and manual nutrition values support food logging; unknown products receive an LLM estimate with the uncertainty rules in D047. Open-database lookup is not part of the revised MVP path. The release roadmap includes history/reporting, post-MVP feedback capture, and operational readiness; report scheduling and export/deletion requirements still have open product details.
 
 Training/workout tracking belongs in v2. Other measurements, menstrual-cycle context, additional activity metrics, Apple Health integration, barcode/photo flows, restaurant nutrition, background catalog synchronization, habit suggestions, historical imports, and public multi-user access are future work with timing to be decided.
 
@@ -39,8 +39,9 @@ These IDs are stable references for specifications, work briefs, and QA. Product
 | FOOD-003 | Correct the same logical entry with retained revision history; changing 100 g to 80 g must not add another portion. |
 | FOOD-004 | In a mixed message, save clear independent items and clarify unresolved ones. Answering later must not repeat the already saved items. |
 | FOOD-005 | Plans, questions, and product/recipe definitions are not evidence of consumption. |
-| FOOD-006 | Food acknowledgments describe what was saved or corrected and show entry and daily kcal/protein totals. The backend continues to persist all four nutrient fields, pending state, and completeness; routine MVP Telegram copy omits fat/carbohydrate lines and pending/completeness notices. |
+| FOOD-006 | Food acknowledgments describe what was saved or corrected and show the entry's central kcal/protein estimate plus the updated daily kcal/protein range. The backend continues to persist all four nutrient fields, their bounds, pending state, and completeness; routine MVP Telegram copy omits fat/carbohydrate lines and pending/completeness notices. |
 | FOOD-007 | In the MVP, model output may identify ambiguity and offer bounded choices, but user decisions control approximations, assumptions, averages, portion conversions, edible-weight interpretations, and recipe substitutes. Unapproved choices remain pending and outside totals. |
+| FOOD-008 | Represent nutrition uncertainty as lower and upper bounds for kcal and all four nutrient fields. Use a working ±10% range for ordinary food and ±25% for restaurant food; combine a user-supplied weight range with the nutrition range. These coefficients are operational defaults, not accuracy guarantees. |
 | RECIPE-001 | Store versioned kcal and macronutrients per 100 g, original ingredient amounts/units, and cooking instructions when supplied. Calculate from arbitrary ingredient amounts or accept supplied per-100-g values. |
 | RECIPE-002 | Store eaten grams on food entries. Do not introduce default recipe portions, serving counts, or separate cooked-batch entities. Ask for material missing calculation inputs such as usable finished yield. |
 | RECIPE-003 | Product/recipe updates must not silently change historical meals. Preserve the source/version and calculation basis used by each meal. |
