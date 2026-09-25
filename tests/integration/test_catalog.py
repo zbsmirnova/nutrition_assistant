@@ -47,6 +47,10 @@ class CatalogProvisioningTests(unittest.TestCase):
         self.assertEqual(product["current_version_id"], version["id"])
         self.assertEqual(version["name"], "Яблоко")
         self.assertEqual(str(version["kcal"]), "52.000000")
+        self.assertEqual(str(version["kcal_lower"]), "46.800000")
+        self.assertEqual(str(version["kcal_upper"]), "57.200000")
+        self.assertEqual(str(version["protein_g_lower"]), "0.270000")
+        self.assertEqual(str(version["protein_g_upper"]), "0.330000")
         self.assertEqual(source["kind"], "operator_catalog")
 
     def test_requires_nutrition_and_valid_dairy_percentage(self):
@@ -74,6 +78,8 @@ class CatalogProvisioningTests(unittest.TestCase):
         self.assertEqual(recipe["current_version_id"], version["id"])
         self.assertEqual(version["name"], "Овсяная каша")
         self.assertEqual(str(version["kcal"]), "76.000000")
+        self.assertEqual(str(version["kcal_lower"]), "68.400000")
+        self.assertEqual(str(version["kcal_upper"]), "83.600000")
         self.assertEqual([item["name_as_entered"] for item in ingredients], ["Овсяные хлопья", "Вода"])
         self.assertEqual(ingredients[0]["original_quantity"]["amount"], "93")
 

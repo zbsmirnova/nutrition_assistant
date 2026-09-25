@@ -76,17 +76,13 @@ Create an owner with `user-create`, then copy the `user_id` from its JSON output
 
 Each poll command receives one batch into the durable inbox; it does not run a parser or create food entries. Each send command attempts one committed food response for the configured bot. Repeated invocations resume from persisted state. The separate conversation worker below connects synthetic interpretation to validated commands. Existing fake dispatch remains available for synthetic demos.
 
-The `product-create` line is trusted local pilot setup: replace the example name and nutrition with values from your product label. It creates an owner-scoped catalog version; it does not call Nebius or let the model invent nutrition. Use it before sending a matching food message through Telegram. See [W021](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/021-local-catalog-provisioning.md?type=file&root=%252F).
+The `product-create` line is trusted local pilot setup: replace the example name and nutrition with values from your product label. It creates an owner-scoped catalog version with working ordinary-food bounds of ±10% for each supplied nutrient; missing nutrients remain unknown. It does not call Nebius or let the model invent nutrition. Use it before sending a matching food message through Telegram. See [W021](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/021-local-catalog-provisioning.md?type=file&root=%252F).
 
-If a food is absent from the local catalog, the MVP can use the external
-cold-start fallback. Open Food Facts is queried without a secret; USDA FoodData
-Central is added when `USDA_FDC_API_KEY` is present. Set a descriptive
-`NUTRITION_FOOD_USER_AGENT` for Open Food Facts. The provider result is cached
-as an unconfirmed source snapshot, shown as numbered choices, and never enters
-the diary until you select it; approximate or missing weights still require an
-exact value or approved estimate. Later messages reuse the confirmed local version. Provider outages
-retry; empty results and unknown restaurant nutrition remain unresolved. See
-[D043](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0043-external-food-catalog-fallback.md?type=file&root=%252F) and [W025](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/025-external-food-catalog-fallback.md?type=file&root=%252F).
+If a food is absent from the local catalog, the MVP leaves it visibly
+unresolved and outside the totals. The Open Food Facts/USDA cold-start code is
+retained as a separate future experiment and is not constructed by the
+production worker. Unknown restaurant nutrition is also outside the MVP gate.
+See [D050](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0050-mvp-runtime-cleanup-and-day-readback.md?type=file&root=%252F).
 
 The `recipe-create` line is the corresponding trusted setup for a saved recipe. It records explicit per-100-g nutrition and does not calculate or infer nutrition from ingredient names. Add `--ingredients-json` when the original ingredient snapshots should be retained. A later Telegram message must include the grams eaten; no default serving is created. See [W022](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/022-local-recipe-provisioning.md?type=file&root=%252F).
 

@@ -13,11 +13,12 @@ from nutrition_contracts.common import DecimalText, Name, NutrientValue, Nutriti
 from . import schema as db
 from .errors import ApplicationError
 from .food_sources import ExternalFoodCandidate
-from .nutrition import to_columns
+from .nutrition import decimal_text, to_columns
 from .service import FoodService
 
 
 NUTRIENTS = ("kcal", "protein_g", "fat_g", "carbs_g")
+ORDINARY_UNCERTAINTY = Decimal("0.10")
 
 
 def _external_evidence(candidate: ExternalFoodCandidate, query: str) -> dict:
@@ -132,7 +133,7 @@ def approve_external_product(engine, actor: UUID, version_id: UUID, *, confirmed
                 confirmed_by_update_id=confirmed_by_update))
 
 
-def _snapshot(values: dict[str, str | None]) -> NutritionSnapshot:
+def _snapshot(values: dict[str, str | None], *, uncertainty: Decimal | None = None) -> NutritionSnapshot:
     if not any(value is not None for value in values.values()):
         raise ApplicationError("Provide at least one nutrition value")
     nutrients = {}
@@ -144,7 +145,13 @@ def _snapshot(values: dict[str, str | None]) -> NutritionSnapshot:
             continue
         try:
             text = adapter.validate_python(value)
-            nutrients[name] = NutrientValue(value=text, lower=None, upper=None)
+            central = Decimal(text)
+            if uncertainty is None:
+                lower = upper = None
+            else:
+                lower = decimal_text(central * (Decimal("1") - uncertainty))
+                upper = decimal_text(central * (Decimal("1") + uncertainty))
+            nutrients[name] = NutrientValue(value=text, lower=lower, upper=upper)
         except ValidationError:
             raise ApplicationError(f"Invalid non-negative decimal for {name}") from None
     return NutritionSnapshot(**nutrients)
@@ -186,7 +193,7 @@ def create_product(
             raise ApplicationError("Declared fat percentage must be between 0 and 100 with at most 2 decimals")
         if food_kind != "dairy":
             raise ApplicationError("Declared fat percentage requires food kind dairy")
-    snapshot = _snapshot(nutrition)
+    snapshot = _snapshot(nutrition, uncertainty=ORDINARY_UNCERTAINTY)
     product_id, version_id, source_id = uuid4(), uuid4(), uuid4()
     with engine.begin() as connection:
         FoodService._user(connection, actor)
@@ -254,7 +261,7 @@ def create_recipe(
                         TypeAdapter(Text).validate_python(cooking_instructions))
     except ValidationError:
         raise ApplicationError("Recipe name and instructions must be non-empty values") from None
-    snapshot = _snapshot(nutrition)
+    snapshot = _snapshot(nutrition, uncertainty=ORDINARY_UNCERTAINTY)
     recipe_ingredients = _recipe_ingredients(ingredients)
     recipe_id, version_id, source_id = uuid4(), uuid4(), uuid4()
     with engine.begin() as connection:

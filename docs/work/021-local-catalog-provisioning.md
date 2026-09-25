@@ -17,6 +17,7 @@ Add a trusted local operator command that creates one owner-scoped product versi
 | W021-A02 | The product is pinned to an `operator_catalog` provenance record; no parser or provider call can create catalog data. |
 | W021-A03 | Invalid empty nutrition, food kind, basis, or dairy percentage is rejected before mutation. |
 | W021-A04 | Existing contract, worker, Telegram, and migration behavior remains unchanged. |
+| W021-A05 | Each supplied nutrient is persisted with its central value and the working ordinary-food ±10% lower/upper bounds; omitted nutrients remain unknown. |
 
 ## Usage
 
@@ -27,7 +28,11 @@ Add a trusted local operator command that creates one owner-scoped product versi
   --kcal 52 --protein-g 0.3 --fat-g 0.2 --carbs-g 14
 ```
 
-Values are entered per 100 g by default. Use `--nutrition-basis per_100_ml` for volume products, and use `--food-kind dairy --declared-fat-percent N` when a dairy label percentage is known.
+Values are entered per 100 g by default. The command stores the supplied central
+values and working ordinary-food bounds of ±10% for every supplied nutrient;
+missing nutrients remain unknown. Use `--nutrition-basis per_100_ml` for volume
+products, and use `--food-kind dairy --declared-fat-percent N` when a dairy
+label percentage is known.
 
 ## Verification
 
