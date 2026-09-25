@@ -24,7 +24,7 @@ parser fingerprints must be rerun for `f2157c2`.
 | E2E-03 | Correct an ordinary food quantity in the same entry | pass with UX issue | The correction eventually returned `applied` and recalculated the recipe/day totals. An initial attempt returned `entry_target_not_found`; the correction flow currently depends too much on replying to the bot message. |
 | E2E-04 | Set and replace daily weight | pass | Telegram processing returned `applied` and `delivery: sent`; the bot confirmed the current-day weight. |
 | E2E-05 | Set and increment daily steps | pass, cumulative total observed | The absolute set returned `applied` and `delivery: sent` with 8200 steps. A shorthand increment also returned `applied` and `delivery: sent`; the bot reported 17000, consistent with two prior +4400 increments accumulated on the same daily slot. The stored value is normalized, while the confirmation-format UX remains open under UX-04. |
-| E2E-06 | Read today after processing/restart | blocked on interpretation retry | The first summary request was classified as `general_chat` and produced no mutation or delivery. The prompt now explicitly maps day-total questions to `get_day_summary`; retry with a new summary request. |
+| E2E-06 | Read today after processing/restart | pass with UX feedback | A new day-summary request returned `applied` and `delivery: sent`; Telegram read back 166 kcal and 4,05 g protein, matching the accumulated entries. The current response omits the uncertainty ranges; see UX-05. |
 | E2E-07 | Unknown product remains visible and outside totals | pending | Send an unseeded item and verify a visible clarification with no food mutation. |
 
 ## UX feedback
@@ -35,6 +35,7 @@ parser fingerprints must be rerun for `f2157c2`.
 | UX-02 | It is inconvenient to reply to the bot message for a correction. | When a correction has no explicit target, resolve it against the user's latest bot acknowledgment when it is an unambiguous food entry; keep explicit replies as the stronger target. | Open product decision; implementation after the E2E pass. |
 | UX-03 | The steps confirmation does not need the calendar date for the current day. | Render current-day confirmation without the date, while retaining dates for backdated observations. | Open product decision; do not change during this E2E run. |
 | UX-04 | A confirmation rendered as `4400 шагов` loses the user's compact input form. | Render shorthand input as `4,4 тыс. шагов` in the confirmation while persisting the normalized integer `4400`. | Open product decision; do not change during this E2E run. |
+| UX-05 | The daily readback shows only central kcal/protein values. | Show the stored kcal and protein ranges in the daily summary, with the central values retained for readability. | Open product decision; do not change during this E2E run. |
 
 The E2E result is not a general model-quality verdict. It covers the specific
 seeded catalog and live transport path exercised above.
