@@ -59,7 +59,7 @@ Most vegetables without dressing are low in calories and can usually be logged w
 
 The vacation phase and additional confidence levels will be added after the first two phases are tested in real use.
 
-The product should support this strategy by keeping confirmed personal products and recurring portion references easy to reuse, while preserving visible uncertainty for estimates. The MVP can record an LLM estimate for a restaurant dish after you provide its weight or weight range; open-ended source validation remains future work.
+The product should support this strategy by keeping confirmed personal products and recurring portion references easy to reuse, while preserving visible uncertainty for estimates. The first MVP validation pass uses the personal product and recipe catalog; unknown-food and restaurant estimates are a separate experiment after the persistence and calculation gate.
 
 ## Common practices
 
@@ -189,7 +189,7 @@ After these exercises, the user should know where totals come from, how pending 
 
 ## Current boundaries
 
-The MVP does not provide a close-day command, scheduled reminders, a combined daily check-in, label-photo or barcode input, medical advice, or a promise of exact nutrition for restaurant food. The first post-MVP reporting slice will answer on-demand progress questions; scheduled feedback comes later. Live model quality and broad restaurant-food coverage still require measured verification.
+The core MVP validation does not provide a close-day command, scheduled reminders, a combined daily check-in, label-photo or barcode input, medical advice, external catalog lookup, or a promise of exact nutrition for restaurant food. The first post-MVP reporting slice will answer on-demand progress questions; scheduled feedback comes later. Live model quality and broad restaurant-food coverage remain separate experiments.
 
 After the MVP, the planned restaurant flow is to find similar reference foods, propose a calorie range from the reference average to up to 30% above it for possible hidden restaurant fats, and ask you to approve the estimate. The range will remain visibly estimated and will be validated during the personal pilot before release.
 

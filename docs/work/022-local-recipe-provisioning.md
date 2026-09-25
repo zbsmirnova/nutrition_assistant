@@ -12,9 +12,11 @@ explicit per-100-g nutrition. The command may retain an optional JSON list of
 ingredient snapshots and cooking instructions so a saved recipe can be tested
 through Telegram without allowing the model to create or mutate catalog data.
 
-This is pilot setup only. Natural-language recipe definition, product lookup,
-external comparison, aliases, and user-facing catalog editing remain outside
-this slice.
+This is the seeded-fixture path for the MVP validation gate. Natural-language
+recipe definition, product lookup, external comparison, aliases, and
+user-facing catalog editing remain outside this slice. Telegram product
+creation is planned as the next catalog-growth slice; recipe authoring through
+Telegram remains a separate follow-up.
 
 ## Acceptance criteria
 

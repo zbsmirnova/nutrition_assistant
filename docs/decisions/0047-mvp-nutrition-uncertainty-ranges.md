@@ -1,7 +1,7 @@
 # D047 — MVP nutrition uncertainty ranges and restaurant portion requirement
 
 Kind: product/technical.
-Status: accepted for MVP nutrition estimates.
+Status: accepted for the estimate experiment; not part of the core MVP validation gate.
 Recorded: 2026-09-25.
 Decision owner: product owner.
 Acceptance evidence: explicit user acceptance of the ±25% restaurant coefficient and the range-based display policy.
@@ -9,10 +9,12 @@ Related questions: Q04.
 
 ## Context
 
-The MVP prioritizes reliable capture and useful trend tracking over laboratory
+The estimate experiment prioritizes useful trend tracking over laboratory
 precision. Every food estimate is approximate, but displaying that word on
 every line would add noise. A numeric range provides a consistent
 representation of uncertainty while keeping the Telegram reply short.
+
+The subsequent MVP validation decision ([D049](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0049-mvp-validation-boundary.md?type=file&root=%252F)) separates this estimate experiment from the core release gate. The range arithmetic remains valid for known personal products and recipes; unknown-food and restaurant model quality is measured separately.
 
 ## Decision
 
@@ -37,7 +39,7 @@ items. For an unknown product or restaurant dish, the LLM supplies the central
 nutrition estimate. The backend validates obvious malformed or impossible
 values, applies the coefficient and weight arithmetic, and persists the
 source message, model identity, prompt version, estimate, and bounds. It does
-not use an open food database to choose a restaurant estimate in this MVP.
+not use an open food database to choose a restaurant estimate in this experiment.
 
 ## Consequences and limits
 

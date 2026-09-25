@@ -1,6 +1,13 @@
 # W025 — External food catalog fallback and personal cache
 
-Status: complete for the bounded MVP fallback. Owner: lead assistant. Milestone: M2 / MVP pilot.
+Status: deferred from the core MVP validation gate; implementation retained for a later estimate experiment. Owner: lead assistant. Milestone: post-MVP experiment.
+
+## Scope note
+
+This path is intentionally not enabled during the core MVP validation. The
+validation gate uses only the owner-scoped products and recipes provisioned by
+W021/W022. Unknown products remain unresolved in that gate, so provider
+selection cannot contaminate the persistence or calculation verdict.
 
 ## Goal
 

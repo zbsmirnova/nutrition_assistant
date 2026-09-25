@@ -1,7 +1,7 @@
 # D048 — Product entry completion and on-demand progress queries
 
 Kind: product/technical.
-Status: accepted for revised MVP and post-MVP order.
+Status: accepted for the catalog-growth slice after core MVP validation and for post-MVP reporting order.
 Recorded: 2026-09-25.
 Decision owner: product owner.
 Acceptance evidence: explicit user acceptance of label-based product entry, manual completion after rejecting an analogue, and first-priority on-demand progress questions.
@@ -18,6 +18,11 @@ never silently converted to zero.
 
 Future label-photo and barcode input are alternate ways to populate the same
 versioned product profile; they are outside the MVP.
+
+The first validation pass intentionally starts with products and recipes
+provisioned through the trusted local commands. Telegram product creation is
+the next slice after that gate, so the personal database can grow through
+normal use without expanding the persistence experiment.
 
 The first post-MVP reporting slice is on-demand, read-only progress questions
 in ordinary Telegram language. The model classifies the question into a typed

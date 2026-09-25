@@ -7,7 +7,7 @@ Decision: D035.
 
 ## Outcome
 
-Add a trusted local operator command that creates one owner-scoped product version from explicitly supplied nutrition values. This supplies the bounded catalog context needed to test a live Telegram food save without allowing the model to invent nutrition or product identity.
+Add a trusted local operator command that creates one owner-scoped product version from explicitly supplied nutrition values. This is the seeded-fixture path for the MVP validation gate: it supplies the bounded catalog context needed to test a live Telegram food save without allowing the model to invent nutrition or product identity. Telegram product creation is a later catalog-growth slice after the gate.
 
 ## Acceptance criteria
 

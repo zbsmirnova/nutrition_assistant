@@ -17,11 +17,26 @@ Accepted product choices and their evidence are recorded in D001/D004/D010 in [R
 | Normal food reply | Brief entry/correction summary with central kcal/protein and the updated daily kcal/protein ranges, headed `Итого за сегодня:`. Routine MVP copy does not include fat/carbohydrate lines, pending counts, or a day-completeness sentence; those states remain authoritative backend data. |
 | Dairy product identity | Ask for missing fat percentage when it affects the product/nutrition-profile choice; reuse an explicitly supplied percentage or an exact identified product/label without asking again. |
 | Preparation and subtype | Ask one concise question when preparation or subtype materially changes the nutrition profile and the message does not resolve it. Examples: “Куриная грудка: без кожи и масла?”, “Яичница: сколько масла или сливочного масла добавлено?”, “Сыр 42%: какой сорт или производитель?”, and “Картошка: с маслом или без?”. |
-| Personal product creation | A user may add a product from label values. Kcal and protein are required. Missing fat and carbohydrates may be proposed from a nearest analogue, but the user must confirm them; rejection leads to a manual request and no product is created. |
+| Personal product creation | Telegram product creation is the next catalog-growth slice after the core validation gate. Kcal and protein are required. Missing fat and carbohydrates may be proposed from a nearest analogue, but the user must confirm them; rejection leads to a manual request and no product is created. The first validation pass uses trusted local provisioning instead. |
 
 The recipe clarification explicitly expands the saved recipe details to include ingredients and instructions while retaining the decision not to store portion sizes or preparation batches.
 
 Recipe recall is user-scoped. Normalize case, whitespace, ordinary inflection, and word order so phrases such as “тунцовая намазка” and “намазка тунцовая по моему рецепту” can identify the same saved recipe. An explicit “по моему рецепту” restricts resolution to the user's recipes. Auto-select only one uniquely matching recipe; if no recipe or more than one recipe matches, keep the action pending and offer numbered choices plus a more-specific-name answer. Never substitute a generic catalog product or invent a saved recipe. W013 implements only exact normalized unique-name and explicit-reference resolution; D024/W014 own this clarification behavior.
+
+### Core MVP validation boundary
+
+The first release gate uses one private Telegram user and a small personal
+catalog provisioned through the trusted local product and recipe commands. It
+validates consumed-food logging, same-entry corrections, daily totals, retries,
+restart recovery, and a read-only day/date summary. The catalog is deliberately
+seeded for this pass; Telegram product creation is the next slice so the
+personal database can grow through normal use.
+
+Unknown products and restaurant dishes are not part of the core validation
+verdict. They remain separate estimate experiments. The validation path does
+not call Open Food Facts or USDA and does not silently turn an unresolved item
+into a total. Weight and steps remain supported adjacent capabilities and have
+separate acceptance evidence.
 
 ## 3. Distinguishing intent
 
@@ -141,7 +156,7 @@ For the MVP, ask for an exact usable weight or an explicit user-approved assumpt
 
 If the user approves an assumption, the reply and stored provenance must say that the amount is assumed or estimated; it must not be presented as a measured value. Until the command and persistence models carry that assumption marker, the backend keeps the action pending rather than silently treating the assumption as exact. The backend applies this guard even when the parser proposal has no unresolved fields.
 
-W016 adds a typed `approved_estimate` answer for a known product or saved recipe. The user must provide the amount themselves—normally in grams for a portion-size clarification—and include explicit approval wording such as “считай примерно 120 г”. A compatible millilitre answer remains valid only for a product defined on a volume basis. The resulting component is marked as `user_approved_estimate` and retains the clarification update as approval evidence. A plain “да” cannot approve an amount. D047 separately defines the MVP restaurant estimate path, which requires a user-supplied weight or range.
+W016 adds a typed `approved_estimate` answer for a known product or saved recipe. The user must provide the amount themselves—normally in grams for a portion-size clarification—and include explicit approval wording such as “считай примерно 120 г”. A compatible millilitre answer remains valid only for a product defined on a volume basis. The resulting component is marked as `user_approved_estimate` and retains the clarification update as approval evidence. A plain “да” cannot approve an amount. D047's unknown/restaurant estimate path is a separate experiment, not a core validation-gate behavior.
 
 ### MVP uncertainty ranges
 
@@ -160,16 +175,20 @@ upper = n * (1 + r) * w_max / 100
 The same rule applies to all four nutrient fields. A single food reply shows
 the central kcal/protein values; the daily summary shows the kcal/protein
 ranges. Fat and carbohydrate values and bounds are persisted but omitted from
-routine MVP Telegram copy.
+routine MVP Telegram copy. The core validation gate exercises this arithmetic
+with known personal products and recipes. The restaurant coefficient and
+unknown-food LLM estimates are measured separately.
 
-### Restaurant portion requirement
+### Restaurant portion requirement — separate experiment
 
 Restaurant food always requires a user-supplied portion weight before it can be
-recorded. An exact weight or a range such as `150–200 г` is valid. If the
-message gives only a dish name, ask for the approximate grams or range. The LLM
-provides the central kcal and macronutrient estimate; the backend does not query
-an open nutrition database for this MVP path. The ±25% restaurant coefficient
-and any weight range are applied by the backend and retained with the entry.
+recorded in the experiment. An exact weight or a range such as `150–200 г` is
+valid. If the message gives only a dish name, ask for the approximate grams or
+range. The LLM provides the central kcal and macronutrient estimate; the
+backend does not query an open nutrition database for this path. The ±25%
+restaurant coefficient and any weight range are applied by the backend and
+retained with the entry. This behavior is not required to pass the core MVP
+validation gate.
 
 Clarifications must not hold a database transaction or block unrelated messages. Revalidate referenced records before applying an answer; a record may have changed while the question was open.
 
