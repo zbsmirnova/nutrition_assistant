@@ -660,7 +660,8 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
         return Resolution("unsupported", "dependent_food_source")
     if len(matching_products) + len(matching_recipes) != 1:
         if not matching_products and not matching_recipes:
-            return defer("product_unresolved")
+            questions = None if action.food.kind == "candidate" else {"food": {"q1": ["text"]}}
+            return defer("product_unresolved", questions)
         if matching_recipes and action.food.kind == "name":
             return defer("recipe_target_ambiguous",
                          {recipe["ref"]: {"q1": ["selection", "text"]} for recipe in matching_recipes})

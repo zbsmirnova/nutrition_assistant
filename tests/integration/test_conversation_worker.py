@@ -422,6 +422,20 @@ class ConversationWorkerTests(unittest.TestCase):
         self.assertEqual(self.count(db.food_entries), 2)
         self.assertEqual(self.worker.run_one(self.actor, parser), {"status": "idle"})
 
+    def test_multiple_meals_reconcile_to_one_current_day_total(self):
+        first_text = "Завтрак: 100 г творога 5% «Марка А»"
+        first = self.source(1, text=first_text)
+        first_output = fixture(first_text, amount="100")["output"]
+        self.assertEqual(self.worker.run_one(self.actor, ControlledParser(first_output), origin=first)["status"], "applied")
+        second_text = "Обед: 50 г творога 5% «Марка А»"
+        second = self.source(2, text=second_text)
+        second_output = fixture(second_text, amount="50")["output"]
+        self.assertEqual(self.worker.run_one(self.actor, ControlledParser(second_output), origin=second)["status"], "applied")
+        day = self.service.get_day(self.actor, date(2026, 9, 22))
+        self.assertEqual(day.entry_count, 2)
+        self.assertEqual(day.nutrition.kcal.amount.value, "180")
+        self.assertEqual(day.nutrition.protein_g.amount.value, "24")
+
     def test_unknown_fat_is_pending_and_visible_in_later_day_totals(self):
         text = "Съела 100 г творога"
         origin = self.source(text=text)
@@ -441,6 +455,25 @@ class ConversationWorkerTests(unittest.TestCase):
         saved = self.worker.run_one(self.actor, ControlledParser())
         self.assertEqual(saved["outcome"]["result"]["daily_summaries"][0]["pending_food_actions"], 1)
         self.assertEqual(self.service.get_day(self.actor, date(2026, 9, 22)).entry_count, 1)
+
+    def test_unknown_product_without_external_lookup_is_visible_and_outside_totals(self):
+        text = "Съела 80 г неизвестного продукта"
+        origin = self.source(1, text=text)
+        output = {"schema_version": "1.0", "actions": [{
+            "kind": "add_food", "action_id": "a1", "evidence": text,
+            "depends_on": [], "unresolved": [],
+            "food": {"kind": "name", "name": "неизвестного продукта"},
+            "quantity": {"amount": "80", "unit": "g"}, "weight_basis": "as_sold",
+            "date_hint": {"text": None}, "meal": "unspecified"}]}
+        result = self.worker.run_one(self.actor, ControlledParser(output), origin=origin)
+        self.assertEqual((result["status"], result["reason"]), ("unresolved", "product_unresolved"))
+        self.assertIn("личной баз", result["clarification"])
+        self.assertEqual(self.count(db.food_entries), 0)
+        self.assertEqual(self.service.get_day(self.actor, date(2026, 9, 22)).entry_count, 0)
+        with self.engine.connect() as connection:
+            payload = connection.execute(sa.select(db.outbox.c.payload).where(
+                db.outbox.c.user_id == self.actor)).scalar_one()
+        self.assertEqual(payload["result"]["outcome"], "needs_clarification")
 
     def test_dairy_fat_reply_resumes_original_operation_once(self):
         original = self.source(text="Съела 100 г творога")
@@ -917,6 +950,21 @@ class ConversationWorkerTests(unittest.TestCase):
         self.assertEqual(replay["status"], "applied")
         self.assertNotIn("outcome", replay)
         self.assertEqual(self.service.get_day(self.actor, date(2026, 9, 22)).entry_count, 1)
+
+        previous_text = TEXT
+        previous_food = self.source(3, text=previous_text,
+                                    sent_at=datetime(2026, 9, 21, 12, tzinfo=timezone.utc))
+        self.assertEqual(self.worker.run_one(self.actor, ControlledParser(), origin=previous_food)["status"], "applied")
+        previous_read_text = "Сколько калорий сегодня?"
+        previous_read = self.source(4, text=previous_read_text,
+                                    sent_at=datetime(2026, 9, 21, 13, tzinfo=timezone.utc))
+        previous_output = {"schema_version": "1.0", "actions": [{
+            "kind": "get_day_summary", "action_id": "a1", "evidence": previous_read_text,
+            "depends_on": [], "unresolved": [], "date_hint": {"text": "сегодня"},
+        }]}
+        previous_result = self.worker.run_one(self.actor, ControlledParser(previous_output), origin=previous_read)
+        self.assertEqual(previous_result["outcome"]["result"]["summary"]["effective_date"], "2026-09-21")
+        self.assertEqual(previous_result["outcome"]["result"]["summary"]["entry_count"], 1)
 
 
 if __name__ == "__main__":

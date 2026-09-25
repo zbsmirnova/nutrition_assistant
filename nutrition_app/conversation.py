@@ -93,6 +93,9 @@ class ConversationWorker:
             name = "этого продукта" if candidate is None else f"«{candidate['name']}»"
             return (f"Укажите процент жирности {name} (например, 5%). "
                     "Пока не включаю продукт в итог.")
+        if reason == "product_unresolved":
+            return ("Не смог сопоставить продукт с вашей личной базой. "
+                    "Уточните название или добавьте продукт в базу. Пока не включаю его в итог.")
         return None
 
     @staticmethod
@@ -108,6 +111,8 @@ class ConversationWorker:
             field, answer_kind = "fat_percent", "nutrition"
         elif reason in {"quantity_unresolved", "quantity_not_exact", "weight_basis_unresolved"}:
             field, answer_kind = "portion_grams", "quantity"
+        elif reason == "product_unresolved":
+            field, answer_kind = "product", "text"
         else:
             return None
         choices = []

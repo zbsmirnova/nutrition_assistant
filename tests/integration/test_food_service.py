@@ -27,7 +27,7 @@ from nutrition_contracts.commands import (
     CommandEnvelope, CommandSource, CorrectFoodEntry, DeleteFoodEntry,
     FoodState, ProductComponent, RestoreFoodEntry,
 )
-from nutrition_contracts.common import Mass, NutrientValue
+from nutrition_contracts.common import Mass, NutrientValue, NutritionSnapshot
 from nutrition_app.db import database_url, engine_for, migrate, ROOT
 from nutrition_app.demo import DEMO_DATE, food_command, message, seed_product, seed_user, synthetic_nutrition
 from nutrition_app.errors import ApplicationError, Conflict, NotFound, NumericOverflow, Unauthorized
@@ -112,6 +112,29 @@ class FoodPersistenceTests(unittest.TestCase):
         for table in (db.food_entries, db.food_entry_revisions, db.food_components, db.applied_operations, db.outbox):
             self.assertEqual(self.count(table), 1)
         self.assertEqual(self.row(db.outbox)["payload"], {"result": result.model_dump(mode="json")})
+
+    def test_bounded_food_reconciles_central_and_daily_ranges(self):
+        bounded = NutritionSnapshot(**{
+            key: NutrientValue(value=value, lower=lower, upper=upper)
+            for key, value, lower, upper in (
+                ("kcal", "100", "90", "110"),
+                ("protein_g", "4", "3.6", "4.4"),
+                ("fat_g", "4", "3.6", "4.4"),
+                ("carbs_g", "12", "10.8", "13.2"),
+            )
+        })
+        with self.engine.begin() as connection:
+            _, version_id, source_id = seed_product(connection, self.seed.user_id,
+                                                     product_id=self.seed.product_id, version_no=2,
+                                                     nutrition=bounded)
+        self.seed = self.seed.__class__(self.seed.user_id, self.seed.account_id,
+                                        self.seed.telegram_user_id, self.seed.product_id,
+                                        version_id, source_id)
+        result = self.service.apply(self.seed.user_id, self.command()).result
+        entry = result.food_entries[0].nutrition.kcal
+        day = result.daily_summaries[0].nutrition.kcal.amount
+        self.assertEqual((entry.value, entry.lower, entry.upper), ("250", "225", "275"))
+        self.assertEqual((day.value, day.lower, day.upper), ("250", "225", "275"))
 
     def test_correction_keeps_entry_identity_and_revises_snapshot(self):
         added = self.service.apply(self.seed.user_id, self.command(1)).result.food_entries[0]
