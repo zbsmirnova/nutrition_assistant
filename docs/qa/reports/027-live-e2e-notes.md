@@ -9,11 +9,9 @@ independent QA review was run.
 
 ## Smoke
 
-At the previous revision, Nebius synthetic smoke passed with `schema_valid: true` and
+On `a8911e6`, Nebius synthetic smoke passed with `schema_valid: true` and
 `expected_action_matched: true`. Parser fingerprint:
-`nebius:b6f87aa27acc2bb82e5e9a6a12841b53f606c4290c9d6d80ae6ee5284964006b`.
-The prompt and observation date handling have since changed, so smoke and live
-parser fingerprints must be rerun for `a8911e6`.
+`nebius:beebab053d79c8de8c25f10d403f444e7f954906fe63b99b0e3e0d38e5ab612f`.
 
 ## Scenario checklist
 
