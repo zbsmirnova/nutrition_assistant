@@ -84,7 +84,7 @@ separate personal-release gate after this validation.
 
 The production Telegram path now excludes external catalog lookup, and
 `get_day_summary` is resolved, persisted, replay-safe, and rendered through the
-same operation/outbox flow as food mutations. The remaining gate work is the
-full scenario run with seeded products and recipes, including live Telegram
-evidence and a separate interpretation-quality report. Developer verification
-for this implementation slice is recorded in [027-mvp-runtime-cleanup-developer.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/027-mvp-runtime-cleanup-developer.md?type=file&root=%252F).
+same operation/outbox flow as food mutations. The local implementation gate is
+complete; live Telegram/Nebius evidence is the next E2E step. Developer
+verification is recorded in [027-mvp-runtime-cleanup-developer.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/027-mvp-runtime-cleanup-developer.md?type=file&root=%252F)
+and the scenario scorecard in [027-mvp-gate-developer.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/027-mvp-gate-developer.md?type=file&root=%252F).
