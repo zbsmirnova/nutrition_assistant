@@ -183,7 +183,8 @@ class ObservationTests(unittest.TestCase):
             value_kg="76.3"))
         self.assertEqual(render_result(weight.model_dump(mode="json")), "Вес за сегодня записан: 76,3 кг.")
         steps = self.service.apply(self.seed.user_id, steps_command(self.seed, self.source(2), steps=8200))
-        self.assertEqual(render_result(steps.model_dump(mode="json")), "Записано шагов за 22.09.2026: 8200.")
+        self.assertEqual(render_result(steps.model_dump(mode="json")),
+                         "Записано шагов за 22.09.2026: 8,2 тыс. шагов.")
         repeat = self.service.apply(self.seed.user_id, weight_command(self.seed, self.source(3),
             value_kg="76.3", expected_revision_id=weight.result.observations[0].revision_id))
         self.assertIn("уже записано", render_result(repeat.model_dump(mode="json")))

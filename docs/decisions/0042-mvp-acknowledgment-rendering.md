@@ -1,6 +1,6 @@
 # D042 — MVP Telegram acknowledgment rendering
 
-Status: Accepted for MVP
+Status: Accepted for MVP; presentation details refined by D051
 Recorded: 2026-09-24
 Authority: product-owner decision during E2E testing
 Related work: W017, W020
@@ -15,8 +15,8 @@ Routine Telegram confirmations are concise and user-focused:
   are hidden from routine Telegram food confirmations.
 - Pending-clarification counts and day-completeness sentences are omitted from
   routine food confirmations. Pending actions remain outside totals.
-- A weight confirmation uses `Вес за сегодня записан: 76,3 кг.`. Steps keep
-  their existing dated confirmation wording until a separate product decision.
+- A weight confirmation uses `Вес за сегодня записан: 76,3 кг.`. Steps use the
+  current-day/backdated and compact-number rules in D051.
 
 This changes presentation only. It does not change storage, nutrient
 calculation, pending-state behavior, observation dates, revision history, or

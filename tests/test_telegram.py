@@ -1,9 +1,11 @@
 """Transport protocol and Russian-rendering checks; no network calls."""
 
 import json
+from datetime import datetime
 from pathlib import Path
 import unittest
 from uuid import uuid4
+from zoneinfo import ZoneInfo
 
 from nutrition_app.outbox import Delivery, DeliveryRejected, RetryLater
 from nutrition_app.rendering import render_clarification_result, render_food_result, render_result
@@ -131,6 +133,34 @@ class RussianReplyTests(unittest.TestCase):
         self.assertEqual(text, "Итого за сегодня:\nКкал: 175\nБелки, г: 10")
         self.assertNotIn("Жиры, г:", text)
         self.assertNotIn("Углеводы, г:", text)
+
+    def test_food_entry_keeps_central_values_and_daily_total_shows_ranges(self):
+        payload = outcome()
+        entry = payload["result"]["food_entries"][0]["nutrition"]
+        day = payload["result"]["daily_summaries"][0]["nutrition"]
+        entry["kcal"].update(lower="157.5", upper="192.5")
+        entry["protein_g"].update(lower="9", upper="11")
+        day["kcal"]["amount"].update(lower="157.5", upper="192.5")
+        day["protein_g"]["amount"].update(lower="9", upper="11")
+        text = render_food_result(payload)
+        entry_text, total_text = text.split("\n\nИтого за сегодня:\n")
+        self.assertIn("Ккал: 175", entry_text)
+        self.assertIn("Белки, г: 10", entry_text)
+        self.assertNotIn("оценка", entry_text)
+        self.assertIn("Ккал: 175 (оценка 157,5–192,5)", total_text)
+        self.assertIn("Белки, г: 10 (оценка 9–11)", total_text)
+
+    def test_current_steps_are_compact_and_undated_but_backdated_steps_keep_date(self):
+        payload = json.loads((Path(__file__).resolve().parents[1] /
+            "contracts/v1/examples/07_increment_daily_steps.json").read_text())
+        current = datetime.now(ZoneInfo("Europe/Berlin")).date().isoformat()
+        payload["results"][0]["result"]["mutations"][0]["effective_date"] = current
+        payload["results"][0]["result"]["observations"][0]["effective_date"] = current
+        self.assertEqual(render_result(payload["results"][0]), "Записано: 9,5 тыс. шагов.")
+        payload["results"][0]["result"]["mutations"][0]["effective_date"] = "2026-09-22"
+        payload["results"][0]["result"]["observations"][0]["effective_date"] = "2026-09-22"
+        self.assertEqual(render_result(payload["results"][0]),
+                         "Записано шагов за 22.09.2026: 9,5 тыс. шагов.")
 
     def test_estimated_quantity_is_visible_in_acknowledgment(self):
         payload = outcome()

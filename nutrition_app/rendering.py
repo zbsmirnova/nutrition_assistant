@@ -1,6 +1,9 @@
 """Russian food acknowledgments built solely from committed typed outcomes."""
 
 import json
+from datetime import datetime
+from decimal import Decimal
+from zoneinfo import ZoneInfo
 
 from nutrition_contracts.results import OutcomeEnvelope
 
@@ -16,6 +19,13 @@ def nutrient(value) -> str:
     if value.lower is not None:
         result += f" (оценка {number(value.lower)}–{number(value.upper)})"
     return result
+
+
+def central_nutrient(value) -> str:
+    """Render a saved entry's central value without repeating its bounds."""
+    if value is None:
+        return "неизвестно"
+    return number(value.value)
 
 
 def total(value) -> str:
@@ -34,6 +44,15 @@ def profile(snapshot, format_value):
                      for key, label in visible_fields)
 
 
+def compact_steps(value: int) -> str:
+    """Keep large step totals readable while persisting the exact integer."""
+    steps = int(value)
+    if steps < 1000:
+        return str(steps)
+    thousands = (Decimal(steps) / Decimal("1000")).normalize()
+    return f"{number(format(thousands, 'f'))} тыс."
+
+
 def render_food_result(payload: dict) -> str:
     result = OutcomeEnvelope.model_validate_json(json.dumps(payload)).result
     if (result.outcome != "applied" or len(result.food_entries) != 1
@@ -49,7 +68,7 @@ def render_food_result(payload: dict) -> str:
         name += "…"
     estimate_note = "\nКоличество отмечено по вашему предположению." if entry.estimated else ""
     verb = "Записано" if entry.change == "added" else "Исправлено"
-    text = (f"{verb}: {name}{estimate_note}\n{profile(entry.nutrition, nutrient)}\n\n"
+    text = (f"{verb}: {name}{estimate_note}\n{profile(entry.nutrition, central_nutrient)}\n\n"
             "Итого за сегодня:\n"
             f"{profile(day.nutrition, total)}")
     if len(text.encode("utf-16-le")) // 2 > 4000:
@@ -65,10 +84,14 @@ def render_observation_result(payload: dict) -> str:
             or result.food_entries or result.recipe is not None or result.daily_summaries):
         raise ValueError("Only daily observation outcomes are supported")
     observation = result.observations[0]
-    day = observation.effective_date.strftime("%d.%m.%Y")
     if observation.kind == "daily_weight":
         return f"Вес за сегодня записан: {number(observation.value_kg)} кг."
-    return f"Записано шагов за {day}: {observation.steps}."
+    steps = compact_steps(observation.steps)
+    today = datetime.now(ZoneInfo("Europe/Berlin")).date()
+    if observation.effective_date == today:
+        return f"Записано: {steps} шагов."
+    day = observation.effective_date.strftime("%d.%m.%Y")
+    return f"Записано шагов за {day}: {steps} шагов."
 
 
 def render_day_result(payload: dict) -> str:
