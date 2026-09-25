@@ -20,7 +20,7 @@ Nebius synthetic smoke passed with `schema_valid: true` and
 | E2E-02 | Save a known recipe by eaten grams | pass | Telegram processing returned `applied` and `delivery: sent`; the recipe acknowledgement and updated daily kcal/protein were delivered. |
 | E2E-03 | Correct an ordinary food quantity in the same entry | pass with UX issue | The correction eventually returned `applied` and recalculated the recipe/day totals. An initial attempt returned `entry_target_not_found`; the correction flow currently depends too much on replying to the bot message. |
 | E2E-04 | Set and replace daily weight | pass | Telegram processing returned `applied` and `delivery: sent`; the bot confirmed the current-day weight. |
-| E2E-05 | Set and increment daily steps | pending | Send an absolute steps value, then an explicit increment; verify one daily slot. |
+| E2E-05 | Set and increment daily steps | blocked on interpretation retry | The first absolute-steps message was accepted by Telegram but ended with `parser_rejected` before mutation or delivery. Send a new, more explicit observation message, then verify one daily slot and the increment path. |
 | E2E-06 | Read today after processing/restart | pending | Request a day summary after a worker restart and compare it with Telegram totals. |
 | E2E-07 | Unknown product remains visible and outside totals | pending | Send an unseeded item and verify a visible clarification with no food mutation. |
 
@@ -33,3 +33,12 @@ Nebius synthetic smoke passed with `schema_valid: true` and
 
 The E2E result is not a general model-quality verdict. It covers the specific
 seeded catalog and live transport path exercised above.
+
+### E2E-05 attempt
+
+The first absolute-steps attempt was polled and accepted by Telegram, but the
+conversation worker returned `failed` with `parser_rejected` on its first
+attempt. The failure is terminal for that update; no observation mutation or
+Telegram delivery was reported. A new message with explicit observation wording
+is required to distinguish model interpretation sensitivity from the already
+verified observation backend.
