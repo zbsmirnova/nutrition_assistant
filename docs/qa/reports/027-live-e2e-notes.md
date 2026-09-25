@@ -25,7 +25,7 @@ parser fingerprints must be rerun for `a8911e6`.
 | E2E-04 | Set and replace daily weight | pass | Telegram processing returned `applied` and `delivery: sent`; the bot confirmed the current-day weight. |
 | E2E-05 | Set and increment daily steps | pass, cumulative total observed | The absolute set returned `applied` and `delivery: sent` with 8200 steps. A shorthand increment also returned `applied` and `delivery: sent`; the bot reported 17000, consistent with two prior +4400 increments accumulated on the same daily slot. The stored value is normalized, while the confirmation-format UX remains open under UX-04. |
 | E2E-06 | Read today after processing/restart | pass with UX feedback | A new day-summary request returned `applied` and `delivery: sent`; Telegram read back 166 kcal and 4,05 g protein, matching the accumulated entries. The current response omits the uncertainty ranges; see UX-05. |
-| E2E-07 | Unknown product remains visible and outside totals | failed first attempt; retry after prompt fix | The unknown-food message left totals unchanged but was misclassified as a day summary, so no clarification was shown. The prompt now requires consumed named items with quantities to remain unresolved food actions; retry with a new unknown item. |
+| E2E-07 | Unknown product remains visible and outside totals | pass after prompt retry | The first attempt was misclassified as a day summary. On retry, Telegram processing returned `unresolved` with `product_unresolved` and `delivery: sent`; the bot asked for a name or catalog addition and explicitly kept the item out of totals. |
 
 ## UX feedback
 
