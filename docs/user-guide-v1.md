@@ -37,7 +37,7 @@ The product database is intended to become a private, owner-scoped cache of prod
 
 This is a personal cache, not a global catalog and not unrestricted model learning. A product should be reused only when the identity is clear enough. For example, a previously confirmed cottage cheese profile with a known fat percentage should not automatically answer a later generic “cottage cheese” message if the fat percentage is still unknown. A changed label or a different product should be added as a new version or clarified explicitly.
 
-The pilot hypothesis is that repeated confirmation creates a useful personal product history. For an unmatched packaged or generic food, the pilot may offer external catalog candidates; you select the right candidate and confirm the portion before it can be used. The selected profile then becomes part of your local cache. This flow does not cover restaurant nutrition, and automatic editing of an existing profile remains a separate capability to validate. Until a matching profile is available, the assistant may ask for product identity, fat percentage, label values, or another material detail. Confirmations are therefore expected during initial onboarding and should decrease as the personal cache becomes more complete.
+The pilot hypothesis is that repeated confirmation creates a useful personal product history. You can add a product from its label through Telegram by providing kcal and protein per 100 g. If fat and carbohydrates are missing, the assistant may propose values from a nearest analogue and ask you to confirm them. If you reject the proposal, it asks you to enter both values manually; it does not create an incomplete product. Future label-photo and barcode flows should populate the same personal cache.
 
 ## Expected user strategy: hybrid tracking
 
@@ -59,7 +59,7 @@ Most vegetables without dressing are low in calories and can usually be logged w
 
 The vacation phase and additional confidence levels will be added after the first two phases are tested in real use.
 
-The product should support this strategy by keeping confirmed personal products and recurring portion references easy to reuse, while preserving visible uncertainty for estimates. The current MVP still keeps unknown restaurant nutrition pending; accepting an explicit user-approved estimate for an unknown restaurant dish is a future behavior to validate and implement.
+The product should support this strategy by keeping confirmed personal products and recurring portion references easy to reuse, while preserving visible uncertainty for estimates. The MVP can record an LLM estimate for a restaurant dish after you provide its weight or weight range; open-ended source validation remains future work.
 
 ## Common practices
 
@@ -189,7 +189,7 @@ After these exercises, the user should know where totals come from, how pending 
 
 ## Current boundaries
 
-The MVP does not provide a close-day command, scheduled reminders, a combined daily check-in, photo-based food estimation, medical advice, or a promise of exact nutrition for restaurant food. Unknown nutrients remain unknown and are not displayed as zero. Live model quality and broad restaurant-food coverage still require measured verification.
+The MVP does not provide a close-day command, scheduled reminders, a combined daily check-in, label-photo or barcode input, medical advice, or a promise of exact nutrition for restaurant food. The first post-MVP reporting slice will answer on-demand progress questions; scheduled feedback comes later. Live model quality and broad restaurant-food coverage still require measured verification.
 
 After the MVP, the planned restaurant flow is to find similar reference foods, propose a calorie range from the reference average to up to 30% above it for possible hidden restaurant fats, and ask you to approve the estimate. The range will remain visibly estimated and will be validated during the personal pilot before release.
 

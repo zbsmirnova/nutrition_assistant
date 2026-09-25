@@ -17,6 +17,7 @@ Accepted product choices and their evidence are recorded in D001/D004/D010 in [R
 | Normal food reply | Brief entry/correction summary with central kcal/protein and the updated daily kcal/protein ranges, headed `Итого за сегодня:`. Routine MVP copy does not include fat/carbohydrate lines, pending counts, or a day-completeness sentence; those states remain authoritative backend data. |
 | Dairy product identity | Ask for missing fat percentage when it affects the product/nutrition-profile choice; reuse an explicitly supplied percentage or an exact identified product/label without asking again. |
 | Preparation and subtype | Ask one concise question when preparation or subtype materially changes the nutrition profile and the message does not resolve it. Examples: “Куриная грудка: без кожи и масла?”, “Яичница: сколько масла или сливочного масла добавлено?”, “Сыр 42%: какой сорт или производитель?”, and “Картошка: с маслом или без?”. |
+| Personal product creation | A user may add a product from label values. Kcal and protein are required. Missing fat and carbohydrates may be proposed from a nearest analogue, but the user must confirm them; rejection leads to a manual request and no product is created. |
 
 The recipe clarification explicitly expands the saved recipe details to include ingredients and instructions while retaining the decision not to store portion sizes or preparation batches.
 
@@ -42,6 +43,20 @@ Proposed interpretation defaults:
 A food noun is not enough to override explicit planning, question, or catalog language. If an intent remains ambiguous, ask a short question before mutation. Recipe creation and eating can both be requested in one message, but the two effects remain explicit and the food entry depends on a valid recipe profile.
 
 ## 4. Adding known food
+
+### Creating a personal product from a label
+
+The user may create a versioned owner-scoped product through Telegram:
+
+> User: Добавь в мою базу: творог 2,5%, 90 ккал и 17 г белка на 100 г.
+>
+> Bot: Для этого аналога предлагаю: жиры 2,5 г, углеводы 3 г на 100 г. Подтвердить?
+
+The product becomes active only after the user confirms the proposed fat and
+carbohydrate values. If the user rejects them, ask for both values manually.
+Do not create a pending product and do not treat missing values as zero or
+unknown in an active profile. A later label photo or barcode lookup is a future
+input method for the same product-version flow.
 
 Example catalog fixture: “мой суп” has 70 kcal, 4 g protein, 2 g fat, and 9 g carbohydrates per 100 g. These are illustrative supplied values, not values inferred for an arbitrary soup.
 
@@ -126,7 +141,7 @@ For the MVP, ask for an exact usable weight or an explicit user-approved assumpt
 
 If the user approves an assumption, the reply and stored provenance must say that the amount is assumed or estimated; it must not be presented as a measured value. Until the command and persistence models carry that assumption marker, the backend keeps the action pending rather than silently treating the assumption as exact. The backend applies this guard even when the parser proposal has no unresolved fields.
 
-W016 adds a typed `approved_estimate` answer for a known product or saved recipe. The user must provide the amount themselves—normally in grams for a portion-size clarification—and include explicit approval wording such as “считай примерно 120 г”. A compatible millilitre answer remains valid only for a product defined on a volume basis. The resulting component is marked as `user_approved_estimate` and retains the clarification update as approval evidence. A plain “да” cannot approve an amount, and this path does not authorize nutrition for an unknown restaurant dish.
+W016 adds a typed `approved_estimate` answer for a known product or saved recipe. The user must provide the amount themselves—normally in grams for a portion-size clarification—and include explicit approval wording such as “считай примерно 120 г”. A compatible millilitre answer remains valid only for a product defined on a volume basis. The resulting component is marked as `user_approved_estimate` and retains the clarification update as approval evidence. A plain “да” cannot approve an amount. D047 separately defines the MVP restaurant estimate path, which requires a user-supplied weight or range.
 
 ### MVP uncertainty ranges
 
