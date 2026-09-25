@@ -84,6 +84,13 @@ If you say “a little”, give a range, use a count without a trusted conversio
 
 When the assistant asks about fat percentage, grams, a product choice, or a recipe choice, reply directly to that question. A bare number is used as an answer only when exactly one active question requested that unit.
 
+If preparation or subtype changes the nutrition, the assistant may ask one
+short follow-up before recording the food. For example, it may ask whether
+chicken breast was prepared without skin or oil, how much oil or butter was
+used in an omelette, which cheese producer or variety was eaten, or whether
+baked potatoes included oil. The food stays out of the total until that
+material detail is answered.
+
 Examples:
 
 ```text
@@ -183,5 +190,7 @@ After these exercises, the user should know where totals come from, how pending 
 ## Current boundaries
 
 The MVP does not provide a close-day command, scheduled reminders, a combined daily check-in, photo-based food estimation, medical advice, or a promise of exact nutrition for restaurant food. Unknown nutrients remain unknown and are not displayed as zero. Live model quality and broad restaurant-food coverage still require measured verification.
+
+After the MVP, the planned restaurant flow is to find similar reference foods, propose a calorie range from the reference average to up to 30% above it for possible hidden restaurant fats, and ask you to approve the estimate. The range will remain visibly estimated and will be validated during the personal pilot before release.
 
 Use synthetic or clearly identified examples during training. Do not place credentials, private message exports, or sensitive personal data in onboarding materials.
