@@ -17,7 +17,7 @@ Nebius synthetic smoke passed with `schema_valid: true` and
 | ID | Scenario | Status | Evidence / next action |
 | --- | --- | --- | --- |
 | E2E-01 | Save a newly provisioned ordinary product through Telegram | pass | Bot confirmed the item and showed central kcal/protein plus ±10% bounds. |
-| E2E-02 | Save a known recipe by eaten grams | pending | Send one saved-recipe message and verify the pinned recipe version and reply. |
+| E2E-02 | Save a known recipe by eaten grams | pass | Telegram processing returned `applied` and `delivery: sent`; the recipe acknowledgement and updated daily kcal/protein were delivered. |
 | E2E-03 | Correct an ordinary food quantity in the same entry | pending | Correct the E2E-01 entry and verify one entry identity with revised totals. |
 | E2E-04 | Set and replace daily weight | pending | Send two weight values for the same local date and verify replacement confirmation. |
 | E2E-05 | Set and increment daily steps | pending | Send an absolute steps value, then an explicit increment; verify one daily slot. |
