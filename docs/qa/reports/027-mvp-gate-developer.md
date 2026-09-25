@@ -48,4 +48,5 @@ This verifies the implementation and local persistence gate. It does not prove
 Nebius Russian-language interpretation quality, live Telegram polling/delivery,
 or deployment availability. Those are the next E2E checks. Telegram product
 creation, restaurant estimates, reminders, progress reports, and other
-post-gate lanes remain outside W027.
+post-gate lanes remain outside W027. Live user-run observations are tracked in
+[027-live-e2e-notes.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/027-live-e2e-notes.md?type=file&root=%252F).
