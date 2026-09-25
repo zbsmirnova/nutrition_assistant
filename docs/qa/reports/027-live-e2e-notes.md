@@ -2,8 +2,8 @@
 
 Status: in progress.
 Date started: 2026-09-25.
-Revision under test: `f2157c2` (`Clarify Telegram day summary intent`), on top of
-`b53e15b`, `37718f7`, `acb1727`, and `bbc1c62`.
+Revision under test: `a8911e6` (`Keep unknown consumed foods visible`), on top of
+`f2157c2`, `b53e15b`, `37718f7`, `acb1727`, and `bbc1c62`.
 Evidence source: user-run private Telegram pilot and Nebius smoke. No
 independent QA review was run.
 
@@ -13,7 +13,7 @@ At the previous revision, Nebius synthetic smoke passed with `schema_valid: true
 `expected_action_matched: true`. Parser fingerprint:
 `nebius:b6f87aa27acc2bb82e5e9a6a12841b53f606c4290c9d6d80ae6ee5284964006b`.
 The prompt and observation date handling have since changed, so smoke and live
-parser fingerprints must be rerun for `f2157c2`.
+parser fingerprints must be rerun for `a8911e6`.
 
 ## Scenario checklist
 
@@ -25,7 +25,7 @@ parser fingerprints must be rerun for `f2157c2`.
 | E2E-04 | Set and replace daily weight | pass | Telegram processing returned `applied` and `delivery: sent`; the bot confirmed the current-day weight. |
 | E2E-05 | Set and increment daily steps | pass, cumulative total observed | The absolute set returned `applied` and `delivery: sent` with 8200 steps. A shorthand increment also returned `applied` and `delivery: sent`; the bot reported 17000, consistent with two prior +4400 increments accumulated on the same daily slot. The stored value is normalized, while the confirmation-format UX remains open under UX-04. |
 | E2E-06 | Read today after processing/restart | pass with UX feedback | A new day-summary request returned `applied` and `delivery: sent`; Telegram read back 166 kcal and 4,05 g protein, matching the accumulated entries. The current response omits the uncertainty ranges; see UX-05. |
-| E2E-07 | Unknown product remains visible and outside totals | pending | Send an unseeded item and verify a visible clarification with no food mutation. |
+| E2E-07 | Unknown product remains visible and outside totals | failed first attempt; retry after prompt fix | The unknown-food message left totals unchanged but was misclassified as a day summary, so no clarification was shown. The prompt now requires consumed named items with quantities to remain unresolved food actions; retry with a new unknown item. |
 
 ## UX feedback
 
@@ -42,7 +42,7 @@ seeded catalog and live transport path exercised above.
 
 ## Local verification for the prompt clarification
 
-Developer checks passed on `f2157c2`: `tests.test_nebius` and
+Developer checks passed on `a8911e6`: `tests.test_nebius` and
 `tests.test_interpretation` (48 tests), plus `git diff --check`. No independent
 QA review was run.
 
