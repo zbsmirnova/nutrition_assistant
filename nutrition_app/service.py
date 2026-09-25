@@ -13,13 +13,13 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import Connection, Engine
 
 from nutrition_contracts.commands import (
-    AddConsumedFood, CalculatedRecipeNutrition, CommandEnvelope, CorrectFoodEntry, DefineRecipe,
+    AddConsumedFood, CalculatedRecipeNutrition, CommandEnvelope, CorrectFoodEntry, DefineRecipe, GetDaySummary,
     DeleteFoodEntry, IncrementDailySteps, ProductComponent, RecipeDefinition, ReviseRecipe, RestoreFoodEntry,
     RecipeComponent, ResolvedIngredientSource, SetDailySteps, SetDailyWeight, UnknownIngredientSource,
 )
 from nutrition_contracts.common import Contract, Count, NutritionSnapshot, PositiveCount, Text
 from nutrition_contracts.results import (Applied, DailySummary, FoodEntrySummary, MutationReceipt, NoChange,
-                                         OutcomeEnvelope, RecipeProfile, StepsSnapshot, WeightSnapshot)
+                                         OutcomeEnvelope, ReadDay, RecipeProfile, StepsSnapshot, WeightSnapshot)
 
 from .errors import ApplicationError, Conflict, NotFound, Unauthorized, Unsupported
 from .nutrition import (CALCULATION_VERSION, RECIPE_CALCULATION_VERSION, day_nutrition, entry_nutrition,
@@ -115,9 +115,9 @@ class FoodService:
     @staticmethod
     def _validate_supported(command: CommandEnvelope, position: int = 0) -> None:
         if not isinstance(command.command, (AddConsumedFood, CorrectFoodEntry, DeleteFoodEntry, RestoreFoodEntry,
-                                            DefineRecipe, ReviseRecipe, SetDailyWeight, SetDailySteps,
+                                            DefineRecipe, ReviseRecipe, SetDailyWeight, SetDailySteps, GetDaySummary,
                                             IncrementDailySteps)):
-            raise Unsupported("This slice supports resolved food, recipe, and daily observation commands only")
+            raise Unsupported("This slice supports resolved food, recipe, observations, and day readback commands only")
         evidence = command.source.evidence_update_ids
         if evidence[0] != command.source.origin_update_id or len(set(evidence)) != len(evidence):
             raise ApplicationError("Evidence must begin with the original source and contain no duplicates")
@@ -144,6 +144,9 @@ class FoodService:
         elif isinstance(command.command, (SetDailyWeight, SetDailySteps, IncrementDailySteps)):
             if command.source.pending_action_id is not None or evidence != [command.source.origin_update_id]:
                 raise Unsupported("Daily observations do not depend on pending clarification in this slice")
+        elif isinstance(command.command, GetDaySummary):
+            if command.source.pending_action_id is not None or evidence != [command.source.origin_update_id]:
+                raise Unsupported("Day readback does not depend on pending clarification in this slice")
         elif command.source.pending_action_id is None and evidence != [command.source.origin_update_id]:
             raise Unsupported("Additional correction evidence requires a pending clarification")
         elif command.source.pending_action_id is not None and len(evidence) < 2:
@@ -704,6 +707,11 @@ class FoodService:
             effective_date=command.effective_date, steps=int(value))
         return self._observation_result(envelope, "daily_steps", observation_id, revision_id, snapshot)
 
+    def _read_day(self, connection, actor, envelope):
+        command: GetDaySummary = envelope.command
+        return OutcomeEnvelope(result=ReadDay(schema_version="1.0", operation_id=envelope.operation_id,
+            outcome="day_summary", summary=self._day(connection, actor, command.effective_date)))
+
     def _mutate(self, connection, actor, command):
         if isinstance(command.command, AddConsumedFood):
             return self._add(connection, actor, command)
@@ -723,7 +731,9 @@ class FoodService:
             return self._set_steps(connection, actor, command)
         if isinstance(command.command, IncrementDailySteps):
             return self._increment_steps(connection, actor, command)
-        raise Unsupported("This slice supports resolved food, recipe, and daily observation commands only")
+        if isinstance(command.command, GetDaySummary):
+            return self._read_day(connection, actor, command)
+        raise Unsupported("This slice supports resolved food, recipe, observations, and day readback commands only")
 
     def get_recipe(self, actor: UUID, recipe_id: UUID) -> RecipeProfile:
         with self.engine.begin() as connection:

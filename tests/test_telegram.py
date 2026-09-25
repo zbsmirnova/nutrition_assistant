@@ -6,7 +6,7 @@ import unittest
 from uuid import uuid4
 
 from nutrition_app.outbox import Delivery, DeliveryRejected, RetryLater
-from nutrition_app.rendering import render_clarification_result, render_food_result
+from nutrition_app.rendering import render_clarification_result, render_food_result, render_result
 from nutrition_app.telegram import TelegramClient, TelegramError, TelegramRejected, TelegramSender, TelegramUnavailable
 
 
@@ -121,6 +121,17 @@ class TelegramProtocolTests(unittest.TestCase):
 
 
 class RussianReplyTests(unittest.TestCase):
+    def test_day_readback_exposes_only_mvp_totals(self):
+        payload = outcome()
+        day = payload["result"]["daily_summaries"][0]
+        day_payload = {"result": {"schema_version": "1.0",
+                                   "operation_id": payload["result"]["operation_id"],
+                                   "outcome": "day_summary", "summary": day}}
+        text = render_result(day_payload)
+        self.assertEqual(text, "Итого за сегодня:\nКкал: 175\nБелки, г: 10")
+        self.assertNotIn("Жиры, г:", text)
+        self.assertNotIn("Углеводы, г:", text)
+
     def test_estimated_quantity_is_visible_in_acknowledgment(self):
         payload = outcome()
         payload["result"]["food_entries"][0]["estimated"] = True

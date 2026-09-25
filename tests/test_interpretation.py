@@ -4,6 +4,7 @@ import json
 import unittest
 from uuid import UUID
 
+from nutrition_contracts.commands import GetDaySummary
 from nutrition_contracts.parser import ParserOutput
 from nutrition_app.conversation_demo import PRODUCT_NAME, TEXT, fixture
 from nutrition_app.conversation import ConversationWorker
@@ -40,6 +41,17 @@ def observation_proposal(kind, text, **fields):
 
 
 class InterpretationTests(unittest.TestCase):
+    def test_day_read_resolves_to_backend_owned_command(self):
+        text = "Сколько калорий сегодня?"
+        result = resolve(ACTOR, ORIGIN, context(text), ParserOutput.model_validate({
+            "schema_version": "1.0", "actions": [{
+                "kind": "get_day_summary", "action_id": "a1", "evidence": text,
+                "depends_on": [], "unresolved": [], "date_hint": {"text": "сегодня"},
+            }] }))
+        self.assertEqual((result.status, result.reason), ("ready", "day_summary_command_prepared"))
+        self.assertIsInstance(result.command.command, GetDaySummary)
+        self.assertEqual(result.command.command.effective_date.isoformat(), "2026-09-22")
+
     def test_daily_weight_resolves_to_backend_owned_command(self):
         text = "Вес 76,3 кг"
         result = resolve(ACTOR, ORIGIN, context(text), observation_proposal(

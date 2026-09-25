@@ -17,7 +17,7 @@ from nutrition_contracts.commands import (CommandEnvelope, IncrementDailySteps, 
 from nutrition_contracts.parser import (AddFood, AnswerClarification, ApprovedEstimateAnswer, CandidateAnswer, CorrectFood,
                                          DeleteFood, MoveDate, NonLogging, NutritionAnswer, ParserOutput,
                                          QuantityAnswer, SetSteps, SetWeight, IncrementSteps, TextAnswer,
-                                         SetMeal, SetQuantity, UndoFood, validate_parser_context)
+                                         SetMeal, SetQuantity, UndoFood, GetDay, validate_parser_context)
 
 from .errors import ApplicationError
 from .service import digest, operation_id_for
@@ -465,6 +465,23 @@ def resolve_observation(actor: UUID, origin: UUID, context: dict, action) -> Res
     return Resolution("unsupported", "observation_action_not_implemented")
 
 
+def resolve_day_read(actor: UUID, origin: UUID, context: dict, action) -> Resolution:
+    """Resolve a day read using the backend-owned local date."""
+    if action.depends_on or action.unresolved:
+        return Resolution("unresolved", "proposal_unresolved")
+    if context["has_reply"] or context["forwarded"]:
+        return Resolution("unresolved", "conversation_context_required")
+    target_date = effective_date(context, action.date_hint.text)
+    if target_date is None:
+        return Resolution("unresolved", "date_unresolved")
+    command = _observation_command(actor, origin, context, {
+        "kind": "get_day_summary", "effective_date": target_date.isoformat(),
+        "time_zone": context["time_zone"],
+    })
+    return Resolution("ready", "day_summary_command_prepared", command,
+                      command_position=context.get("operation_position", 0))
+
+
 def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> Resolution:
     candidate_kinds = {c["ref"]: "product" for c in context["candidates"]}
     candidate_kinds.update({c["ref"]: "recipe" for c in context.get("recipes", ())})
@@ -482,6 +499,8 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
         return Resolution(status, action.reason)
     if isinstance(action, (SetWeight, SetSteps, IncrementSteps)):
         return resolve_observation(actor, origin, context, action)
+    if isinstance(action, GetDay):
+        return resolve_day_read(actor, origin, context, action)
     if isinstance(action, AnswerClarification):
         pending = context.get("pending")
         if pending is None or action.pending is None:

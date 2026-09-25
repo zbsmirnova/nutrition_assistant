@@ -9,7 +9,6 @@ from threading import Event
 from uuid import UUID
 
 from .conversation import ConversationWorker
-from .food_sources import lookup_from_environment
 from .nebius import NebiusConfig, NebiusParser
 from .outbox import OutboxWorker
 from .telegram import TelegramClient, TelegramPoller, TelegramSender
@@ -43,7 +42,7 @@ class PilotRunner:
         self.api = TelegramClient(token, bot_id)
         self.poller = TelegramPoller(engine, self.api)
         self.parser = NebiusParser(NebiusConfig.from_environment())
-        self.worker = ConversationWorker(engine, food_lookup=lookup_from_environment())
+        self.worker = ConversationWorker(engine)
         self.sender = OutboxWorker(engine, bot_id=bot_id)
 
     def request_stop(self, *_args):

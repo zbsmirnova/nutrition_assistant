@@ -898,6 +898,26 @@ class ConversationWorkerTests(unittest.TestCase):
         self.assertEqual(replay["delivery"], "idle")
         self.assertEqual(replay["rendered_replies"], [])
 
+    def test_day_readback_is_durable_and_uses_the_same_worker_pipeline(self):
+        food_origin = self.source(1)
+        self.assertEqual(self.worker.run_one(self.actor, ControlledParser(), origin=food_origin)["status"], "applied")
+        text = "Сколько калорий сегодня?"
+        read_origin = self.source(2, text=text)
+        output = {"schema_version": "1.0", "actions": [{
+            "kind": "get_day_summary", "action_id": "a1", "evidence": text,
+            "depends_on": [], "unresolved": [], "date_hint": {"text": "сегодня"},
+        }]}
+        parser = ControlledParser(output)
+        result = self.worker.run_one(self.actor, parser, origin=read_origin)
+        self.assertEqual(result["status"], "applied")
+        self.assertEqual(result["outcome"]["result"]["outcome"], "day_summary")
+        self.assertEqual(result["outcome"]["result"]["summary"]["entry_count"], 1)
+        replay = self.worker.run_one(self.actor, ControlledParser(callback=lambda _: self.fail("readback replay reparsed")),
+                                     origin=read_origin)
+        self.assertEqual(replay["status"], "applied")
+        self.assertNotIn("outcome", replay)
+        self.assertEqual(self.service.get_day(self.actor, date(2026, 9, 22)).entry_count, 1)
+
 
 if __name__ == "__main__":
     unittest.main()

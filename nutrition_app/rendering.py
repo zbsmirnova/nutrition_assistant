@@ -71,6 +71,15 @@ def render_observation_result(payload: dict) -> str:
     return f"Записано шагов за {day}: {observation.steps}."
 
 
+def render_day_result(payload: dict) -> str:
+    result = OutcomeEnvelope.model_validate_json(json.dumps(payload)).result
+    if result.outcome != "day_summary":
+        raise ValueError("Not a day summary result")
+    # Readback intentionally exposes only the MVP-facing calorie and protein
+    # totals; fat and carbohydrates remain persisted for later views.
+    return f"Итого за сегодня:\n{profile(result.summary.nutrition, total)}"
+
+
 def render_clarification_result(payload: dict) -> str:
     result = OutcomeEnvelope.model_validate_json(json.dumps(payload)).result
     if result.outcome != "needs_clarification":
@@ -86,5 +95,9 @@ def render_result(payload: dict) -> str:
         pass
     try:
         return render_observation_result(payload)
+    except ValueError:
+        pass
+    try:
+        return render_day_result(payload)
     except ValueError:
         return render_food_result(payload)

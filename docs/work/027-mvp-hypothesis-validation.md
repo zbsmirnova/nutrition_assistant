@@ -1,6 +1,6 @@
 # W027 — MVP hypothesis validation: stable calculation and recording
 
-Status: ready.
+Status: in progress.
 Milestone: MVP-GATE.
 Owner: lead assistant, architect/developer; QA evidence must remain separately attributed.
 Decision: D049.
@@ -79,3 +79,11 @@ migration, fixture identities, commands, scenario results, failures, and
 coverage limits in a QA report linked here. A live user run is useful evidence
 but is not an independent QA review. The W024 deployment brief remains the
 separate personal-release gate after this validation.
+
+## Implementation progress
+
+The production Telegram path now excludes external catalog lookup, and
+`get_day_summary` is resolved, persisted, replay-safe, and rendered through the
+same operation/outbox flow as food mutations. The remaining gate work is the
+full scenario run with seeded products and recipes, including live Telegram
+evidence and a separate interpretation-quality report.
