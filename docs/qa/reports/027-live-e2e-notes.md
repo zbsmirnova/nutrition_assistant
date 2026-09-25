@@ -34,6 +34,7 @@ parser fingerprints must be rerun for `b53e15b`.
 | UX-01 | Repeating `(оценка lower–upper)` on each nutrient line makes a short acknowledgement feel heavy. | Keep the saved-entry central values clean. Show the uncertainty range once in the daily total, initially on the kcal line; decide separately whether the protein range is shown there. | Open product decision; do not change during this E2E run. |
 | UX-02 | It is inconvenient to reply to the bot message for a correction. | When a correction has no explicit target, resolve it against the user's latest bot acknowledgment when it is an unambiguous food entry; keep explicit replies as the stronger target. | Open product decision; implementation after the E2E pass. |
 | UX-03 | The steps confirmation does not need the calendar date for the current day. | Render current-day confirmation without the date, while retaining dates for backdated observations. | Open product decision; do not change during this E2E run. |
+| UX-04 | A confirmation rendered as `4400 шагов` loses the user's compact input form. | Render shorthand input as `4,4 тыс. шагов` in the confirmation while persisting the normalized integer `4400`. | Open product decision; do not change during this E2E run. |
 
 The E2E result is not a general model-quality verdict. It covers the specific
 seeded catalog and live transport path exercised above.
