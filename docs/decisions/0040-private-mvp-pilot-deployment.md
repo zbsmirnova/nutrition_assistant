@@ -5,6 +5,12 @@ Recorded: 2026-09-24
 Authority: product-owner choice of always-on cloud, provider, and pilot spending constraint; backup/data-lifecycle details remain open
 Related questions: Q10, Q11
 
+Hardware confirmation: 2026-09-25 — the selected Netcup VPS nano G11.5s is
+confirmed as 2 vCore x86, 2 GB RAM, 60 GB SSD, public IPv4 and IPv6, included
+traffic, snapshots, and remote console, with no extra IPv4. This confirms the
+reduced single-user pilot profile; it does not change the capacity or backup
+limits below.
+
 ## Decision proposal
 
 For the first usable deployment, run one private application worker and one

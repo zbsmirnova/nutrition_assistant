@@ -51,4 +51,6 @@ explicit single-user pilot constraint; the production image limits the worker
 and database for the small host, and the host must use swap. Extra IPv4 and
 Cloud vLAN are not required. Upgrade to 4 GB RAM remains the recovery path if
 the pilot shows memory pressure. Credentials are entered directly into the
-host's secret store and must not be sent in chat or committed.
+host's secret store and must not be sent in chat or committed. The hardware
+profile was reconfirmed on 2026-09-25, including snapshots and remote console;
+the absence of an extra IPv4 does not block this polling-based topology.
