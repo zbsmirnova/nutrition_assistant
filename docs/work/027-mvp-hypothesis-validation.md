@@ -1,6 +1,6 @@
 # W027 — MVP hypothesis validation: stable calculation and recording
 
-Status: in progress.
+Status: complete for the user-run single-user pilot validation.
 Milestone: MVP-GATE.
 Owner: lead assistant, architect/developer; QA evidence must remain separately attributed.
 Decision: D049.
@@ -84,7 +84,9 @@ separate personal-release gate after this validation.
 
 The production Telegram path now excludes external catalog lookup, and
 `get_day_summary` is resolved, persisted, replay-safe, and rendered through the
-same operation/outbox flow as food mutations. The local implementation gate is
-complete; live Telegram/Nebius evidence is the next E2E step. Developer
-verification is recorded in [027-mvp-runtime-cleanup-developer.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/027-mvp-runtime-cleanup-developer.md?type=file&root=%252F)
-and the scenario scorecard in [027-mvp-gate-developer.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/027-mvp-gate-developer.md?type=file&root=%252F).
+same operation/outbox flow as food mutations. The local implementation gate
+and the user-run live E2E gate are complete for the seeded single-user pilot.
+Live evidence, including its model-interpretation retries and UX feedback, is
+recorded in [027-live-e2e-notes.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/027-live-e2e-notes.md?type=file&root=%252F).
+Developer verification is recorded in [027-mvp-runtime-cleanup-developer.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/027-mvp-runtime-cleanup-developer.md?type=file&root=%252F)
+and the local scenario scorecard in [027-mvp-gate-developer.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/027-mvp-gate-developer.md?type=file&root=%252F).

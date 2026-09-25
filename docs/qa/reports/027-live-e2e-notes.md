@@ -1,11 +1,16 @@
 # W027 — Live E2E notes
 
-Status: in progress.
+Status: complete for the user-run single-user pilot validation.
 Date started: 2026-09-25.
 Revision under test: `a8911e6` (`Keep unknown consumed foods visible`), on top of
 `f2157c2`, `b53e15b`, `37718f7`, `acb1727`, and `bbc1c62`.
 Evidence source: user-run private Telegram pilot and Nebius smoke. No
 independent QA review was run.
+
+The W027 live validation scenarios are complete for the seeded personal
+catalog and the bounded Telegram/Nebius path. This closes the current
+validation gate with the limitations below; it is not a broad model-quality
+benchmark or an independent QA verdict.
 
 ## Smoke
 
