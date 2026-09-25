@@ -18,7 +18,7 @@ Nebius synthetic smoke passed with `schema_valid: true` and
 | --- | --- | --- | --- |
 | E2E-01 | Save a newly provisioned ordinary product through Telegram | pass | Bot confirmed the item and showed central kcal/protein plus ±10% bounds. |
 | E2E-02 | Save a known recipe by eaten grams | pass | Telegram processing returned `applied` and `delivery: sent`; the recipe acknowledgement and updated daily kcal/protein were delivered. |
-| E2E-03 | Correct an ordinary food quantity in the same entry | pending | Correct the E2E-01 entry and verify one entry identity with revised totals. |
+| E2E-03 | Correct an ordinary food quantity in the same entry | pass with UX issue | The correction eventually returned `applied` and recalculated the recipe/day totals. An initial attempt returned `entry_target_not_found`; the correction flow currently depends too much on replying to the bot message. |
 | E2E-04 | Set and replace daily weight | pending | Send two weight values for the same local date and verify replacement confirmation. |
 | E2E-05 | Set and increment daily steps | pending | Send an absolute steps value, then an explicit increment; verify one daily slot. |
 | E2E-06 | Read today after processing/restart | pending | Request a day summary after a worker restart and compare it with Telegram totals. |
@@ -29,6 +29,7 @@ Nebius synthetic smoke passed with `schema_valid: true` and
 | ID | Observation | Proposed follow-up | Status |
 | --- | --- | --- | --- |
 | UX-01 | Repeating `(оценка lower–upper)` on each nutrient line makes a short acknowledgement feel heavy. | Keep the saved-entry central values clean. Show the uncertainty range once in the daily total, initially on the kcal line; decide separately whether the protein range is shown there. | Open product decision; do not change during this E2E run. |
+| UX-02 | It is inconvenient to reply to the bot message for a correction. | When a correction has no explicit target, resolve it against the user's latest bot acknowledgment when it is an unambiguous food entry; keep explicit replies as the stronger target. | Open product decision; implementation after the E2E pass. |
 
 The E2E result is not a general model-quality verdict. It covers the specific
 seeded catalog and live transport path exercised above.
