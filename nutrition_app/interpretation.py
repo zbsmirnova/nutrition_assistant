@@ -162,9 +162,10 @@ def effective_date(context: dict, hint: str | None) -> date | None:
     # write; this also makes the default independent of model formatting.
     if not markers:
         return original
-    if hint is None:
-        return None
-    token = normalized(hint)
+    # The backend owns date resolution. A model hint is useful as a consistency
+    # check, but it is optional when the source itself contains one unambiguous
+    # date marker (for example, ``сегодня``).
+    token = normalized(hint) if hint is not None else markers[0]
     if token not in source or len(markers) != 1 or markers[0] != token:
         return None
     if token in {"сегодня", "today"}:

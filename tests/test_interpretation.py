@@ -76,6 +76,13 @@ class InterpretationTests(unittest.TestCase):
             "increment_daily_steps", increment_text, steps=500))
         self.assertEqual(increment.reason, "steps_baseline_missing")
 
+    def test_observation_date_is_derived_when_source_has_today_marker(self):
+        text = "Запиши за сегодня 8200 шагов"
+        result = resolve(ACTOR, ORIGIN, context(text), observation_proposal(
+            "set_daily_steps", text, steps=8200))
+        self.assertEqual((result.status, result.reason), ("ready", "steps_command_prepared"))
+        self.assertEqual(result.command.command.effective_date.isoformat(), "2026-09-22")
+
     def test_increment_steps_requires_existing_baseline(self):
         text = "ещё 500 шагов"
         source = context(text)
@@ -246,7 +253,7 @@ class InterpretationTests(unittest.TestCase):
     def test_dates_use_source_date_and_require_lexical_consistency(self):
         for hint, text, expected in [(None, TEXT, "2026-09-22"),
                 ("вчера", "Вчера " + TEXT, "2026-09-21"), ("2026-09-20", TEXT + " 2026-09-20", "2026-09-20"),
-                (None, "Вчера " + TEXT, None), ("сегодня", "Вчера " + TEXT, None),
+                (None, "Вчера " + TEXT, "2026-09-21"), ("сегодня", "Вчера " + TEXT, None),
                 ("вчера", "Вчера или сегодня " + TEXT, None), ("позавчера", "Позавчера " + TEXT, None),
                 ("2026-02-30", TEXT + " 2026-02-30", None)]:
             with self.subTest(text=text, hint=hint):
