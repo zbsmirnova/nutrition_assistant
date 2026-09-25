@@ -2,8 +2,8 @@
 
 Status: in progress.
 Date started: 2026-09-25.
-Revision under test: `b53e15b` (`Normalize common shorthand steps formats`), on
-top of `37718f7`, `acb1727`, and `bbc1c62`.
+Revision under test: `f2157c2` (`Clarify Telegram day summary intent`), on top of
+`b53e15b`, `37718f7`, `acb1727`, and `bbc1c62`.
 Evidence source: user-run private Telegram pilot and Nebius smoke. No
 independent QA review was run.
 
@@ -13,7 +13,7 @@ At the previous revision, Nebius synthetic smoke passed with `schema_valid: true
 `expected_action_matched: true`. Parser fingerprint:
 `nebius:b6f87aa27acc2bb82e5e9a6a12841b53f606c4290c9d6d80ae6ee5284964006b`.
 The prompt and observation date handling have since changed, so smoke and live
-parser fingerprints must be rerun for `b53e15b`.
+parser fingerprints must be rerun for `f2157c2`.
 
 ## Scenario checklist
 
@@ -24,7 +24,7 @@ parser fingerprints must be rerun for `b53e15b`.
 | E2E-03 | Correct an ordinary food quantity in the same entry | pass with UX issue | The correction eventually returned `applied` and recalculated the recipe/day totals. An initial attempt returned `entry_target_not_found`; the correction flow currently depends too much on replying to the bot message. |
 | E2E-04 | Set and replace daily weight | pass | Telegram processing returned `applied` and `delivery: sent`; the bot confirmed the current-day weight. |
 | E2E-05 | Set and increment daily steps | pass, cumulative total observed | The absolute set returned `applied` and `delivery: sent` with 8200 steps. A shorthand increment also returned `applied` and `delivery: sent`; the bot reported 17000, consistent with two prior +4400 increments accumulated on the same daily slot. The stored value is normalized, while the confirmation-format UX remains open under UX-04. |
-| E2E-06 | Read today after processing/restart | pending | Request a day summary after a worker restart and compare it with Telegram totals. |
+| E2E-06 | Read today after processing/restart | blocked on interpretation retry | The first summary request was classified as `general_chat` and produced no mutation or delivery. The prompt now explicitly maps day-total questions to `get_day_summary`; retry with a new summary request. |
 | E2E-07 | Unknown product remains visible and outside totals | pending | Send an unseeded item and verify a visible clarification with no food mutation. |
 
 ## UX feedback
@@ -41,7 +41,7 @@ seeded catalog and live transport path exercised above.
 
 ## Local verification for the prompt clarification
 
-Developer checks passed on `b53e15b`: `tests.test_nebius` and
+Developer checks passed on `f2157c2`: `tests.test_nebius` and
 `tests.test_interpretation` (48 tests), plus `git diff --check`. No independent
 QA review was run.
 
