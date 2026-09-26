@@ -43,7 +43,7 @@ scaling, and unknown-restaurant nutrition sourcing.
 | W024-A02 | SIGTERM stops polling cleanly; an in-flight durable job/outbox item can be recovered by the next start. |
 | W024-A03 | A clean host startup runs the required migration and starts the worker without exposing PostgreSQL or an application HTTP port publicly. |
 | W024-A04 | Secrets are supplied outside the image and repository; normal logs contain statuses/IDs only and no message text or tokens. |
-| W024-A05 | A backup can be restored into a disposable PostgreSQL instance and the application resumes from the restored durable state. |
+| W024-A05 | A backup can be restored into a disposable PostgreSQL instance and the application resumes from the restored durable state. Developer evidence: [024-postgresql-backup-restore-developer.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/qa/reports/024-postgresql-backup-restore-developer.md?type=file&root=%252F). |
 | W024-A06 | The live pilot acceptance scenarios pass on the selected host; each result records its revision, limits, and whether it was developer or independent QA evidence. |
 | W024-A07 | A push to `main` deploys only after the configured CI suites pass, activates the exact tested commit, keeps runtime secrets on the host, and reports worker health or a bounded failure. |
 
