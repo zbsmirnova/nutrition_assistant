@@ -584,6 +584,50 @@ class ConversationWorkerTests(unittest.TestCase):
         self.assertEqual(self.count(db.food_entry_revisions), 2)
         self.assertEqual(self.service.get_day(self.actor, date(2026, 9, 22)).nutrition.kcal.amount.value, "96")
 
+    def test_reply_adjust_quantity_adds_and_subtracts_without_new_entry(self):
+        original = self.source(1)
+        self.assertEqual(self.worker.run_one(self.actor, ControlledParser(), origin=original)["status"], "applied")
+        with self.engine.begin() as connection:
+            message_id = connection.execute(sa.select(db.inbox_updates.c.telegram_message_id).where(
+                db.inbox_updates.c.id == original)).scalar_one()
+
+        def adjustment(number, text, direction, amount):
+            source = self.source(number, text=text, reply_to_message_id=message_id)
+            output = {"schema_version": "1.0", "actions": [{
+                "kind": "correct_food", "action_id": "a1", "evidence": text,
+                "depends_on": [], "unresolved": [], "target": {"kind": "reply"},
+                "change": {"kind": "adjust_quantity", "quantity": {"amount": amount, "unit": "g"},
+                           "direction": direction}}]}
+            return self.worker.run_one(self.actor, ControlledParser(output), origin=source)
+
+        self.assertEqual(adjustment(2, "Добавь еще 30 г", "add", "30")["status"], "applied")
+        self.assertEqual(adjustment(3, "Убавь 20 г", "subtract", "20")["status"], "applied")
+        self.assertEqual(self.count(db.food_entries), 1)
+        self.assertEqual(self.count(db.food_entry_revisions), 3)
+        with self.engine.begin() as connection:
+            current_revision = sa.select(db.food_entries.c.current_revision_id).where(
+                db.food_entries.c.user_id == self.actor).scalar_subquery()
+            amount = connection.execute(sa.select(db.food_components.c.edible_g).where(
+                db.food_components.c.food_entry_revision_id == current_revision)).scalar_one()
+        self.assertEqual(str(amount), "110.000000")
+
+    def test_reply_adjust_quantity_cannot_make_weight_non_positive(self):
+        original = self.source(1)
+        self.assertEqual(self.worker.run_one(self.actor, ControlledParser(), origin=original)["status"], "applied")
+        with self.engine.begin() as connection:
+            message_id = connection.execute(sa.select(db.inbox_updates.c.telegram_message_id).where(
+                db.inbox_updates.c.id == original)).scalar_one()
+        text = "Убавь 120 г"
+        correction = self.source(2, text=text, reply_to_message_id=message_id)
+        output = {"schema_version": "1.0", "actions": [{
+            "kind": "correct_food", "action_id": "a1", "evidence": text,
+            "depends_on": [], "unresolved": [], "target": {"kind": "reply"},
+            "change": {"kind": "adjust_quantity", "quantity": {"amount": "120", "unit": "g"},
+                       "direction": "subtract"}}]}
+        result = self.worker.run_one(self.actor, ControlledParser(output), origin=correction)
+        self.assertEqual((result["status"], result["reason"]), ("unresolved", "quantity_would_be_non_positive"))
+        self.assertEqual(self.count(db.food_entry_revisions), 1)
+
     def test_reply_to_bot_acknowledgment_updates_the_same_entry(self):
         original = self.source(1)
         self.assertEqual(self.worker.run_one(self.actor, ControlledParser(), origin=original)["status"], "applied")
@@ -652,6 +696,44 @@ class ConversationWorkerTests(unittest.TestCase):
         self.assertEqual(undo_result["status"], "applied")
         self.assertEqual(self.service.get_day(self.actor, date(2026, 9, 22)).entry_count, 1)
         self.assertEqual(self.count(db.food_entry_revisions), 3)
+
+    def test_standalone_latest_delete_removes_latest_active_entry_once(self):
+        first = self.source(1)
+        self.assertEqual(self.worker.run_one(self.actor, ControlledParser(), origin=first)["status"], "applied")
+        second = self.source(2, text=TEXT.replace("100", "80"))
+        second_output = {"schema_version": "1.0", "actions": [{
+            "kind": "add_food", "action_id": "a1", "evidence": TEXT.replace("100", "80"),
+            "depends_on": [], "unresolved": [],
+            "food": {"kind": "candidate", "candidate_ref": "c1", "candidate_kind": "product"},
+            "quantity": {"amount": "80", "unit": "g"}, "weight_basis": "as_sold",
+            "date_hint": {"text": None}, "meal": "lunch"}]}
+        self.assertEqual(self.worker.run_one(self.actor, ControlledParser(second_output), origin=second)["status"], "applied")
+
+        delete = self.source(3, text="Удали последнее")
+
+        class ParserMustNotRun(ControlledParser):
+            def parse(self, request):
+                raise AssertionError("standalone latest deletion must not call the model")
+
+        result = self.worker.run_one(self.actor, ParserMustNotRun({}), origin=delete)
+        self.assertEqual(result["status"], "applied")
+        self.assertEqual(self.service.get_day(self.actor, date(2026, 9, 22)).entry_count, 1)
+        self.assertEqual(self.count(db.food_entry_revisions), 3)
+        self.assertEqual(self.worker.run_one(self.actor, ParserMustNotRun({}), origin=delete)["status"], "applied")
+        self.assertEqual(self.count(db.food_entry_revisions), 3)
+
+    def test_standalone_latest_delete_with_empty_log_is_unresolved(self):
+        delete = self.source(1, text="удали последнее")
+
+        class ParserMustNotRun(ControlledParser):
+            def parse(self, request):
+                raise AssertionError("standalone latest deletion must not call the model")
+
+        result = self.worker.run_one(self.actor, ParserMustNotRun({}), origin=delete)
+        self.assertEqual((result["status"], result["reason"]), ("unresolved", "entry_target_not_found"))
+        self.assertEqual(self.count(db.food_entries), 0)
+        self.assertEqual(self.count(db.food_entry_revisions), 0)
+        self.assertEqual(self.count(db.prepared_operations), 0)
 
     def test_ambiguous_description_target_stays_unresolved(self):
         self.assertEqual(self.worker.run_one(self.actor, ControlledParser(), origin=self.source(1))["status"], "applied")

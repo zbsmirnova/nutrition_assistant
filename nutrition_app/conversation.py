@@ -28,6 +28,14 @@ MAX_ATTEMPTS = 3
 TERMINAL = {"applied", "non_logging", "unresolved", "unsupported", "rejected", "failed"}
 CLARIFICATION_POSITION = 31
 CLARIFICATION_NAMESPACE = UUID("6f8e91a4-0e9a-4d5f-bca3-8a2fb4a1f6a0")
+STANDALONE_LATEST_DELETE_RE = re.compile(
+    r"^\s*(?:удали|удалить|убери|сотри|стереть)\s+(?:последнее|"
+    r"последнюю(?:\s+(?:запись|еду|порцию))?|последний(?:\s+при[её]м)?)"
+    r"\s*[.!…]*\s*$", re.IGNORECASE)
+
+
+def is_standalone_latest_delete(text: str) -> bool:
+    return bool(STANDALONE_LATEST_DELETE_RE.fullmatch(text))
 
 
 @dataclass(frozen=True)
@@ -631,7 +639,14 @@ class ConversationWorker:
                 resolution = Resolution("unsupported", "catalog_context_limit")
             else:
                 try:
-                    raw = parser.parse(parser_request(context))
+                    if is_standalone_latest_delete(context["source_text"]):
+                        raw = json.dumps({"schema_version": "1.0", "actions": [{
+                            "kind": "delete_food", "action_id": "a1",
+                            "evidence": context["source_text"], "depends_on": [], "unresolved": [],
+                            "target": {"kind": "latest"},
+                        }]})
+                    else:
+                        raw = parser.parse(parser_request(context))
                 except ParserRejected:
                     status = self._failure(claim, "parser_rejected", retryable=False)
                     return {"status": status, "origin_update_id": str(claim.origin)}

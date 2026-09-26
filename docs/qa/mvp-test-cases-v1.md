@@ -10,6 +10,8 @@ readback дня. Не является отчетом о выполнении: �
 Связанные требования: [W027 — MVP hypothesis validation](../work/027-mvp-hypothesis-validation.md),
 [QA strategy](strategy.md), [conversation contract](../conversation-contract-v1.md).
 
+Карта автоматизированного покрытия: [MVP checklist coverage map](mvp-checklist-coverage-v1.md).
+
 ## Общая подготовка
 
 Для основной группы нужен свежий пользователь и отдельная PostgreSQL schema.

@@ -136,6 +136,34 @@
       "title": "AddFood",
       "type": "object"
     },
+    "AdjustQuantity": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "adjust_quantity",
+          "title": "Kind",
+          "type": "string"
+        },
+        "quantity": {
+          "$ref": "#/$defs/QuantityMention"
+        },
+        "direction": {
+          "enum": [
+            "add",
+            "subtract"
+          ],
+          "title": "Direction",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "quantity",
+        "direction"
+      ],
+      "title": "AdjustQuantity",
+      "type": "object"
+    },
     "AnswerClarification": {
       "additionalProperties": false,
       "properties": {
@@ -677,6 +705,7 @@
             "mapping": {
               "candidate": "#/$defs/EntryCandidate",
               "description": "#/$defs/DescribedTarget",
+              "latest": "#/$defs/LatestTarget",
               "reply": "#/$defs/ReplyTarget"
             },
             "propertyName": "kind"
@@ -689,6 +718,9 @@
               "$ref": "#/$defs/ReplyTarget"
             },
             {
+              "$ref": "#/$defs/LatestTarget"
+            },
+            {
               "$ref": "#/$defs/DescribedTarget"
             }
           ],
@@ -697,6 +729,7 @@
         "change": {
           "discriminator": {
             "mapping": {
+              "adjust_quantity": "#/$defs/AdjustQuantity",
               "move_date": "#/$defs/MoveDate",
               "replace_food": "#/$defs/ReplaceFood",
               "set_inedible_weight": "#/$defs/SetInedibleWeight",
@@ -708,6 +741,9 @@
           "oneOf": [
             {
               "$ref": "#/$defs/SetQuantity"
+            },
+            {
+              "$ref": "#/$defs/AdjustQuantity"
             },
             {
               "$ref": "#/$defs/SetInedibleWeight"
@@ -984,6 +1020,7 @@
             "mapping": {
               "candidate": "#/$defs/EntryCandidate",
               "description": "#/$defs/DescribedTarget",
+              "latest": "#/$defs/LatestTarget",
               "reply": "#/$defs/ReplyTarget"
             },
             "propertyName": "kind"
@@ -994,6 +1031,9 @@
             },
             {
               "$ref": "#/$defs/ReplyTarget"
+            },
+            {
+              "$ref": "#/$defs/LatestTarget"
             },
             {
               "$ref": "#/$defs/DescribedTarget"
@@ -1430,6 +1470,21 @@
         "weight_basis"
       ],
       "title": "IngredientMention",
+      "type": "object"
+    },
+    "LatestTarget": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "latest",
+          "title": "Kind",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind"
+      ],
+      "title": "LatestTarget",
       "type": "object"
     },
     "MoveDate": {
@@ -2377,6 +2432,7 @@
             "mapping": {
               "candidate": "#/$defs/EntryCandidate",
               "description": "#/$defs/DescribedTarget",
+              "latest": "#/$defs/LatestTarget",
               "reply": "#/$defs/ReplyTarget"
             },
             "propertyName": "kind"
@@ -2387,6 +2443,9 @@
             },
             {
               "$ref": "#/$defs/ReplyTarget"
+            },
+            {
+              "$ref": "#/$defs/LatestTarget"
             },
             {
               "$ref": "#/$defs/DescribedTarget"
