@@ -41,6 +41,7 @@ On `a8911e6`, Nebius synthetic smoke passed with `schema_valid: true` and
 | UX-05 | The daily readback shows only central kcal/protein values. | Show the stored kcal and protein ranges in the daily summary, with the central values retained for readability. | Applied in `18635ca`. |
 | UX-06 | A three-item breakfast list was accepted by Telegram but ended with `unsupported` and no delivery. | Keep list messages outside MVP and document one-item-per-message input; design bounded multi-product processing for V2. | Recorded in D052. |
 | UX-07 | `яблоко 200 гр` was answered with an exact-weight clarification even though the source states one explicit gram amount. | Accept the common `гр` abbreviation as an exact gram unit; retain the backend guard for genuinely approximate or ambiguous amounts. | Fixed locally; redeploy and rerun this Telegram case. |
+| UX-08 | A standalone reply `200` did not resume the pending weight question. | For the current MVP test, reply to the original food message and include the unit (`200 г`); later decide whether an active pending question may accept a standalone bare number or a reply to the bot's clarification. | Open MVP UX issue. |
 
 The E2E result is not a general model-quality verdict. It covers the specific
 seeded catalog and live transport path exercised above.
