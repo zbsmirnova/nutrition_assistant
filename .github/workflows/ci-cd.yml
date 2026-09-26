@@ -73,6 +73,9 @@ jobs:
           umask 077
           printf '%s\n' "$DEPLOY_PRIVATE_KEY" > "$RUNNER_TEMP/nutrition_deploy_key"
           printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$RUNNER_TEMP/nutrition_known_hosts"
+          ssh-keygen -y -f "$RUNNER_TEMP/nutrition_deploy_key" > "$RUNNER_TEMP/nutrition_deploy_key.pub"
+          echo "Deploy key fingerprint:"
+          ssh-keygen -lf "$RUNNER_TEMP/nutrition_deploy_key.pub"
       - name: Upload and activate this commit
         env:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}

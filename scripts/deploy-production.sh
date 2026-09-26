@@ -23,6 +23,7 @@ tar --exclude-vcs \
 
 ssh_options=(
   -i "$DEPLOY_SSH_KEY_FILE"
+  -o IdentitiesOnly=yes
   -o BatchMode=yes
   -o StrictHostKeyChecking=yes
   -o UserKnownHostsFile="$DEPLOY_KNOWN_HOSTS_FILE"
@@ -30,6 +31,7 @@ ssh_options=(
 )
 scp_options=(
   -i "$DEPLOY_SSH_KEY_FILE"
+  -o IdentitiesOnly=yes
   -o BatchMode=yes
   -o StrictHostKeyChecking=yes
   -o UserKnownHostsFile="$DEPLOY_KNOWN_HOSTS_FILE"
