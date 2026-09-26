@@ -201,6 +201,11 @@ class NeedsClarification(ResultBase):
         return self
 
 
+class PendingCancelled(ResultBase):
+    outcome: Literal["pending_cancelled"]
+    pending_action_id: UUID
+
+
 class Rejected(ResultBase):
     outcome: Literal["rejected"]
     code: Literal["invalid_input", "not_found", "unauthorized", "revision_conflict", "unsupported"]
@@ -223,7 +228,7 @@ class FoodPreview(ResultBase):
 
 
 Outcome = Annotated[
-    Applied | NoChange | NeedsClarification | Rejected | ReadDay | ReadRecipe | FoodPreview,
+    Applied | NoChange | NeedsClarification | PendingCancelled | Rejected | ReadDay | ReadRecipe | FoodPreview,
     Field(discriminator="outcome"),
 ]
 

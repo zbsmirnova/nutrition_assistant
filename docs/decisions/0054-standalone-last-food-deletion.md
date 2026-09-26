@@ -21,13 +21,21 @@ committed active food entry by backend creation order, not the latest bot
 message, clarification, summary, or correction text. The backend resolves this
 target and applies the normal expected-revision deletion command.
 
+An active food clarification takes precedence over this targetless latest-entry
+rule. For the bounded single-pending MVP path, standalone `Удали` is interpreted
+against that pending action and may cancel it; it must not delete an unrelated
+saved entry. Cancellation closes the pending action idempotently and queues a
+visible confirmation that nothing was recorded. If the pending target cannot be
+resolved uniquely, the worker must keep saved entries unchanged and request a
+more specific target.
+
 If the standalone message names a food or date, the named scope must still
 resolve to one entry. If it matches several entries, ask the user to choose;
 the latest-entry rule applies only to a targetless standalone deletion. If no
 active food entry exists, acknowledge that there is nothing to delete and leave
 totals unchanged.
 
-All three forms preserve the deleted entry and its prior revisions in history,
+All three saved-entry forms preserve the deleted entry and its prior revisions in history,
 remove it from current totals, and are idempotent on replay. A deletion of a
 pending clarification does not delete an already saved unrelated entry.
 

@@ -9,7 +9,7 @@ Updated: 2026-09-23.
 
 Turn W003's unresolved dairy-fat result into a resumable one-question workflow. For `Съела 100 г творога` followed by a Telegram reply `5%`, keep the original 100 g and source date, validate the typed answer, save one food entry, and clear the pending count. Replaying the answer must not create another entry.
 
-This slice is intentionally bounded to one active dairy-fat question identified through Telegram reply-to metadata. It does not implement mixed-message partial saving, several simultaneous questions, bare-number quantity answers, cancellation, corrections/delete/undo, or live model quality.
+This original slice was intentionally bounded to one active dairy-fat question identified through Telegram reply-to metadata. Later checklist follow-ups added bounded cancellation and correction/delete/undo paths. Several simultaneous questions, bare-number quantity answers, and live model quality remain outside W006.
 
 ## Requirements and decisions
 

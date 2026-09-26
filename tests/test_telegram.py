@@ -134,6 +134,14 @@ class RussianReplyTests(unittest.TestCase):
         self.assertNotIn("Жиры, г:", text)
         self.assertNotIn("Углеводы, г:", text)
 
+    def test_pending_cancellation_is_visible(self):
+        operation_id, pending_action_id = uuid4(), uuid4()
+        payload = {"result": {"schema_version": "1.0", "operation_id": str(operation_id),
+                               "outcome": "pending_cancelled",
+                               "pending_action_id": str(pending_action_id)}}
+        self.assertEqual(render_result(payload),
+                         "Уточнение по еде отменено. Ничего не записано.")
+
     def test_food_entry_keeps_central_values_and_daily_total_shows_ranges(self):
         payload = outcome()
         entry = payload["result"]["food_entries"][0]["nutrition"]

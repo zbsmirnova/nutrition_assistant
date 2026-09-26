@@ -131,7 +131,11 @@ class DescribedTarget(Contract):
     description: Text
 
 
-EntryTarget = Annotated[EntryCandidate | ReplyTarget | DescribedTarget, Field(discriminator="kind")]
+class LatestTarget(Contract):
+    kind: Literal["latest"]
+
+
+EntryTarget = Annotated[EntryCandidate | ReplyTarget | LatestTarget | DescribedTarget, Field(discriminator="kind")]
 RecipeTarget = Annotated[RecipeCandidate | DescribedTarget, Field(discriminator="kind")]
 ProductTarget = Annotated[ProductCandidate | DescribedTarget, Field(discriminator="kind")]
 

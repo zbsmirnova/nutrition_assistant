@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.exc import DBAPIError
 
 from nutrition_contracts.parser import AddFood, ParserOutput
-from nutrition_contracts.results import NeedsClarification, OutcomeEnvelope, Question
+from nutrition_contracts.results import NeedsClarification, OutcomeEnvelope, PendingCancelled, Question
 
 from . import schema as db
 from .errors import ApplicationError, NotFound
@@ -28,6 +28,14 @@ MAX_ATTEMPTS = 3
 TERMINAL = {"applied", "non_logging", "unresolved", "unsupported", "rejected", "failed"}
 CLARIFICATION_POSITION = 31
 CLARIFICATION_NAMESPACE = UUID("6f8e91a4-0e9a-4d5f-bca3-8a2fb4a1f6a0")
+STANDALONE_LATEST_DELETE_RE = re.compile(
+    r"^\s*(?:удали|удалить|убери|сотри|стереть)(?:\s+(?:последнее|"
+    r"последнюю(?:\s+(?:запись|еду|порцию))?|последний(?:\s+при[её]м)?)"
+    r")?\s*[.!…]*\s*$", re.IGNORECASE)
+
+
+def is_standalone_latest_delete(text: str) -> bool:
+    return bool(STANDALONE_LATEST_DELETE_RE.fullmatch(text))
 
 
 @dataclass(frozen=True)
@@ -158,6 +166,32 @@ class ConversationWorker:
             user_id=claim.actor, operation_id=notification_id,
             telegram_account_id=source["telegram_account_id"], payload=outcome))
 
+    def _queue_cancellation(self, connection, claim):
+        pending = claim.context.get("pending")
+        if pending is None:
+            return
+        source = connection.execute(sa.select(db.inbox_updates.c.telegram_account_id).where(
+            db.inbox_updates.c.user_id == claim.actor,
+            db.inbox_updates.c.id == claim.origin)).mappings().one()
+        notification_id = self._clarification_operation_id(claim.origin)
+        if connection.execute(sa.select(db.applied_operations.c.id).where(
+                db.applied_operations.c.user_id == claim.actor,
+                db.applied_operations.c.id == notification_id)).scalar_one_or_none() is not None:
+            return
+        outcome = OutcomeEnvelope(result=PendingCancelled(
+            schema_version="1.0", operation_id=notification_id,
+            outcome="pending_cancelled", pending_action_id=UUID(pending["job_id"]),
+        )).model_dump(mode="json")
+        prepared = {"kind": "cancellation_notification", "pending_action_id": pending["job_id"]}
+        connection.execute(db.prepared_operations.insert().values(
+            id=notification_id, user_id=claim.actor, origin_update_id=claim.origin,
+            position=CLARIFICATION_POSITION, request_hash=digest(prepared), command=prepared))
+        connection.execute(db.applied_operations.insert().values(
+            id=notification_id, user_id=claim.actor, outcome=outcome))
+        connection.execute(db.outbox.insert().values(
+            user_id=claim.actor, operation_id=notification_id,
+            telegram_account_id=source["telegram_account_id"], payload=outcome))
+
     @staticmethod
     def _where(actor, origin):
         return sa.and_(db.conversation_jobs.c.user_id == actor, db.conversation_jobs.c.origin_update_id == origin)
@@ -211,6 +245,7 @@ class ConversationWorker:
                    "recipe_records": [],
                    "pending_candidates": [], "pending_recipes": [], "pending_entries": [],
                    "pending_questions": {}, "pending": None, "pending_reason": None,
+                   "active_food_pending_count": 0,
                    "observations": [],
                    "entries": [], "reply_entry_ref": None}
         observation_rows = connection.execute(sa.select(
@@ -351,37 +386,43 @@ class ConversationWorker:
                 if record["entry_id"] == (None if replied_entry is None else str(replied_entry)):
                     context["reply_entry_ref"] = record["ref"]
                     break
-        if source["reply_to_message_id"] is not None:
-            original = db.inbox_updates.alias("original_inbox")
-            pending = connection.execute(sa.select(db.conversation_jobs).select_from(
+        original = db.inbox_updates.alias("original_inbox")
+        pending_query = sa.select(db.conversation_jobs).select_from(
                 db.conversation_jobs.join(original, sa.and_(
                     original.c.user_id == db.conversation_jobs.c.user_id,
                     original.c.id == db.conversation_jobs.c.origin_update_id))).where(
                 db.conversation_jobs.c.user_id == user["id"],
                 db.conversation_jobs.c.status == "unresolved",
                 db.conversation_jobs.c.pending_questions.is_not(None),
-                original.c.telegram_account_id == source["telegram_account_id"],
-                original.c.telegram_message_id == source["reply_to_message_id"]
-            ).order_by(original.c.created_at, original.c.id).limit(1)).mappings().first()
-            if pending is not None:
-                original_context = pending["context"]
-                pending_questions = pending["pending_questions"]
-                refs = set(pending_questions)
-                context["pending_questions"] = pending_questions
-                context["pending_reason"] = pending["reason"]
-                context["pending_candidates"] = [candidate for candidate in original_context["candidates"]
-                                                   if candidate["ref"] in refs]
-                context["pending_recipes"] = [recipe for recipe in original_context.get("recipes", ())
-                                               if recipe["ref"] in refs]
-                context["pending_entries"] = [entry for entry in original_context.get("entries", ())
-                                               if entry["ref"] in refs]
-                context["pending"] = {
-                    "job_id": str(pending["id"]),
-                    "origin_update_id": str(pending["origin_update_id"]),
-                    "proposal": pending["proposal"],
-                    "context": original_context,
-                    "position": original_context.get("pending_position", 0),
-                }
+                original.c.telegram_account_id == source["telegram_account_id"])
+        if source["reply_to_message_id"] is not None:
+            pending_query = pending_query.where(
+                original.c.telegram_message_id == source["reply_to_message_id"])
+        elif not is_standalone_latest_delete(source["text"]):
+            pending_query = None
+        pending_rows = ([] if pending_query is None else connection.execute(
+            pending_query.order_by(original.c.created_at, original.c.id).limit(2)).mappings().all())
+        context["active_food_pending_count"] = len(pending_rows)
+        if len(pending_rows) == 1:
+            pending = pending_rows[0]
+            original_context = pending["context"]
+            pending_questions = pending["pending_questions"]
+            refs = set(pending_questions)
+            context["pending_questions"] = pending_questions
+            context["pending_reason"] = pending["reason"]
+            context["pending_candidates"] = [candidate for candidate in original_context["candidates"]
+                                               if candidate["ref"] in refs]
+            context["pending_recipes"] = [recipe for recipe in original_context.get("recipes", ())
+                                           if recipe["ref"] in refs]
+            context["pending_entries"] = [entry for entry in original_context.get("entries", ())
+                                           if entry["ref"] in refs]
+            context["pending"] = {
+                "job_id": str(pending["id"]),
+                "origin_update_id": str(pending["origin_update_id"]),
+                "proposal": pending["proposal"],
+                "context": original_context,
+                "position": original_context.get("pending_position", 0),
+            }
         return context
 
     def _set(self, connection, actor, origin, status, reason, **values):
@@ -457,7 +498,7 @@ class ConversationWorker:
             db.conversation_jobs.c.lease_until > now)).mappings().one_or_none()
 
     @staticmethod
-    def _clear_pending(connection, claim):
+    def _clear_pending(connection, claim, *, reason="clarification_resolved"):
         pending = claim.context.get("pending")
         if pending is None:
             return
@@ -465,7 +506,7 @@ class ConversationWorker:
             db.conversation_jobs.c.user_id == claim.actor,
             db.conversation_jobs.c.origin_update_id == UUID(pending["origin_update_id"]),
             db.conversation_jobs.c.status == "unresolved",
-        ).values(status="applied", reason="clarification_resolved", pending_food_date=None,
+        ).values(status="applied", reason=reason, pending_food_date=None,
                  pending_questions=None, claim_token=None, lease_until=None, next_attempt_at=None))
 
     def _freeze(self, claim, proposal, resolution):
@@ -497,6 +538,9 @@ class ConversationWorker:
                       "context": claim.context}
             # _set normally clears the date; use a separate value assignment below.
             self._set(connection, claim.actor, claim.origin, resolution.status, resolution.reason, **values)
+            if resolution.reason == "clarification_cancelled":
+                self._queue_cancellation(connection, claim)
+                self._clear_pending(connection, claim, reason="clarification_cancelled")
             if resolution.pending_food_date is not None:
                 connection.execute(db.conversation_jobs.update().where(self._where(claim.actor, claim.origin))
                                    .values(pending_food_date=resolution.pending_food_date))
@@ -629,9 +673,20 @@ class ConversationWorker:
                 resolution = Resolution("unresolved", "conversation_context_required")
             elif context["catalog_overflow"]:
                 resolution = Resolution("unsupported", "catalog_context_limit")
+            elif (not context["has_reply"] and context["active_food_pending_count"] > 1
+                    and is_standalone_latest_delete(context["source_text"])):
+                resolution = Resolution("unresolved", "pending_delete_target_ambiguous")
             else:
                 try:
-                    raw = parser.parse(parser_request(context))
+                    if (not context["has_reply"] and context["active_food_pending_count"] == 0
+                            and is_standalone_latest_delete(context["source_text"])):
+                        raw = json.dumps({"schema_version": "1.0", "actions": [{
+                            "kind": "delete_food", "action_id": "a1",
+                            "evidence": context["source_text"], "depends_on": [], "unresolved": [],
+                            "target": {"kind": "latest"},
+                        }]})
+                    else:
+                        raw = parser.parse(parser_request(context))
                 except ParserRejected:
                     status = self._failure(claim, "parser_rejected", retryable=False)
                     return {"status": status, "origin_update_id": str(claim.origin)}

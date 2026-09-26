@@ -33,6 +33,12 @@ class SetQuantity(Contract):
     quantity: QuantityMention
 
 
+class AdjustQuantity(Contract):
+    kind: Literal["adjust_quantity"]
+    quantity: QuantityMention
+    direction: Literal["add", "subtract"]
+
+
 class SetInedibleWeight(Contract):
     kind: Literal["set_inedible_weight"]
     quantity: QuantityMention
@@ -53,7 +59,7 @@ class ReplaceFood(Contract):
     food: FoodReference
 
 
-FoodChange = Annotated[SetQuantity | SetInedibleWeight | MoveDate | SetMeal | ReplaceFood, Field(discriminator="kind")]
+FoodChange = Annotated[SetQuantity | AdjustQuantity | SetInedibleWeight | MoveDate | SetMeal | ReplaceFood, Field(discriminator="kind")]
 
 
 class CorrectFood(Proposal):

@@ -108,6 +108,36 @@ class InterpretationTests(unittest.TestCase):
         self.assertEqual(result.status, "ready")
         self.assertEqual(result.command.command.food.components[0].quantity.edible_g, "100")
 
+    def test_supported_quantity_spellings_and_safe_natural_text_boundaries(self):
+        accepted = (
+            ("Съела 100 г творога 5% «Марка А»", "100"),
+            ("Съела 100 гр творога 5% «Марка А»", "100"),
+            ("Съела 100 g творога 5% «Марка А»", "100"),
+            ("Съела 100 грамм творога 5% «Марка А»", "100"),
+            ("Съела 🥣\n250г творога 5% «Марка А»!", "250"),
+        )
+        for text, amount in accepted:
+            with self.subTest(text=text):
+                result = resolve(ACTOR, ORIGIN, context(text), proposal(
+                    text, quantity={"amount": amount, "unit": "g"}))
+                self.assertEqual(result.status, "ready")
+                self.assertEqual(result.command.command.food.components[0].quantity.edible_g, amount)
+
+        safely_unresolved = (
+            ("Съела 0,1кг творога 5% «Марка А»", {"amount": "0.1", "unit": "kg"},
+             "unit_conversion_required"),
+            ("Съела сто гр творога 5% «Марка А»", {"amount": "100", "unit": "g"},
+             "quantity_unresolved"),
+            ("Съела 100 г творорога 5%", {"amount": "100", "unit": "g"},
+             "product_evidence_conflict"),
+            ("Съела 100г творога 5% «Марка А», сорри, 80г", {"amount": "80", "unit": "g"},
+             "quantity_unresolved"),
+        )
+        for text, quantity, reason in safely_unresolved:
+            with self.subTest(text=text):
+                result = resolve(ACTOR, ORIGIN, context(text), proposal(text, quantity=quantity))
+                self.assertEqual((result.status, result.reason), ("unresolved", reason))
+
     def test_gram_units_accept_terminal_period(self):
         for unit in ("г.", "гр."):
             with self.subTest(unit=unit):

@@ -14,7 +14,7 @@ from uuid import UUID
 
 from nutrition_contracts.commands import (CommandEnvelope, IncrementDailySteps, SetDailySteps,
                                            SetDailyWeight)
-from nutrition_contracts.parser import (AddFood, AnswerClarification, ApprovedEstimateAnswer, CandidateAnswer, CorrectFood,
+from nutrition_contracts.parser import (AddFood, AdjustQuantity, AnswerClarification, ApprovedEstimateAnswer, CandidateAnswer, CancelClarification, CorrectFood,
                                          DeleteFood, MoveDate, NonLogging, NutritionAnswer, ParserOutput,
                                          QuantityAnswer, SetSteps, SetWeight, IncrementSteps, TextAnswer,
                                          SetMeal, SetQuantity, UndoFood, GetDay, validate_parser_context)
@@ -269,6 +269,8 @@ def _entry_matches(target, context):
     elif target.kind == "description":
         wanted = normalized(target.description)
         matching = [entry for entry in entries if normalized(entry["description"]) == wanted]
+    elif target.kind == "latest":
+        matching = [entry for entry in entries if entry.get("state") == "active"][:1]
     else:
         return [], "entry_target_unsupported"
     return matching, None
@@ -365,17 +367,28 @@ def resolve_entry_action(actor: UUID, origin: UUID, context: dict, action) -> Re
                           command_position=context.get("operation_position", 0))
     if not isinstance(action, CorrectFood):
         return Resolution("unsupported", "entry_action_not_implemented")
-    if not isinstance(action.change, (SetQuantity, MoveDate, SetMeal)):
+    if not isinstance(action.change, (SetQuantity, AdjustQuantity, MoveDate, SetMeal)):
         return Resolution("unsupported", "correction_change_not_implemented")
     components = record.get("components", [])
     replacement = dict(record["food"])
-    if isinstance(action.change, SetQuantity):
+    if isinstance(action.change, (SetQuantity, AdjustQuantity)):
         if len(components) != 1:
             return Resolution("unsupported", "correction_multiple_components")
         quantity, quantity_reason = _correction_quantity(context["source_text"], action.change.quantity)
         if quantity is None:
             return Resolution("unresolved", quantity_reason)
         component = dict(components[0])
+        if isinstance(action.change, AdjustQuantity):
+            current_amount = (Decimal(component["eaten_grams"])
+                              if component["kind"] == "recipe"
+                              else Decimal(component["quantity"]["edible_g"]
+                                           if component["quantity"]["kind"] == "mass"
+                                           else component["quantity"]["ml"]))
+            delta = Decimal(quantity.amount)
+            next_amount = current_amount + (delta if action.change.direction == "add" else -delta)
+            if next_amount <= 0:
+                return Resolution("unresolved", "quantity_would_be_non_positive")
+            quantity = quantity.model_copy(update={"amount": format(next_amount.normalize(), "f")})
         if component["kind"] == "recipe":
             if quantity.unit != "g":
                 return Resolution("unresolved", "unit_basis_mismatch")
@@ -502,6 +515,15 @@ def resolve(actor: UUID, origin: UUID, context: dict, output: ParserOutput) -> R
         return resolve_observation(actor, origin, context, action)
     if isinstance(action, GetDay):
         return resolve_day_read(actor, origin, context, action)
+    if isinstance(action, CancelClarification):
+        pending = context.get("pending")
+        if pending is None:
+            return Resolution("unresolved", "clarification_context_missing")
+        if action.pending.kind != "candidate":
+            return Resolution("unsupported", "pending_action_not_implemented")
+        if action.pending.candidate_ref not in context.get("pending_questions", {}):
+            return Resolution("unresolved", "clarification_context_missing")
+        return Resolution("non_logging", "clarification_cancelled")
     if isinstance(action, AnswerClarification):
         pending = context.get("pending")
         if pending is None or action.pending is None:

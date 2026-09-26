@@ -26,6 +26,7 @@ from nutrition_app.errors import NotFound
 from nutrition_app.food_sources import ExternalFoodCandidate
 from nutrition_app.interpretation import SyntheticParser
 from nutrition_app.outbox import OutboxWorker
+from nutrition_app.rendering import render_result
 from nutrition_app.service import FoodService, operation_id_for
 from nutrition_contracts.commands import (CommandEnvelope, CommandSource, DefineRecipe, ProvidedRecipeNutrition,
                                           RecipeDefinition, RecipeIngredient, UnknownIngredientSource)
@@ -496,17 +497,110 @@ class ConversationWorkerTests(unittest.TestCase):
                 "supplied_nutrition": {"kcal": None, "protein_g": None, "fat_g": "5", "carbs_g": None}}}],
         }]}
         parser = ControlledParser(answer)
-        result = self.worker.run_one(self.actor, parser, origin=reply)
+        result = ConversationWorker(self.engine).run_one(self.actor, parser, origin=reply)
         self.assertEqual(result["status"], "applied")
         self.assertEqual(parser.requests[0].pending_questions, {"c1": {"q1": "nutrition"}})
         self.assertEqual(parser.requests[0].pending_candidates[0]["ref"], "c1")
         self.assertEqual(self.count(db.food_entries), 1)
-        self.assertEqual(self.worker.run_one(self.actor, parser, origin=reply)["status"], "applied")
+        self.assertEqual(ConversationWorker(self.engine).run_one(
+            self.actor, parser, origin=reply)["status"], "applied")
         with self.engine.begin() as connection:
-            states = connection.execute(sa.select(db.conversation_jobs.c.status, db.conversation_jobs.c.reason).where(
-                db.conversation_jobs.c.user_id == self.actor).order_by(db.conversation_jobs.c.created_at)).all()
-        self.assertEqual(states, [("applied", "clarification_resolved"), ("applied", "command_applied")])
+            states = connection.execute(sa.select(
+                db.conversation_jobs.c.status, db.conversation_jobs.c.reason).where(
+                db.conversation_jobs.c.user_id == self.actor).order_by(
+                db.conversation_jobs.c.created_at)).all()
+        self.assertEqual(states, [("applied", "clarification_resolved"),
+                                  ("applied", "command_applied")])
         self.assertEqual(self.count(db.food_entries), 1)
+
+    def test_pending_food_can_be_cancelled_without_mutation(self):
+        original = self.source(text="Съела 100 г творога")
+        initial = self.worker.run_one(
+            self.actor, ControlledParser(fixture("Съела 100 г творога")["output"]), origin=original)
+        self.assertEqual((initial["status"], initial["reason"]), ("unresolved", "dairy_fat_missing"))
+        with self.engine.begin() as connection:
+            message_id = connection.execute(sa.select(db.inbox_updates.c.telegram_message_id).where(
+                db.inbox_updates.c.id == original)).scalar_one()
+        reply = self.source(2, text="не надо, отмена", reply_to_message_id=message_id)
+        output = {"schema_version": "1.0", "actions": [{
+            "kind": "cancel_clarification", "action_id": "a1", "evidence": "не надо, отмена",
+            "depends_on": [], "unresolved": [],
+            "pending": {"kind": "candidate", "candidate_ref": "c1", "candidate_kind": "pending"},
+        }]}
+        result = ConversationWorker(self.engine).run_one(
+            self.actor, ControlledParser(output), origin=reply)
+        self.assertEqual((result["status"], result["reason"]),
+                         ("non_logging", "clarification_cancelled"))
+        self.assertEqual(self.count(db.food_entries), 0)
+        self.assertEqual(self.service.get_day(self.actor, date(2026, 9, 22)).pending_food_actions, 0)
+        self.assertEqual(ConversationWorker(self.engine).run_one(
+            self.actor, ControlledParser(output), origin=reply)["status"], "non_logging")
+
+    def test_standalone_delete_cancels_active_food_pending_without_deleting_saved_entry(self):
+        saved_source = self.source(1)
+        self.assertEqual(self.worker.run_one(
+            self.actor, ControlledParser(), origin=saved_source)["status"], "applied")
+        pending_source = self.source(2, text="Съела 80 г творога")
+        self.assertEqual(self.worker.run_one(
+            self.actor, ControlledParser(fixture("Съела 80 г творога", amount="80")["output"]),
+            origin=pending_source)["status"], "unresolved")
+        before = self.service.get_day(self.actor, date(2026, 9, 22))
+        self.assertEqual((before.entry_count, before.pending_food_actions,
+                          before.nutrition.kcal.amount.value), (1, 1, "120"))
+
+        delete_source = self.source(3, text="Удали")
+        output = {"schema_version": "1.0", "actions": [{
+            "kind": "cancel_clarification", "action_id": "a1", "evidence": "Удали",
+            "depends_on": [], "unresolved": [],
+            "pending": {"kind": "candidate", "candidate_ref": "c1", "candidate_kind": "pending"},
+        }]}
+        parser = ControlledParser(output)
+        result = ConversationWorker(self.engine).run_one(
+            self.actor, parser, origin=delete_source)
+        self.assertEqual((result["status"], result["reason"]),
+                         ("non_logging", "clarification_cancelled"))
+        self.assertEqual(parser.calls, 1)
+        after = self.service.get_day(self.actor, date(2026, 9, 22))
+        self.assertEqual((after.entry_count, after.pending_food_actions,
+                          after.nutrition.kcal.amount.value), (1, 0, "120"))
+        self.assertEqual(self.count(db.food_entries), 1)
+        self.assertEqual(self.count(db.food_entry_revisions), 1)
+        with self.engine.begin() as connection:
+            cancellation_payload = connection.execute(sa.select(db.outbox.c.payload).where(
+                db.outbox.c.user_id == self.actor,
+                db.outbox.c.operation_id == self.worker._clarification_operation_id(delete_source),
+            )).scalar_one()
+            outbox_count = connection.execute(sa.select(sa.func.count()).select_from(db.outbox).where(
+                db.outbox.c.user_id == self.actor)).scalar_one()
+        self.assertEqual(cancellation_payload["result"]["outcome"], "pending_cancelled")
+        self.assertEqual(render_result(cancellation_payload),
+                         "Уточнение по еде отменено. Ничего не записано.")
+
+        replay = ConversationWorker(self.engine).run_one(
+            self.actor, parser, origin=delete_source)
+        self.assertEqual((replay["status"], replay["reason"]),
+                         ("non_logging", "clarification_cancelled"))
+        with self.engine.begin() as connection:
+            self.assertEqual(connection.execute(sa.select(sa.func.count()).select_from(db.outbox).where(
+                db.outbox.c.user_id == self.actor)).scalar_one(), outbox_count)
+        self.assertEqual(self.count(db.food_entry_revisions), 1)
+
+    def test_unrelated_weight_does_not_consume_pending_food(self):
+        original = self.source(text="Съела 100 г творога")
+        self.assertEqual(self.worker.run_one(
+            self.actor, ControlledParser(fixture("Съела 100 г творога")["output"]),
+            origin=original)["status"], "unresolved")
+        weight_text = "Вес 72 кг"
+        weight = self.source(2, text=weight_text)
+        output = {"schema_version": "1.0", "actions": [{
+            "kind": "set_daily_weight", "action_id": "a1", "evidence": weight_text,
+            "depends_on": [], "unresolved": [], "date_hint": {"text": None},
+            "quantity": {"amount": "72", "unit": "kg"},
+        }]}
+        self.assertEqual(ConversationWorker(self.engine).run_one(
+            self.actor, ControlledParser(output), origin=weight)["status"], "applied")
+        self.assertEqual(self.count(db.food_entries), 0)
+        self.assertEqual(self.service.get_day(self.actor, date(2026, 9, 22)).pending_food_actions, 1)
 
     def test_mixed_clear_food_is_saved_once_while_other_item_waits(self):
         text = "Съела 100 г творога 5% «Марка А» и 80 г творога"
@@ -584,6 +678,82 @@ class ConversationWorkerTests(unittest.TestCase):
         self.assertEqual(self.count(db.food_entry_revisions), 2)
         self.assertEqual(self.service.get_day(self.actor, date(2026, 9, 22)).nutrition.kcal.amount.value, "96")
 
+    def test_reply_adjust_quantity_adds_and_subtracts_without_new_entry(self):
+        original = self.source(1)
+        self.assertEqual(self.worker.run_one(self.actor, ControlledParser(), origin=original)["status"], "applied")
+        with self.engine.begin() as connection:
+            message_id = connection.execute(sa.select(db.inbox_updates.c.telegram_message_id).where(
+                db.inbox_updates.c.id == original)).scalar_one()
+
+        def adjustment(number, text, direction, amount):
+            source = self.source(number, text=text, reply_to_message_id=message_id)
+            output = {"schema_version": "1.0", "actions": [{
+                "kind": "correct_food", "action_id": "a1", "evidence": text,
+                "depends_on": [], "unresolved": [], "target": {"kind": "reply"},
+                "change": {"kind": "adjust_quantity", "quantity": {"amount": amount, "unit": "g"},
+                           "direction": direction}}]}
+            return self.worker.run_one(self.actor, ControlledParser(output), origin=source)
+
+        self.assertEqual(adjustment(2, "Добавь еще 30 г", "add", "30")["status"], "applied")
+        self.assertEqual(adjustment(3, "Убавь 20 г", "subtract", "20")["status"], "applied")
+        self.assertEqual(self.count(db.food_entries), 1)
+        self.assertEqual(self.count(db.food_entry_revisions), 3)
+        with self.engine.begin() as connection:
+            current_revision = sa.select(db.food_entries.c.current_revision_id).where(
+                db.food_entries.c.user_id == self.actor).scalar_subquery()
+            amount = connection.execute(sa.select(db.food_components.c.edible_g).where(
+                db.food_components.c.food_entry_revision_id == current_revision)).scalar_one()
+        self.assertEqual(str(amount), "110.000000")
+
+    def test_reply_adjust_quantity_cannot_make_weight_non_positive(self):
+        original = self.source(1)
+        self.assertEqual(self.worker.run_one(self.actor, ControlledParser(), origin=original)["status"], "applied")
+        with self.engine.begin() as connection:
+            message_id = connection.execute(sa.select(db.inbox_updates.c.telegram_message_id).where(
+                db.inbox_updates.c.id == original)).scalar_one()
+        text = "Убавь 120 г"
+        correction = self.source(2, text=text, reply_to_message_id=message_id)
+        output = {"schema_version": "1.0", "actions": [{
+            "kind": "correct_food", "action_id": "a1", "evidence": text,
+            "depends_on": [], "unresolved": [], "target": {"kind": "reply"},
+            "change": {"kind": "adjust_quantity", "quantity": {"amount": "120", "unit": "g"},
+                       "direction": "subtract"}}]}
+        result = self.worker.run_one(self.actor, ControlledParser(output), origin=correction)
+        self.assertEqual((result["status"], result["reason"]), ("unresolved", "quantity_would_be_non_positive"))
+        self.assertEqual(self.count(db.food_entry_revisions), 1)
+
+    def test_reply_short_corrections_replace_add_and_safely_defer_half(self):
+        original = self.source(1)
+        self.assertEqual(self.worker.run_one(self.actor, ControlledParser(), origin=original)["status"], "applied")
+        with self.engine.begin() as connection:
+            message_id = connection.execute(sa.select(db.inbox_updates.c.telegram_message_id).where(
+                db.inbox_updates.c.id == original)).scalar_one()
+
+        def correct(number, text, change):
+            source = self.source(number, text=text, reply_to_message_id=message_id)
+            output = {"schema_version": "1.0", "actions": [{
+                "kind": "correct_food", "action_id": "a1", "evidence": text,
+                "depends_on": [], "unresolved": [], "target": {"kind": "reply"},
+                "change": change,
+            }]}
+            return self.worker.run_one(self.actor, ControlledParser(output), origin=source)
+
+        self.assertEqual(correct(2, "Сделай 80 г", {
+            "kind": "set_quantity", "quantity": {"amount": "80", "unit": "g"}})["status"], "applied")
+        self.assertEqual(correct(3, "Еще 50 грамм", {
+            "kind": "adjust_quantity", "direction": "add",
+            "quantity": {"amount": "50", "unit": "g"}})["status"], "applied")
+        self.assertEqual(correct(4, "Было 80 г", {
+            "kind": "set_quantity", "quantity": {"amount": "80", "unit": "g"}})["status"], "applied")
+        deferred = correct(5, "Половину убери", {
+            "kind": "set_quantity", "quantity": {"amount": None, "unit": None}})
+        self.assertEqual((deferred["status"], deferred["reason"]),
+                         ("unresolved", "quantity_unresolved"))
+        self.assertEqual(self.count(db.food_entries), 1)
+        self.assertEqual(self.count(db.food_entry_revisions), 4)
+        self.assertEqual(self.service.get_day(
+            self.actor, date(2026, 9, 22)).nutrition.kcal.amount.value, "96")
+
     def test_reply_to_bot_acknowledgment_updates_the_same_entry(self):
         original = self.source(1)
         self.assertEqual(self.worker.run_one(self.actor, ControlledParser(), origin=original)["status"], "applied")
@@ -652,6 +822,99 @@ class ConversationWorkerTests(unittest.TestCase):
         self.assertEqual(undo_result["status"], "applied")
         self.assertEqual(self.service.get_day(self.actor, date(2026, 9, 22)).entry_count, 1)
         self.assertEqual(self.count(db.food_entry_revisions), 3)
+
+    def test_reply_delete_uses_user_or_bot_message_target_and_replays_once(self):
+        first = self.source(1)
+        self.assertEqual(self.worker.run_one(self.actor, ControlledParser(), origin=first)["status"], "applied")
+        second_text = TEXT.replace("100", "80")
+        second = self.source(2, text=second_text)
+        second_output = {"schema_version": "1.0", "actions": [{
+            "kind": "add_food", "action_id": "a1", "evidence": second_text,
+            "depends_on": [], "unresolved": [],
+            "food": {"kind": "candidate", "candidate_ref": "c1", "candidate_kind": "product"},
+            "quantity": {"amount": "80", "unit": "g"}, "weight_basis": "as_sold",
+            "date_hint": {"text": None}, "meal": "lunch",
+        }]}
+        self.assertEqual(self.worker.run_one(
+            self.actor, ControlledParser(second_output), origin=second)["status"], "applied")
+        with self.engine.begin() as connection:
+            first_message_id = connection.execute(sa.select(db.inbox_updates.c.telegram_message_id).where(
+                db.inbox_updates.c.id == first)).scalar_one()
+            second_operation = operation_id_for(second)
+            connection.execute(db.outbox.update().where(
+                db.outbox.c.user_id == self.actor,
+                db.outbox.c.operation_id == second_operation,
+            ).values(status="sent", sent_at=sa.func.now(), telegram_message_id=9003))
+
+        def delete(number, text, reply_to):
+            source = self.source(number, text=text, reply_to_message_id=reply_to)
+            output = {"schema_version": "1.0", "actions": [{
+                "kind": "delete_food", "action_id": "a1", "evidence": text,
+                "depends_on": [], "unresolved": [], "target": {"kind": "reply"},
+            }]}
+            parser = ControlledParser(output)
+            self.assertEqual(self.worker.run_one(self.actor, parser, origin=source)["status"], "applied")
+            self.assertEqual(self.worker.run_one(self.actor, parser, origin=source)["status"], "applied")
+
+        delete(3, "Удали эту еду", first_message_id)
+        self.assertEqual(self.service.get_day(self.actor, date(2026, 9, 22)).entry_count, 1)
+        delete(4, "Удали", 9003)
+        self.assertEqual(self.service.get_day(self.actor, date(2026, 9, 22)).entry_count, 0)
+        self.assertEqual(self.count(db.food_entries), 2)
+        self.assertEqual(self.count(db.food_entry_revisions), 4)
+
+    def test_named_today_delete_uses_unique_backend_entry(self):
+        original = self.source(1)
+        self.assertEqual(self.worker.run_one(self.actor, ControlledParser(), origin=original)["status"], "applied")
+        text = "Удали творог за сегодня"
+        source = self.source(2, text=text)
+        output = {"schema_version": "1.0", "actions": [{
+            "kind": "delete_food", "action_id": "a1", "evidence": text,
+            "depends_on": [], "unresolved": [],
+            "target": {"kind": "description", "description": PRODUCT_NAME},
+        }]}
+        result = self.worker.run_one(self.actor, ControlledParser(output), origin=source)
+        self.assertEqual(result["status"], "applied")
+        self.assertEqual(self.service.get_day(self.actor, date(2026, 9, 22)).entry_count, 0)
+        self.assertEqual(self.count(db.food_entries), 1)
+
+    def test_standalone_latest_delete_removes_latest_active_entry_once(self):
+        first = self.source(1)
+        self.assertEqual(self.worker.run_one(self.actor, ControlledParser(), origin=first)["status"], "applied")
+        second = self.source(2, text=TEXT.replace("100", "80"))
+        second_output = {"schema_version": "1.0", "actions": [{
+            "kind": "add_food", "action_id": "a1", "evidence": TEXT.replace("100", "80"),
+            "depends_on": [], "unresolved": [],
+            "food": {"kind": "candidate", "candidate_ref": "c1", "candidate_kind": "product"},
+            "quantity": {"amount": "80", "unit": "g"}, "weight_basis": "as_sold",
+            "date_hint": {"text": None}, "meal": "lunch"}]}
+        self.assertEqual(self.worker.run_one(self.actor, ControlledParser(second_output), origin=second)["status"], "applied")
+
+        delete = self.source(3, text="Удали последнее")
+
+        class ParserMustNotRun(ControlledParser):
+            def parse(self, request):
+                raise AssertionError("standalone latest deletion must not call the model")
+
+        result = self.worker.run_one(self.actor, ParserMustNotRun({}), origin=delete)
+        self.assertEqual(result["status"], "applied")
+        self.assertEqual(self.service.get_day(self.actor, date(2026, 9, 22)).entry_count, 1)
+        self.assertEqual(self.count(db.food_entry_revisions), 3)
+        self.assertEqual(self.worker.run_one(self.actor, ParserMustNotRun({}), origin=delete)["status"], "applied")
+        self.assertEqual(self.count(db.food_entry_revisions), 3)
+
+    def test_standalone_latest_delete_with_empty_log_is_unresolved(self):
+        delete = self.source(1, text="удали последнее")
+
+        class ParserMustNotRun(ControlledParser):
+            def parse(self, request):
+                raise AssertionError("standalone latest deletion must not call the model")
+
+        result = self.worker.run_one(self.actor, ParserMustNotRun({}), origin=delete)
+        self.assertEqual((result["status"], result["reason"]), ("unresolved", "entry_target_not_found"))
+        self.assertEqual(self.count(db.food_entries), 0)
+        self.assertEqual(self.count(db.food_entry_revisions), 0)
+        self.assertEqual(self.count(db.prepared_operations), 0)
 
     def test_ambiguous_description_target_stays_unresolved(self):
         self.assertEqual(self.worker.run_one(self.actor, ControlledParser(), origin=self.source(1))["status"], "applied")

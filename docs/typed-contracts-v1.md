@@ -53,7 +53,7 @@ flowchart LR
 | `food_question` | `preview_food` when sources/amount are resolved; otherwise ask a question. Never adds consumed food. |
 | `confirm_day_complete` | `confirm_day_complete` after checking pending food and empty-day declarations. Missing steps do not block it. |
 | `answer_clarification` | Resolve the original pending operation; do not create another independent food command identity. |
-| `cancel_clarification` | `cancel_pending_action`; leave unrelated saved items intact. |
+| `cancel_clarification` | Close the scoped pending action, emit `pending_cancelled`, and leave unrelated saved items intact. |
 | `non_logging` | Plan/chat/unsupported/ambiguous intent; no consumption command. A clarification can still be needed. |
 
 `dismiss_daily_check_in` is a trusted button command. It does not need an LLM interpretation. Future aliases, additional activity metrics, training, and scheduled report generation are outside this contract package; do not bypass strict schemas to add them silently.

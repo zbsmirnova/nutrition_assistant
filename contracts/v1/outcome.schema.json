@@ -806,6 +806,39 @@
       "title": "PartialTotal",
       "type": "object"
     },
+    "PendingCancelled": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": "1.0",
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "operation_id": {
+          "format": "uuid",
+          "title": "Operation Id",
+          "type": "string"
+        },
+        "outcome": {
+          "const": "pending_cancelled",
+          "title": "Outcome",
+          "type": "string"
+        },
+        "pending_action_id": {
+          "format": "uuid",
+          "title": "Pending Action Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "schema_version",
+        "operation_id",
+        "outcome",
+        "pending_action_id"
+      ],
+      "title": "PendingCancelled",
+      "type": "object"
+    },
     "Question": {
       "additionalProperties": false,
       "properties": {
@@ -1325,6 +1358,7 @@
           "food_preview": "#/$defs/FoodPreview",
           "needs_clarification": "#/$defs/NeedsClarification",
           "no_change": "#/$defs/NoChange",
+          "pending_cancelled": "#/$defs/PendingCancelled",
           "recipe_profile": "#/$defs/ReadRecipe",
           "rejected": "#/$defs/Rejected"
         },
@@ -1339,6 +1373,9 @@
         },
         {
           "$ref": "#/$defs/NeedsClarification"
+        },
+        {
+          "$ref": "#/$defs/PendingCancelled"
         },
         {
           "$ref": "#/$defs/Rejected"

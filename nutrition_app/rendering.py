@@ -110,6 +110,13 @@ def render_clarification_result(payload: dict) -> str:
     return "\n".join(question.prompt for question in result.questions)
 
 
+def render_pending_cancelled_result(payload: dict) -> str:
+    result = OutcomeEnvelope.model_validate_json(json.dumps(payload)).result
+    if result.outcome != "pending_cancelled":
+        raise ValueError("Not a pending cancellation result")
+    return "Уточнение по еде отменено. Ничего не записано."
+
+
 def render_result(payload: dict) -> str:
     """Render any supported committed outcome into a Russian confirmation."""
     try:
@@ -122,5 +129,9 @@ def render_result(payload: dict) -> str:
         pass
     try:
         return render_day_result(payload)
+    except ValueError:
+        pass
+    try:
+        return render_pending_cancelled_result(payload)
     except ValueError:
         return render_food_result(payload)
