@@ -28,12 +28,24 @@ multiple independent actions, per-item resolution and clarification, stable
 operation identities, partial-success semantics, and one clear user-facing
 response. It must preserve the existing exactly-once and correction guarantees.
 
+When a V2 clarification asks for a product or recipe weight, the user may
+answer through any of three Telegram forms: reply to the original food
+message, reply to the bot's clarification message, or a new standalone
+message. A standalone answer may use natural Russian wording such as `там
+было граммов 200`, `примерно 200 грамм`, or equivalent forms, including
+ordinary punctuation and spacing variants. The backend must attach the answer
+to the correct pending context, preserve the user's exact-versus-approximate
+meaning, and ask for disambiguation when more than one pending quantity could
+match; it must not guess from an unrelated standalone number.
+
 ## Consequences
 
 The MVP remains suitable for validating single-item calculation and durable
 recording, but it does not yet match the user's fastest breakfast-entry format.
 The V2 design should be completed before changing the worker's current
-unsupported disposition for multi-action proposals.
+unsupported disposition for multi-action proposals. The three clarification
+entry points and free-form weight wording belong to that V2 design and do not
+change the MVP's current one-message, reply-linked clarification behavior.
 
 ## References
 
