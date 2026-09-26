@@ -31,7 +31,8 @@ The workflow also supports a manual dispatch, but deployment remains restricted
 to the `main` ref. A concurrency group allows only one production deployment at
 a time. Runtime Nebius, Telegram, and PostgreSQL secrets remain in the server's
 untracked `.env`; GitHub receives only deployment SSH material and host
-connection settings.
+connection settings. The dedicated deploy private key must be non-interactive
+(without a passphrase), because the hosted runner cannot answer prompts.
 
 ## Alternatives and consequences
 

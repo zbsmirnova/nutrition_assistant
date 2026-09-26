@@ -60,7 +60,9 @@ The `migrate` service runs to completion before the worker starts. To stop the p
 The repository now contains [ci-cd.yml](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/.github/workflows/ci-cd.yml?type=file&root=%252F). A push to `main` runs the three documented test suites, then uploads the exact tested commit to the Netcup host over SSH. The deployment unpacks a release under `/opt/nutrition_assistant/releases/<commit>`, keeps the host `.env` outside the release, runs the Compose migration, starts the worker, and waits for its Docker health check. It does not send Nebius, Telegram, or database credentials to the runner.
 
 Before the first run, create a dedicated deploy key and add its public key to
-the server account's `~/.ssh/authorized_keys`. In GitHub, create a `production`
+the server account's `~/.ssh/authorized_keys`. The key must be usable without an
+interactive passphrase; GitHub's runner cannot answer a passphrase prompt. Keep
+this non-interactive key dedicated to deployment. In GitHub, create a `production`
 Environment and add these secrets: `DEPLOY_HOST`, `DEPLOY_USER`,
 `DEPLOY_SSH_PORT` (optional; use `22`), `DEPLOY_SSH_PRIVATE_KEY`, and
 `DEPLOY_KNOWN_HOSTS`. The last value should be the verified SSH host-key line
