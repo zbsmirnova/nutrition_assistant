@@ -29,6 +29,7 @@ On `a8911e6`, Nebius synthetic smoke passed with `schema_valid: true` and
 | E2E-05 | Set and increment daily steps | pass, cumulative total observed | The absolute set returned `applied` and `delivery: sent` with 8200 steps. A shorthand increment also returned `applied` and `delivery: sent`; the bot reported 17000, consistent with two prior +4400 increments accumulated on the same daily slot. The stored value is normalized; confirmations now use compact thousands formatting. |
 | E2E-06 | Read today after processing/restart | pass with UX feedback applied | A new day-summary request returned `applied` and `delivery: sent`; Telegram read back 166 kcal and 4,05 g protein, matching the accumulated entries. Daily summaries now render available kcal/protein ranges. |
 | E2E-07 | Unknown product remains visible and outside totals | pass after prompt retry | The first attempt was misclassified as a day summary. On retry, Telegram processing returned `unresolved` with `product_unresolved` and `delivery: sent`; the bot asked for a name or catalog addition and explicitly kept the item out of totals. |
+| E2E-08 | Answer a pending weight question by replying to the original food message | pass | On 2026-09-26 the user replied `200 г` to the original `Яблоко 200 гр` clarification. Telegram saved `Яблоко` at 94 kcal and 0,8 g protein, then returned the daily kcal/protein ranges. This is user-run evidence; the deployed revision was not recorded and no independent QA review was run. |
 
 ## UX feedback
 
@@ -41,7 +42,7 @@ On `a8911e6`, Nebius synthetic smoke passed with `schema_valid: true` and
 | UX-05 | The daily readback shows only central kcal/protein values. | Show the stored kcal and protein ranges in the daily summary, with the central values retained for readability. | Applied in `18635ca`. |
 | UX-06 | A three-item breakfast list was accepted by Telegram but ended with `unsupported` and no delivery. | Keep list messages outside MVP and document one-item-per-message input; design bounded multi-product processing for V2. | Recorded in D052. |
 | UX-07 | `яблоко 200 гр` was answered with an exact-weight clarification even though the source states one explicit gram amount. | Accept the common `гр` abbreviation as an exact gram unit; retain the backend guard for genuinely approximate or ambiguous amounts. | Fixed locally; redeploy and rerun this Telegram case. |
-| UX-08 | A standalone reply `200` did not resume the pending weight question. | For the current MVP test, reply to the original food message and include the unit (`200 г`); later decide whether an active pending question may accept a standalone bare number or a reply to the bot's clarification. | Open MVP UX issue. |
+| UX-08 | Replying `200 г` to the original food message resumed the pending question; a standalone bare `200` did not. | Keep the original-message reply as the verified MVP path. Add reply-to-bot and standalone natural-language answers such as `там было граммов 200` in the V2 clarification slice. | Original reply verified on 2026-09-26; the other two entry points remain V2 work under D052. |
 
 The E2E result is not a general model-quality verdict. It covers the specific
 seeded catalog and live transport path exercised above.
