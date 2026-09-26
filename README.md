@@ -55,6 +55,25 @@ docker compose -f compose.production.yml logs --tail=100 worker
 
 The `migrate` service runs to completion before the worker starts. To stop the pilot while preserving PostgreSQL data, use `docker compose -f compose.production.yml stop`; do not remove the `nutrition_pgdata` volume. Backup and restore rehearsal instructions remain part of W024 before calling the pilot release ready.
 
+### GitHub CI/CD deployment
+
+The repository now contains [ci-cd.yml](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/.github/workflows/ci-cd.yml?type=file&root=%252F). A push to `main` runs the three documented test suites, then uploads the exact tested commit to the Netcup host over SSH. The deployment unpacks a release under `/opt/nutrition_assistant/releases/<commit>`, keeps the host `.env` outside the release, runs the Compose migration, starts the worker, and waits for its Docker health check. It does not send Nebius, Telegram, or database credentials to the runner.
+
+Before the first run, create a dedicated deploy key and add its public key to
+the server account's `~/.ssh/authorized_keys`. In GitHub, create a `production`
+Environment and add these secrets: `DEPLOY_HOST`, `DEPLOY_USER`,
+`DEPLOY_SSH_PORT` (optional; use `22`), `DEPLOY_SSH_PRIVATE_KEY`, and
+`DEPLOY_KNOWN_HOSTS`. The last value should be the verified SSH host-key line
+for the Netcup server, obtained with `ssh-keyscan` only after checking the
+fingerprint in the provider console. Keep the existing runtime `.env` on the
+server; do not copy it into GitHub or the repository.
+
+After the workflow is committed and pushed, use the **Actions** tab to inspect
+the `CI and production deploy` run. A failed test prevents deployment. A
+successful run prints the Compose status and the deployed commit. Previous
+release directories are retained for manual rollback; database migration
+compatibility must be checked before selecting an older release.
+
 ## Telegram transport development
 
 Apply the current migration head before using these commands (`migrate` handles this; the current head includes daily observations). No new runtime dependencies are needed. The API adapter uses normal HTTPS certificate verification; if your environment uses a custom CA, configure its trusted CA through Python's standard SSL_CERT_FILE setting.

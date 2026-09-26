@@ -1,0 +1,83 @@
+name: CI and production deploy
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nutrition-production
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: nutrition
+          POSTGRES_PASSWORD: nutrition_ci
+          POSTGRES_DB: nutrition_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U nutrition -d nutrition_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      NUTRITION_DATABASE_URL: postgresql+psycopg://nutrition:nutrition_ci@127.0.0.1:5432/nutrition_ci
+    steps:
+      - name: Check out the commit
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Install pinned dependencies
+        run: python -m pip install -r requirements-runtime.txt -r requirements-contracts.txt
+      - name: Run offline tests
+        run: python -m unittest discover -s tests -v
+      - name: Run PostgreSQL integration tests
+        run: python -m unittest discover -s tests/integration -v
+      - name: Run retained QA checks
+        run: python -m unittest discover -s tests/qa -v
+      - name: Check dependencies and whitespace
+        run: |
+          python -m pip check
+          git diff --check
+
+  deploy:
+    name: Deploy to Netcup
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    steps:
+      - name: Check out the tested commit
+        uses: actions/checkout@v4
+      - name: Install deployment SSH material
+        shell: bash
+        env:
+          DEPLOY_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          printf '%s\n' "$DEPLOY_PRIVATE_KEY" > "$RUNNER_TEMP/nutrition_deploy_key"
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > "$RUNNER_TEMP/nutrition_known_hosts"
+      - name: Upload and activate this commit
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SSH_PORT: ${{ secrets.DEPLOY_SSH_PORT }}
+          DEPLOY_SSH_KEY_FILE: ${{ runner.temp }}/nutrition_deploy_key
+          DEPLOY_KNOWN_HOSTS_FILE: ${{ runner.temp }}/nutrition_known_hosts
+        run: bash scripts/deploy-production.sh

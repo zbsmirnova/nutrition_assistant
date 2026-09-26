@@ -3,7 +3,7 @@
 Status: in progress.
 Milestone: M6 personal release readiness, first usable MVP pilot.  
 Owner: lead assistant, architect/developer.  
-Decision: D040; Q10/Q11 constraints remain open.
+Decision: D040, D053; Q10/Q11 constraints remain open.
 
 ## Goal
 
@@ -21,9 +21,12 @@ outbox boundaries.
 3. Document secret injection, first startup, upgrade/rollback, log redaction,
    and operator smoke checks. Keep credentials and personal messages out of
    tracked files.
-4. Add encrypted PostgreSQL dump and restore-rehearsal instructions. Record
+4. Add a GitHub Actions path that tests the exact `main` commit, uploads a
+   source release over SSH, runs migrations, and waits for the worker health
+   check before reporting success.
+5. Add encrypted PostgreSQL dump and restore-rehearsal instructions. Record
    the actual backup evidence before claiming personal-release readiness.
-5. Run the live pilot acceptance path: food, recipe clarification, weight,
+6. Run the live pilot acceptance path: food, recipe clarification, weight,
    steps, correction, retry/restart, and Telegram delivery.
 
 ## Out of scope
@@ -42,6 +45,7 @@ scaling, and unknown-restaurant nutrition sourcing.
 | W024-A04 | Secrets are supplied outside the image and repository; normal logs contain statuses/IDs only and no message text or tokens. |
 | W024-A05 | A backup can be restored into a disposable PostgreSQL instance and the application resumes from the restored durable state. |
 | W024-A06 | The live pilot acceptance scenarios pass on the selected host; each result records its revision, limits, and whether it was developer or independent QA evidence. |
+| W024-A07 | A push to `main` deploys only after the configured CI suites pass, activates the exact tested commit, keeps runtime secrets on the host, and reports worker health or a bounded failure. |
 
 ## Required user input before deployment
 
