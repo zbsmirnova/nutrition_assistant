@@ -62,7 +62,7 @@ compose=(docker compose --project-name nutrition_assistant \
 "${compose[@]}" up -d db
 "${compose[@]}" build migrate worker
 "${compose[@]}" run --rm migrate
-"${compose[@]}" up -d --no-deps worker
+"${compose[@]}" up -d --no-deps --force-recreate worker
 
 worker_id=""
 health="unknown"

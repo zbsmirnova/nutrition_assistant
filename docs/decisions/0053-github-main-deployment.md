@@ -25,7 +25,8 @@ Use GitHub Actions for a two-job `main` pipeline:
 3. unpack it under `/opt/nutrition_assistant/releases/<commit>` and run the
    existing production Compose topology with the host's unchanged `.env`;
 4. build the migration/worker images, run migrations, start the worker, and
-   wait for its Docker health check before marking deployment successful.
+   force-recreate the worker from the new image, and wait for its Docker health
+   check before marking deployment successful.
 
 The workflow also supports a manual dispatch, but deployment remains restricted
 to the `main` ref. A concurrency group allows only one production deployment at
