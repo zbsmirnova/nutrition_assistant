@@ -40,7 +40,7 @@ On `a8911e6`, Nebius synthetic smoke passed with `schema_valid: true` and
 | UX-04 | A confirmation rendered as `4400 шагов` loses the user's compact input form. | Render shorthand input as `4,4 тыс. шагов` in the confirmation while persisting the normalized integer `4400`. | Applied in `18635ca`; exact integers remain persisted. |
 | UX-05 | The daily readback shows only central kcal/protein values. | Show the stored kcal and protein ranges in the daily summary, with the central values retained for readability. | Applied in `18635ca`. |
 | UX-06 | A three-item breakfast list was accepted by Telegram but ended with `unsupported` and no delivery. | Keep list messages outside MVP and document one-item-per-message input; design bounded multi-product processing for V2. | Recorded in D052. |
-| UX-07 | `яблоко 200 гр` was answered with an exact-weight clarification even though the source states one explicit gram amount. | Investigate the live parser proposal and ensure an explicit compatible amount is not treated as approximate; retain the backend guard for genuinely approximate or ambiguous amounts. | Open MVP interpretation defect. |
+| UX-07 | `яблоко 200 гр` was answered with an exact-weight clarification even though the source states one explicit gram amount. | Accept the common `гр` abbreviation as an exact gram unit; retain the backend guard for genuinely approximate or ambiguous amounts. | Fixed locally; redeploy and rerun this Telegram case. |
 
 The E2E result is not a general model-quality verdict. It covers the specific
 seeded catalog and live transport path exercised above.

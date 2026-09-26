@@ -102,6 +102,12 @@ class InterpretationTests(unittest.TestCase):
         self.assertEqual(command.command.food.components[0].quantity.edible_g, "100")
         self.assertNotIn("kcal", command.model_dump_json())
 
+    def test_common_gram_abbreviation_is_an_exact_quantity(self):
+        text = TEXT.replace("100 г", "100 гр")
+        result = resolve(ACTOR, ORIGIN, context(text), proposal(text))
+        self.assertEqual(result.status, "ready")
+        self.assertEqual(result.command.command.food.components[0].quantity.edible_g, "100")
+
     def test_single_catalog_candidate_cannot_supply_missing_dairy_percentage(self):
         text = "Съела 100 г творога"
         result = resolve(ACTOR, ORIGIN, context(text), proposal(text))
