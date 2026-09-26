@@ -47,6 +47,9 @@ Use [README.md](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutri
 ## Later scope
 
 - V2: training sessions and sets.
+- V2: bounded processing of multiple independent food products written in one
+  Telegram message, with per-item clarification and a single clear response;
+  the MVP keeps one food item per message.
 - Post-MVP feedback capture: store contextual replies to bot messages and standalone general suggestions for later review; define schema, retention, and review workflow before implementation.
 - Post-MVP restaurant estimation: propose a clearly labeled range based on similar foods in an approved reference database, from the reference average to average plus 30% for possible hidden restaurant fats; require user approval and evaluate the heuristic before release. See [W026](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/work/026-restaurant-calorie-estimation.md?type=file&root=%252F) and [D045](air-file://fai6b8iclscp0tss0s3r/Users/Zinaida.Smirnova/air/nutrition_assistant/docs/decisions/0045-post-mvp-restaurant-calorie-estimation.md?type=file&root=%252F).
 - Post-MVP reference catalog: evaluate a compact, licensed Russian-language Open Food Facts subset built offline; keep it separate from the owner-scoped personal catalog, and consider daily deltas plus periodic full rebuilds only after the first subset proves useful. Full exports and unlicensed copying are outside the MVP.

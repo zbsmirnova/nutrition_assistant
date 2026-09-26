@@ -35,6 +35,10 @@ not part of the core MVP release gate. D047's uncertainty coefficients remain
 the experimental policy for that lane; open-database lookup is disabled in the
 validation path.
 
+The MVP's reliable food input is one food item per Telegram message. Lists of
+multiple independent food items remain a V2 slice; the current worker must not
+silently save an arbitrary subset of such a list.
+
 The combined completion/activity check-in and reminders are post-MVP W018
 work. The release roadmap includes history/reporting, post-MVP feedback capture,
 and operational readiness; report scheduling and export/deletion requirements
@@ -53,7 +57,7 @@ These IDs are stable references for specifications, work briefs, and QA. Product
 | FOOD-001 | Save independently clear consumed-food entries continuously. A close-day action is not required to persist food. |
 | FOOD-002 | Ask about material missing details, including dairy fat percentage when needed to identify the consumed product/nutrition profile, preparation or subtype when it changes nutrition materially, and exact usable weight when the amount is approximate, partial, ranged, gross/edible ambiguous, bone-in, or otherwise uncertain. Examples include skin/oil for chicken, added fat for eggs, cheese type/producer, and oil for baked potatoes. Do not ask again when the message or exact identified product/label already resolves it. Persist the pending message/action, but exclude unresolved new food from totals; an uncertain correction leaves the previously committed entry intact. An estimated or assumed portion requires explicit user approval and visible provenance. |
 | FOOD-003 | Correct the same logical entry with retained revision history; changing 100 g to 80 g must not add another portion. |
-| FOOD-004 | In a mixed message, save clear independent items and clarify unresolved ones. Answering later must not repeat the already saved items. |
+| FOOD-004 | For the post-MVP V2 multi-product slice, save clear independent items in a mixed message and clarify unresolved ones. Answering later must not repeat the already saved items. The MVP accepts one food item per message. |
 | FOOD-005 | Plans, questions, and product/recipe definitions are not evidence of consumption. |
 | FOOD-006 | Food acknowledgments describe what was saved or corrected and show the entry's central kcal/protein estimate plus the updated daily kcal/protein range. The backend continues to persist all four nutrient fields, their bounds, pending state, and completeness; routine MVP Telegram copy omits fat/carbohydrate lines and pending/completeness notices. |
 | FOOD-007 | In the MVP, model output may identify ambiguity and offer bounded choices, but user decisions control approximations, assumptions, averages, portion conversions, edible-weight interpretations, and recipe substitutes. Unapproved choices remain pending and outside totals. |
