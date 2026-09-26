@@ -80,6 +80,12 @@ coverage limits in a QA report linked here. A live user run is useful evidence
 but is not an independent QA review. The W024 deployment brief remains the
 separate personal-release gate after this validation.
 
+The reusable QA input matrix for message forms, clarifications, corrections,
+negative cases, reliability, and adjacent weight/steps behavior is maintained
+in [mvp-test-cases-v1.md](../qa/mvp-test-cases-v1.md). It is a test design
+artifact, not execution evidence; each run must record its own revision and
+result.
+
 ## Implementation progress
 
 The production Telegram path now excludes external catalog lookup, and

@@ -218,11 +218,29 @@ W007 implements this rule for one clear pinned product plus one dairy-fat-pendin
 
 The entry keeps its identity. A new revision replaces the current values; the earlier revision remains in history. The model identifies the intended target and changed fields; the backend performs arithmetic.
 
-Proposed target-resolution order: explicit reply plus named food, explicit day/meal/food reference, then a uniquely established current conversation target. Do not choose the newest record solely because it is newest when several records fit. Ask the user to select or name a target in that case.
+Proposed target-resolution order for corrections, undo, and named deletion is:
+explicit reply plus named food, explicit day/meal/food reference, then a
+uniquely established current conversation target. Do not choose the newest
+record solely because it is newest when several records fit; ask the user to
+select or name a target in that case. The one exception is an explicit,
+targetless standalone deletion such as “Удали последнее”: it selects the
+latest active food entry by backend creation order. It never selects the latest
+bot message, summary, clarification, or correction text.
 
 “Ещё 80 г” means an addition only when the food/context is unambiguous. “Было 80 г” replaces the selected quantity. If “80 g total” refers to multiple records, resolve that scope before changing any of them.
 
-When a description matches several current entries, keep the correction, deletion, or undo pending and show numbered choices with description, local date, meal, and current state. A reply selects exactly one opaque candidate; the original entry remains unchanged until the resumed guarded command commits. Never choose the newest matching entry automatically.
+When a description matches several current entries, keep the correction, named
+deletion, or undo pending and show numbered choices with description, local
+date, meal, and current state. A reply selects exactly one opaque candidate;
+the original entry remains unchanged until the resumed guarded command commits.
+The targetless standalone deletion exception is defined above and does not
+extend to correction, undo, or named deletion.
+
+A food deletion may be expressed as a reply to the user's original food
+message, a reply to the bot's acknowledgment for that food, or a new
+standalone message. A targetless standalone deletion selects the latest active
+food entry for that owner in the current conversation scope. If no active entry
+exists, acknowledge that there is nothing to delete and leave totals unchanged.
 
 W010 supports `move_date` when the source contains one explicit date expression and `set_meal` when the user explicitly changes the meal. A date move updates both affected day summaries; a meal change stays on the same day. Both retain the entry identity and revision history.
 
