@@ -108,6 +108,21 @@ class InterpretationTests(unittest.TestCase):
         self.assertEqual(result.status, "ready")
         self.assertEqual(result.command.command.food.components[0].quantity.edible_g, "100")
 
+    def test_gram_units_accept_terminal_period(self):
+        for unit in ("г.", "гр."):
+            with self.subTest(unit=unit):
+                text = TEXT.replace("100 г", f"100 {unit}")
+                result = resolve(ACTOR, ORIGIN, context(text), proposal(text))
+                self.assertEqual(result.status, "ready")
+                self.assertEqual(result.command.command.food.components[0].quantity.edible_g, "100")
+
+    def test_quantity_without_unit_stays_unresolved(self):
+        text = "Съела яблоко 200"
+        source = context(text)
+        source["candidates"][0].update(name="Яблоко", food_kind="general", declared_fat_percent=None)
+        result = resolve(ACTOR, ORIGIN, source, proposal(text, quantity={"amount": "200", "unit": "g"}))
+        self.assertEqual((result.status, result.reason), ("unresolved", "quantity_unresolved"))
+
     def test_single_catalog_candidate_cannot_supply_missing_dairy_percentage(self):
         text = "Съела 100 г творога"
         result = resolve(ACTOR, ORIGIN, context(text), proposal(text))
